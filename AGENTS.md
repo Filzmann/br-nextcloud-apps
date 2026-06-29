@@ -424,6 +424,8 @@ Nicht ohne ausdrückliche Freigabe:
 
 Statt `git add .` gezielt Dateien hinzufügen.
 
+Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem Repo-Root `~/projects/br-nextcloud-apps` ausführen. Das `.git`-Verzeichnis liegt dort und nicht in `brtop/`; bei einer Codex-Session mit Workspace-Root `brtop/` muss dafür eskalierter Schreibzugriff auf die Git-Metadaten genutzt werden.
+
 ## Arbeitsweise für Codex
 
 Vor Änderungen:
@@ -439,3 +441,5 @@ Nach Änderungen:
 2. Relevante grep-Prüfung ausführen.
 3. DDEV/Nextcloud nur neu starten, wenn nötig.
 4. Ergebnis knapp melden.
+
+Wenn bei der Arbeit ein echtes, wiederverwendbares Projekt-Learning entsteht, soll Codex vorschlagen, es in `AGENTS.md` zu ergänzen. Die Ergänzung erfolgt erst nach ausdrücklicher Freigabe.
