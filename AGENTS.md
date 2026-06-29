@@ -46,6 +46,248 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 
+## Architektur- und Codequalitätsregeln für BRTop
+
+Diese Regeln sind eigenständige Projektregeln für die Nextcloud-App `brtop`. Sie bleiben gültig, auch wenn sich Regeln in anderen Projekten ändern. Externe Projektkonfigurationen dürfen nur als Denkanstoß dienen, aber nicht als automatisch geltende Quelle.
+
+### Nicht anwendbare Regeln
+
+Für BRTop gelten nicht:
+
+- WordPress-spezifische APIs, Konzepte und Prüfungen wie Shortcodes, Gutenberg-Blöcke, `$wpdb`, WordPress-Nonces, `current_user_can()`, `esc_html()` oder WordPress-Capabilities.
+- Namenskonventionen anderer Projekte wie `flz_`.
+- Symlink-Regeln, Staging-Workflows oder Plugin-Verzeichnisregeln aus WordPress-Projekten.
+- Gemeinsame WordPress-Hilfsplugins oder deren APIs.
+- Harte Demo-Daten aus externen Produktivseiten, wenn die Daten lokal aus der App oder der Entwicklungsumgebung ableitbar sind.
+
+### Übertragene Grundprinzipien
+
+Für BRTop gelten diese angepassten Prinzipien verbindlich:
+
+- Controller bleiben dünn.
+- Fachlogik, Datenzugriff, Darstellung, Dokumenterzeugung und Dateiablage werden getrennt.
+- Wiederkehrende Logik wird nicht mehrfach in Controllern oder `main.js` dupliziert.
+- Datenzugriffe laufen mittelfristig über Repository-, Mapper- oder Store-Klassen.
+- Wiederkehrende Datenstrukturen werden als Modelle, DTOs oder Value Objects beschrieben, sobald rohe Arrays unübersichtlich werden.
+- Größere HTML-Blöcke werden aus `templates/index.php` in Partials ausgelagert.
+- Wiederkehrende Frontend-Logik wird app-intern in JavaScript-Module unter `js/components/` oder `js/modules/` ausgelagert.
+- Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
+- Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
+
+### Zielstruktur
+
+Die App soll schrittweise in diese Richtung wachsen:
+
+```text
+brtop/
+├── appinfo/
+├── css/
+├── js/
+│   ├── main.js
+│   ├── modules/
+│   └── components/
+├── lib/
+│   ├── AppInfo/
+│   ├── Controller/
+│   ├── Db/
+│   ├── Model/
+│   ├── Repository/
+│   ├── Service/
+│   └── Exception/
+└── templates/
+    ├── index.php
+    ├── partials/
+    └── odt/
+```
+
+Leere Ordner werden nicht vorsorglich angelegt. Neue Struktur entsteht erst, wenn tatsächlich Code dorthin ausgelagert wird.
+
+### Controller-Regel
+
+Controller dürfen:
+
+- Requests entgegennehmen.
+- Eingaben typisieren und validieren.
+- Berechtigungsprüfungen anstoßen.
+- Services aufrufen.
+- `DataResponse`, `JSONResponse`, `TemplateResponse` oder passende Nextcloud-Antworten zurückgeben.
+
+Controller sollen nicht dauerhaft enthalten:
+
+- SQL- oder QueryBuilder-Details.
+- ODT-XML-Erzeugung.
+- Dokumentgenerator-Logik.
+- Dateiablage- und Exportpfade.
+- komplexe TOP-Gruppierung oder TOP-Nummerierung.
+- Default-Beschlussfragen und §99-/§100-/§102-Fachlogik.
+- große Textbausteine für Einladung, Protokoll oder Beschlüsse.
+
+### Service-Regel
+
+Fachlogik gehört in Services. Für BRTop sind insbesondere diese Services sinnvoll:
+
+- `MeetingService`: Sitzungen anlegen, laden, prüfen.
+- `AgendaService`: Standard-TOPs, Sortierung, Gruppierung, Nummerierung.
+- `PersonnelCaseService`: §99-, §100- und §102-Vorgänge fachlich einordnen.
+- `ResolutionService`: Beschlussfragen, Beschlusslogik und Abstimmung.
+- `InvitationService`: Einladungsstruktur und Einladungstext erzeugen.
+- `ProtocolService`: Protokollstruktur aus Sitzung und TOPs erzeugen.
+- `DocumentGenerationService`: Einladungen, Protokolle und Beschlussdokumente koordinieren.
+- `OdtTemplateRenderer`: ODT-Vorlagen befüllen, ohne das Vorlagenlayout unnötig zu zerstören.
+- `FileExportService`: Dateien im Nextcloud-Dateisystem ablegen.
+- `ErrorReporter` oder `BrtopLogger`: Fehler zentral protokollieren.
+
+Services sollen möglichst wenig Framework-Code enthalten. Nextcloud-spezifische Datei-, User- und Response-Details gehören an die Ränder der App.
+
+### Modelle, DTOs und Repositories
+
+Bei wiederkehrenden Datenstrukturen sind Modelle oder DTOs zu prüfen. Sinnvolle Kandidaten:
+
+- `Meeting`
+- `AgendaItem`
+- `PersonnelCase`
+- `Resolution`
+- `VoteGroup`
+- `GeneratedDocument`
+- `DocumentRequest`
+- `DocumentResult`
+
+Datenbankzugriffe sollen mittelfristig aus dem `ApiController` herausgezogen werden. Sinnvolle Kandidaten:
+
+- `MeetingRepository`
+- `AgendaItemRepository`
+- `ResolutionRepository`
+- `VoteGroupRepository`
+
+Eine gemeinsame Bibliothek analog zu einem Datenbank-Hilfsplugin ist erst sinnvoll, wenn mindestens eine zweite eigene Nextcloud-App dieselben Repository-, DTO- oder Exportmuster verwendet. Bis dahin bleibt Wiederverwendung app-intern.
+
+### Frontend- und UI-Regeln
+
+`js/main.js` darf Einstiegspunkt bleiben, soll aber nicht dauerhaft alle UI-Logik enthalten.
+
+Auslagerung ist zu prüfen für:
+
+- API-Fetch-Wrapper.
+- Sitzungsformular.
+- TOP-/Vorgangsformular.
+- Beschlussformular.
+- Sitzungsübersicht.
+- Dokumentaktionen.
+- Status- und Fehlermeldungen.
+- Chips, Badges, Listen und wiederkehrende UI-Zustände.
+
+Mögliche Struktur:
+
+```text
+brtop/js/modules/api.js
+brtop/js/modules/notices.js
+brtop/js/components/meeting-form.js
+brtop/js/components/agenda-form.js
+brtop/js/components/resolution-form.js
+brtop/js/components/meeting-list.js
+brtop/js/components/document-actions.js
+```
+
+Eine gemeinsame UI-App oder gemeinsame UI-Bibliothek ist erst sinnvoll, wenn mehrere eigene Nextcloud-Apps dieselben UI-Komponenten verwenden. Bis dahin bleiben Komponenten app-intern.
+
+### Template-Regel
+
+`templates/index.php` soll nur die Seitenstruktur enthalten. Wiederkehrende oder größere Blöcke gehören in Partials, zum Beispiel:
+
+- `templates/partials/meeting-form.php`
+- `templates/partials/agenda-form.php`
+- `templates/partials/document-actions.php`
+- `templates/partials/notices.php`
+
+Ausgaben in Templates müssen escaped werden. Interne Fehlerdetails, Stacktraces, absolute Pfade oder Datenbankdetails werden nicht in Templates ausgegeben.
+
+### Error-Reporting
+
+Interne Fehler sollen zentral protokolliert werden, vorzugsweise über die Logging-Infrastruktur der Nextcloud-App und einen dünnen Wrapper-Service.
+
+Regeln:
+
+- Interne Exception-Details stehen im Log, nicht in der UI.
+- API-Antworten enthalten höchstens kurze Fehlercodes oder sichere Meldungen.
+- Fehlerkontext soll nachvollziehbar sein: Aktion, Sitzungs-ID, TOP-ID, Dokumenttyp, User-ID, Exception-Klasse und Message.
+- ODT- oder Exportfehler sollen so gemeldet werden, dass Teilerfolge erkennbar bleiben.
+- Keine Secrets, Tokens, unnötigen personenbezogenen Zusatzdaten oder vollständigen Stacktraces in sichtbaren Antworten ausgeben.
+
+Beispiel für eine sichtbare Meldung:
+
+```text
+Das Protokoll konnte nicht als ODT erzeugt werden. Details stehen im Nextcloud-Log.
+```
+
+### Sicherheitsregeln für Nextcloud-Code
+
+Bei jeder Änderung ist zu prüfen:
+
+- Request-Parameter validieren und typisieren.
+- Ausgaben in Templates escapen.
+- API-Aktionen gegen CSRF absichern; `NoCSRFRequired` nur verwenden, wenn es bewusst begründet ist.
+- Berechtigungen prüfen: Nutzer*innen dürfen nur eigene oder freigegebene Sitzungen sehen und ändern.
+- Keine SQL-Fragmente aus Request-Daten bauen.
+- QueryBuilder-Parameter gebunden übergeben.
+- Dateipfade normalisieren und nicht ungeprüft aus Eingaben zusammensetzen.
+- Keine Secrets in Repository, Logs oder erzeugte Dokumente schreiben.
+- Personenbezogene Daten in Logs minimieren.
+
+### Demo- und Seed-Daten
+
+Demo- und Seed-Daten sollen bevorzugt aus lokal vorhandenen App-Daten oder bewusst gepflegten lokalen Seed-Dateien stammen.
+
+Nicht verwenden:
+
+- Live-Daten aus fremden Produktivsystemen.
+- frei erfundene fachliche Scheindaten, wenn dadurch falsche Annahmen über BR-Abläufe entstehen.
+- externe URLs als harte Datenquelle.
+
+Wenn Demo-Daten fehlen, bleiben Felder leer oder werden als nicht verfügbar markiert.
+
+### Refactoring-Regel
+
+Wenn ein Stück Logik zum zweiten Mal benötigt wird, ist Auslagerung zu prüfen.
+
+Wenn ein Stück Logik zum dritten Mal benötigt wird, soll es ausgelagert werden, außer es gibt einen klaren Grund dagegen.
+
+Typische Auslagerungskandidaten im aktuellen BRTop-Stand:
+
+- TOP-Gruppierung.
+- TOP-Nummerierung.
+- Default-Beschlussfragen.
+- §99-/§100-/§102-Fachlogik.
+- Dokumentstruktur für Einladung, Protokoll und Beschlüsse.
+- ODT-XML-Fragmente.
+- Dateinamen und Exportpfade.
+- API-Fehlerantworten.
+- UI-Notice-Rendering.
+- API-Fetch-Wrapper im JavaScript.
+
+### Prüfpflicht vor größeren Änderungen
+
+Vor größeren Änderungen an Architektur oder Datenmodell:
+
+1. Aktuellen Stand mit `git status --short` prüfen.
+2. Relevante Dateien lesen.
+3. Kurz benennen, was ausgelagert wird und warum.
+4. Prüfen, ob bestehende Funktionen betroffen sind.
+5. Migrationsbedarf nennen, falls Tabellen, Dateistrukturen oder API-Antworten geändert werden.
+6. Nach der Änderung Syntax- und Funktionstests ausführen.
+7. Keine Commits ohne ausdrückliche Freigabe.
+
+### Branch-Regel für größere Änderungen
+
+Für größere Refactorings, neue Datenmodelle oder neue Services soll ein eigener Branch verwendet werden.
+
+Beispiele:
+
+```bash
+git checkout -b refactor/extract-agenda-service
+git checkout -b refactor/repository-layer
+git checkout -b feat/resolution-vote-groups
+```
+
 ## Mount
 
 Die App wird per DDEV-Bind-Mount eingebunden:
