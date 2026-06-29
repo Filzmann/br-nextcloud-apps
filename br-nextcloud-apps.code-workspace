@@ -22,7 +22,13 @@
       "nextcloud-dev/html": true,
       "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
-      "nextcloud-dev/.ddev/.webimageBuild": true
+      "nextcloud-dev/.ddev/.webimageBuild": true,
+      "html": true,
+      ".ddev/.ddev-docker-compose-full.yaml": true,
+      ".ddev/.dbimageBuild": true,
+      ".ddev/.webimageBuild": true,
+      ".ddev/.homeadditions": true,
+      ".ddev/db_snapshots": true
     },
     "search.exclude": {
       "nextcloud-dev/html": true,
@@ -30,7 +36,12 @@
       "nextcloud-dev/.ddev/.dbimageBuild": true,
       "nextcloud-dev/.ddev/.webimageBuild": true,
       "**/node_modules": true,
-      "**/vendor": true
+      "**/vendor": true,
+      "html": true,
+      ".ddev/db_snapshots": true,
+      ".ddev/.dbimageBuild": true,
+      ".ddev/.webimageBuild": true,
+      ".ddev/.homeadditions": true
     }
   }
 }
