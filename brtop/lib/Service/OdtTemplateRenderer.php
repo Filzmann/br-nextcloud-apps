@@ -12,7 +12,7 @@ class OdtTemplateRenderer {
         $templatePath = __DIR__ . '/../../templates/odt/protokoll-template.odt';
 
         if (!is_file($templatePath)) {
-            throw new RuntimeException('ODT-Template nicht gefunden: ' . $templatePath);
+            throw new RuntimeException('ODT-Template nicht gefunden.');
         }
 
         $settings = [

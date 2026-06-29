@@ -6,8 +6,10 @@ namespace OCA\BrTop\Controller;
 
 use DateTimeImmutable;
 use OCA\BrTop\AppInfo\Application;
+use OCA\BrTop\Service\BrtopLogger;
 use OCA\BrTop\Service\OdtTemplateRenderer;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\IRootFolder;
@@ -20,7 +22,8 @@ class ApiController extends Controller {
         IRequest $request,
         private IDBConnection $db,
         private IUserSession $userSession,
-        private IRootFolder $rootFolder
+        private IRootFolder $rootFolder,
+        private BrtopLogger $logger
     ) {
         parent::__construct(Application::APP_ID, $request);
     }
@@ -142,41 +145,62 @@ class ApiController extends Controller {
 
     public function generateInvitation(int $meetingId): DataResponse {
         $meeting = $this->assertMeetingOwner($meetingId);
-        $tops = $this->topsForMeeting($meetingId);
 
-        $basePath = $this->meetingFolder($meeting);
-        $this->ensureFolder($basePath);
+        try {
+            $tops = $this->topsForMeeting($meetingId);
 
-        $subject = 'Ladung zur BR-Sitzung am ' . $this->formatGermanDate((string)$meeting['meeting_date']);
-        $email = $this->renderInvitationEmail($meeting, $tops);
-        $markdown = "# " . $subject . "\n\n```text\n" . $email . "\n```\n";
+            $basePath = $this->meetingFolder($meeting);
+            $this->ensureFolder($basePath);
 
-        $this->putUserFile($basePath . '/01_Einladung_Email.txt', $email);
-        $this->putUserFile($basePath . '/01_Ladung.md', $markdown);
+            $subject = 'Ladung zur BR-Sitzung am ' . $this->formatGermanDate((string)$meeting['meeting_date']);
+            $email = $this->renderInvitationEmail($meeting, $tops);
+            $markdown = "# " . $subject . "\n\n```text\n" . $email . "\n```\n";
 
-        return new DataResponse([
-            'ok' => true,
-            'type' => 'invitation',
-            'folder' => $basePath,
-            'subject' => $subject,
-            'email' => $email,
-            'created' => ['01_Einladung_Email.txt', '01_Ladung.md'],
-        ]);
+            $this->putUserFile($basePath . '/01_Einladung_Email.txt', $email);
+            $this->putUserFile($basePath . '/01_Ladung.md', $markdown);
+
+            return new DataResponse([
+                'ok' => true,
+                'type' => 'invitation',
+                'folder' => $basePath,
+                'subject' => $subject,
+                'email' => $email,
+                'created' => ['01_Einladung_Email.txt', '01_Ladung.md'],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->documentErrorResponse(
+                'generate_invitation',
+                $e,
+                'Die Einladung konnte nicht erzeugt werden. Details stehen im Nextcloud-Log.',
+                ['meeting_id' => $meetingId, 'document_type' => 'invitation']
+            );
+        }
     }
 
     public function generateProtocol(int $meetingId): DataResponse {
         $meeting = $this->assertMeetingOwner($meetingId);
-        $tops = $this->topsForMeeting($meetingId);
-
-        $basePath = $this->meetingFolder($meeting);
-        $this->ensureFolder($basePath);
 
         $created = [];
         $warnings = [];
 
-        $protocol = $this->renderProtocolTemplate($meeting, $tops);
-        $this->putUserFile($basePath . '/02_Protokollvorlage.md', $protocol);
-        $created[] = '02_Protokollvorlage.md';
+        try {
+            $tops = $this->topsForMeeting($meetingId);
+
+            $basePath = $this->meetingFolder($meeting);
+            $this->ensureFolder($basePath);
+
+            $protocol = $this->renderProtocolTemplate($meeting, $tops);
+            $this->putUserFile($basePath . '/02_Protokollvorlage.md', $protocol);
+            $created[] = '02_Protokollvorlage.md';
+        } catch (\Throwable $e) {
+            return $this->documentErrorResponse(
+                'generate_protocol',
+                $e,
+                'Das Protokoll konnte nicht erzeugt werden. Details stehen im Nextcloud-Log.',
+                ['meeting_id' => $meetingId, 'document_type' => 'protocol'],
+                ['created' => $created]
+            );
+        }
 
         try {
             if (class_exists(OdtTemplateRenderer::class)) {
@@ -187,7 +211,11 @@ class ApiController extends Controller {
                 $warnings[] = 'ODT-Renderer ist noch nicht vorhanden.';
             }
         } catch (\Throwable $e) {
-            $warnings[] = 'ODT konnte nicht erzeugt werden: ' . $e->getMessage();
+            $this->logger->error('generate_protocol_odt', $e, [
+                'meeting_id' => $meetingId,
+                'document_type' => 'protocol',
+            ]);
+            $warnings[] = 'Das Protokoll konnte nicht als ODT erzeugt werden. Details stehen im Nextcloud-Log.';
         }
 
         return new DataResponse([
@@ -201,31 +229,57 @@ class ApiController extends Controller {
 
     public function generateResolutions(int $meetingId): DataResponse {
         $meeting = $this->assertMeetingOwner($meetingId);
-        $tops = $this->topsForMeeting($meetingId);
-
-        $basePath = $this->meetingFolder($meeting);
-        $this->ensureFolder($basePath);
 
         $created = [];
 
-        foreach ($tops as $top) {
-            if ((int)$top['requires_resolution'] !== 1) {
-                continue;
+        try {
+            $tops = $this->topsForMeeting($meetingId);
+
+            $basePath = $this->meetingFolder($meeting);
+            $this->ensureFolder($basePath);
+
+            foreach ($tops as $top) {
+                if ((int)$top['requires_resolution'] !== 1) {
+                    continue;
+                }
+
+                $filename = '03_Beschluss_' . $this->protocolNumber($top) . '_' . $this->safeName((string)$top['subject']) . '.md';
+
+                $this->putUserFile($basePath . '/' . $filename, $this->renderResolutionDocument($meeting, $top));
+                $created[] = $filename;
             }
 
-            $filename = '03_Beschluss_' . $this->protocolNumber($top) . '_' . $this->safeName((string)$top['subject']) . '.md';
-
-            $this->putUserFile($basePath . '/' . $filename, $this->renderResolutionDocument($meeting, $top));
-            $created[] = $filename;
+            return new DataResponse([
+                'ok' => true,
+                'type' => 'resolutions',
+                'folder' => $basePath,
+                'created' => $created,
+                'message' => count($created) === 0 ? 'Keine TOPs mit Beschlussmarkierung vorhanden.' : '',
+            ]);
+        } catch (\Throwable $e) {
+            return $this->documentErrorResponse(
+                'generate_resolutions',
+                $e,
+                'Die Beschlussdokumente konnten nicht erzeugt werden. Details stehen im Nextcloud-Log.',
+                ['meeting_id' => $meetingId, 'document_type' => 'resolutions'],
+                ['created' => $created]
+            );
         }
+    }
 
-        return new DataResponse([
-            'ok' => true,
-            'type' => 'resolutions',
-            'folder' => $basePath,
-            'created' => $created,
-            'message' => count($created) === 0 ? 'Keine TOPs mit Beschlussmarkierung vorhanden.' : '',
-        ]);
+    private function documentErrorResponse(
+        string $action,
+        \Throwable $exception,
+        string $message,
+        array $context = [],
+        array $data = []
+    ): DataResponse {
+        $this->logger->error($action, $exception, $context);
+
+        return new DataResponse(array_merge($data, [
+            'ok' => false,
+            'message' => $message,
+        ]), Http::STATUS_INTERNAL_SERVER_ERROR);
     }
 
     private function renderInvitationEmail(array $meeting, array $tops): string {

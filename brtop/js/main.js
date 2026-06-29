@@ -21,8 +21,11 @@
         }
 
         if (!response.ok) {
-            const msg = data.message || data.raw || ('HTTP ' + response.status);
-            throw new Error(msg);
+            const msg = data.ok === false && data.message ? data.message : ('HTTP ' + response.status);
+            const error = new Error(msg);
+            error.data = data;
+            error.status = response.status;
+            throw error;
         }
 
         return data;
@@ -182,7 +185,13 @@
                     alert(msg || 'Fertig.');
                     await loadState(id);
                 } catch (e) {
-                    alert('Fehler:\n' + e.message);
+                    const created = e.data && Array.isArray(e.data.created) ? e.data.created.join('\n') : '';
+                    const details = [
+                        e.message,
+                        created ? `Bereits erzeugt:\n${created}` : ''
+                    ].filter(Boolean).join('\n\n');
+
+                    alert('Fehler:\n' + details);
                 }
             });
         });
