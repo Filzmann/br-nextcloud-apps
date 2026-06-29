@@ -313,6 +313,28 @@ Der Mount muss den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/
     brtop/js/main.js
     brtop/css/style.css
 
+## Zielprozess BRTop
+
+BRTop soll den wiederkehrenden Sitzungs- und Dokumentprozess des Betriebsrats abbilden, nicht nur einzelne Dokumente erzeugen.
+
+Grundmodell:
+
+- Es gibt einen Betriebsrat mit `n` Mitgliedern; die Mitgliederzahl ist eine Setup- bzw. Konfigurationsvariable.
+- Ein BR-Mitglied ist ein Nextcloud-User in der Gruppe `Betriebsrat`.
+- Listen, Ersatzmitglieder und Nachladungen bleiben zu Beginn bewusst außen vor, müssen aber später wieder aufgegriffen werden.
+- Die reguläre BR-Sitzung findet in einem konfigurierbaren Rhythmus statt, zunächst typischerweise wöchentlich am Dienstag zu einer konfigurierbaren Uhrzeit.
+- Die Einladung erfolgt an einem konfigurierbaren Wochentag vor der Sitzung, zunächst typischerweise am Freitag vorher.
+- Sitzungen werden nicht automatisch vorerzeugt, sondern über „nächste Sitzung planen“ angelegt.
+- Beim Erzeugen einer Einladung wird die Ladungsliste als rechtssicherer Snapshot gespeichert; spätere Gruppenänderungen dürfen alte Einladungen nicht verändern.
+- Standard-TOPs und Sitzungstypen sollen konfigurierbar werden.
+- TOPs und Sub-TOPs werden mit Überschrift, Reihenfolge und späterem Protokollinhalt in der Datenbank gespeichert.
+- Aus denselben gespeicherten Sitzungs- und TOP-Daten werden TOP-Liste für die Einladung, Mailtext und Protokollvorlage erzeugt.
+- Alte Einladungen, Protokolle und Beschlussdokumente sollen über eine eigene Dokumentübersicht mit DB-Metadaten auffindbar sein, nicht nur über Dateipfade.
+- E-Mail-Versand soll mittelfristig direkt aus der App möglich sein; die Absenderadresse muss konfigurierbar sein.
+- Neben regulären BR-Sitzungen können andere Sitzungstypen mit eigener Struktur existieren, z. B. Monatsgespräche, Betriebsausschuss, AGs und Ausschüsse.
+
+Architekturfolge: Refactorings sollen zuerst dieses Prozessmodell, Sitzungstypen, Konfiguration, Agenda-Templates, Ladungssnapshots und Dokumentmetadaten berücksichtigen, bevor Renderer- oder Controller-Details großflächig umgebaut werden.
+
 ## Fachliche BR-Logik
 
 Standardstruktur einer BR-Sitzung:

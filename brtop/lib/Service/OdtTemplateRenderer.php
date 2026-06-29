@@ -98,9 +98,7 @@ class OdtTemplateRenderer {
     private function buildProtocolOfficeText(array $meeting, array $tops): string {
         $date = $this->formatGermanDate((string)($meeting['meeting_date'] ?? ''));
 
-        $kuendigungen = array_values(array_filter($tops, fn(array $top): bool => in_array(($top['type'] ?? ''), ['personnel_102', 'kuendigung', 'pe_kuendigung'], true)));
-        $einstellungen = array_values(array_filter($tops, fn(array $top): bool => in_array(($top['type'] ?? ''), ['personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige'], true)));
-        $sonstige = array_values(array_filter($tops, fn(array $top): bool => !in_array(($top['type'] ?? ''), ['kuendigung', 'personelle_einzelmassnahme'], true)));
+        $groups = $this->groupTops($tops);
 
         $xml = [];
 
@@ -126,48 +124,66 @@ class OdtTemplateRenderer {
         $xml[] = $this->emptyP();
 
         $xml[] = $this->h('1. Protokolle', 1);
-        $xml[] = $this->emptyP();
+        $this->appendSimpleTops($xml, $groups['protocol'], '1', 'Keine Protokolle eingetragen.');
 
         $xml[] = $this->h('2. Personelle Angelegenheiten', 1);
 
         $xml[] = $this->h('2.1 Personelle Einzelmaßnahmen nach § 99 BetrVG', 2);
-        if (count($kuendigungen) === 0) {
-            $xml[] = $this->p('Keine Kündigungsanhörungen eingetragen.', 'Text_20_body');
+        if (count($groups['personnel_99']) === 0) {
+            $xml[] = $this->p('Keine personellen Einzelmaßnahmen nach § 99 BetrVG eingetragen.', 'Text_20_body');
         } else {
-            foreach ($kuendigungen as $index => $top) {
-                $person = $this->personLabel($top);
+            foreach ($groups['personnel_99'] as $index => $top) {
                 $n = $index + 1;
 
                 $xml[] = $this->h(
-                    '2.1.' . $n . '. Beteiligung des Betriebsrats bei Kündigungen / Anhörungen vor beabsichtigter Kündigung gemäß § 102 BetrVG ' . $person,
+                    '2.1.' . $n . '. ' . $this->subjectLabel($top, 'Personelle Einzelmaßnahme'),
                     3
                 );
 
-                $frage = 'Wer widerspricht der beabsichtigten Kündigung von ' . $person . ' gemäß § 102 BetrVG?';
-                $xml[] = $this->beschlusskasten($frage, 'BeschlusskastenKuendigung' . $n);
-                $xml[] = $this->p('Damit ist der beabsichtigten Kündigung von ' . $person . ' widersprochen / nicht widersprochen. Es geht ein Schreiben / kein Schreiben an GF.', 'SmallTight');
+                $xml[] = $this->p('Person: ' . $this->personLabel($top), 'SmallTight');
+                $xml[] = $this->p('(Schreiben der GF vom {{GF_SCHREIBEN_VOM}}, empfangsbestätigt am {{EMPFANGSBESTAETIGT_AM}}).', 'SmallTight');
+                $xml[] = $this->beschlusskasten($this->resolutionQuestion($top), 'BeschlusskastenPersonell99' . $n);
+                $xml[] = $this->p('Damit ist die Zustimmung verweigert / nicht verweigert. Es geht ein Schreiben / kein Schreiben an GF.', 'SmallTight');
+                $xml[] = $this->emptyP();
+            }
+        }
+
+        $xml[] = $this->h('2.2 Vorläufige personelle Maßnahmen nach § 100 BetrVG', 2);
+        if (count($groups['personnel_100']) === 0) {
+            $xml[] = $this->p('Keine vorläufigen personellen Maßnahmen nach § 100 BetrVG eingetragen.', 'Text_20_body');
+        } else {
+            foreach ($groups['personnel_100'] as $index => $top) {
+                $n = $index + 1;
+
+                $xml[] = $this->h(
+                    '2.2.' . $n . '. ' . $this->subjectLabel($top, 'Vorläufige personelle Maßnahme'),
+                    3
+                );
+
+                $xml[] = $this->p('Person: ' . $this->personLabel($top), 'SmallTight');
+                $xml[] = $this->p('(Schreiben der GF vom {{GF_SCHREIBEN_VOM}}, empfangsbestätigt am {{EMPFANGSBESTAETIGT_AM}}).', 'SmallTight');
+                $xml[] = $this->beschlusskasten($this->resolutionQuestion($top), 'BeschlusskastenPersonell100' . $n);
+                $xml[] = $this->p('Damit ist die Dringlichkeit bestritten / nicht bestritten. Es geht ein Schreiben / kein Schreiben an GF.', 'SmallTight');
                 $xml[] = $this->emptyP();
             }
         }
 
         $xml[] = $this->h('2.3 Anhörungen zu Kündigungen nach § 102 BetrVG', 2);
-        if (count($einstellungen) === 0) {
-            $xml[] = $this->p('Keine Einstellungen eingetragen.', 'Text_20_body');
+        if (count($groups['personnel_102']) === 0) {
+            $xml[] = $this->p('Keine Anhörungen zu Kündigungen nach § 102 BetrVG eingetragen.', 'Text_20_body');
         } else {
-            foreach ($einstellungen as $index => $top) {
-                $person = $this->personLabel($top);
+            foreach ($groups['personnel_102'] as $index => $top) {
                 $n = $index + 1;
 
                 $xml[] = $this->h(
-                    '2.2.' . $n . '. Anhörung des Betriebsrats über die Einstellung gemäß § 99 BetrVG ' . $person,
+                    '2.3.' . $n . '. ' . $this->subjectLabel($top, 'Anhörung zu Kündigung'),
                     3
                 );
 
+                $xml[] = $this->p('Person: ' . $this->personLabel($top), 'SmallTight');
                 $xml[] = $this->p('(Schreiben der GF vom {{GF_SCHREIBEN_VOM}}, empfangsbestätigt am {{EMPFANGSBESTAETIGT_AM}}).', 'SmallTight');
-
-                $frage = 'Wer verweigert die Zustimmung und widerspricht damit der Einstellung von ' . $person . ' gemäß § 99 BetrVG?';
-                $xml[] = $this->beschlusskasten($frage, 'BeschlusskastenEinstellung' . $n);
-                $xml[] = $this->p('Damit ist der beabsichtigten Einstellung von ' . $person . ' nicht widersprochen. Es geht kein Schreiben an GF.', 'SmallTight');
+                $xml[] = $this->beschlusskasten($this->resolutionQuestion($top), 'BeschlusskastenKuendigung102' . $n);
+                $xml[] = $this->p('Damit ist der beabsichtigten Kündigung widersprochen / nicht widersprochen. Es geht ein Schreiben / kein Schreiben an GF.', 'SmallTight');
                 $xml[] = $this->emptyP();
             }
         }
@@ -185,15 +201,14 @@ class OdtTemplateRenderer {
         $xml[] = $this->h('4. Bericht aus den Sprechstunden', 1);
         $xml[] = $this->emptyP();
 
-        $xml[] = $this->h('5. weiterer TOP', 1);
-        foreach ($sonstige as $index => $top) {
+        $xml[] = $this->h('5. Weitere Tagesordnungspunkte', 1);
+        if (count($groups['other']) === 0) {
+            $xml[] = $this->p('Keine weiteren Tagesordnungspunkte eingetragen.', 'Text_20_body');
+        }
+        foreach ($groups['other'] as $index => $top) {
             $xml[] = $this->h('5.' . ($index + 1) . '. ' . (string)($top['subject'] ?? 'weiterer TOP'), 2);
             if ((int)($top['requires_resolution'] ?? 0) === 1) {
-                $frage = (string)($top['resolution_text'] ?? '');
-                if ($frage === '') {
-                    $frage = 'Beschlussfrage ergänzen.';
-                }
-                $xml[] = $this->beschlusskasten($frage, 'BeschlusskastenSonstige' . ($index + 1));
+                $xml[] = $this->beschlusskasten($this->resolutionQuestion($top), 'BeschlusskastenSonstige' . ($index + 1));
             }
         }
 
@@ -241,11 +256,12 @@ class OdtTemplateRenderer {
             '<text:p text:style-name="TocEntry1">1. Protokolle<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry1">2. Personelle Angelegenheiten<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry2">2.1 Personelle Einzelmaßnahmen nach § 99 BetrVG<text:tab/>1</text:p>',
+            '<text:p text:style-name="TocEntry2">2.2 Vorläufige personelle Maßnahmen nach § 100 BetrVG<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry2">2.3 Anhörungen zu Kündigungen nach § 102 BetrVG<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry1">3. Arbeitsorganisatorisches:<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry2">3.1 nächste Sitzung<text:tab/>1</text:p>',
             '<text:p text:style-name="TocEntry1">4. Bericht aus den Sprechstunden<text:tab/>1</text:p>',
-            '<text:p text:style-name="TocEntry1">5. weiterer TOP<text:tab/>1</text:p>',
+            '<text:p text:style-name="TocEntry1">5. Weitere Tagesordnungspunkte<text:tab/>1</text:p>',
             '</text:index-body>',
             '</text:table-of-content>',
             '</table:table-cell></table:table-row>',
@@ -294,6 +310,99 @@ class OdtTemplateRenderer {
 
     private function pSpan(string $label, string $value, string $style): string {
         return '<text:p text:style-name="' . $this->xml($style) . '"><text:span text:style-name="T_Bold">' . $this->xml($label) . '</text:span> ' . $this->xml($value) . '</text:p>';
+    }
+
+    private function appendSimpleTops(array &$xml, array $tops, string $prefix, string $emptyText): void {
+        if (count($tops) === 0) {
+            $xml[] = $this->p($emptyText, 'Text_20_body');
+            return;
+        }
+
+        foreach ($tops as $index => $top) {
+            $n = $index + 1;
+
+            $xml[] = $this->h($prefix . '.' . $n . '. ' . $this->subjectLabel($top, 'TOP ergänzen'), 2);
+
+            if (!empty($top['legal_basis'])) {
+                $xml[] = $this->p('Rechtsgrundlage: ' . (string)$top['legal_basis'], 'SmallTight');
+            }
+
+            if ((int)($top['requires_resolution'] ?? 0) === 1) {
+                $xml[] = $this->beschlusskasten($this->resolutionQuestion($top), 'BeschlusskastenTop' . str_replace('.', '_', $prefix) . '_' . $n);
+            }
+
+            $xml[] = $this->emptyP();
+        }
+    }
+
+    private function groupTops(array $tops): array {
+        $groups = [
+            'protocol' => [],
+            'personnel_99' => [],
+            'personnel_100' => [],
+            'personnel_102' => [],
+            'organisation' => [],
+            'consultation_report' => [],
+            'other' => [],
+        ];
+
+        foreach ($tops as $top) {
+            $type = (string)($top['type'] ?? '');
+
+            $key = match ($type) {
+                'protocol', 'protokolle' => 'protocol',
+                'personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige' => 'personnel_99',
+                'personnel_100' => 'personnel_100',
+                'personnel_102', 'kuendigung', 'pe_kuendigung' => 'personnel_102',
+                'organisation' => 'organisation',
+                'consultation_report', 'sprechstunden' => 'consultation_report',
+                default => 'other',
+            };
+
+            $groups[$key][] = $top;
+        }
+
+        return $groups;
+    }
+
+    private function subjectLabel(array $top, string $fallback): string {
+        $subject = trim((string)($top['subject'] ?? ''));
+
+        return $subject !== '' ? $subject : $fallback;
+    }
+
+    private function measureLabel(array $top): string {
+        $subject = trim((string)($top['subject'] ?? ''));
+        if ($subject !== '') {
+            return $subject;
+        }
+
+        $person = trim((string)($top['person_name'] ?? ''));
+        if ($person !== '') {
+            return $person;
+        }
+
+        return 'die Maßnahme';
+    }
+
+    private function resolutionQuestion(array $top): string {
+        $question = trim((string)($top['resolution_text'] ?? ''));
+        if ($question !== '') {
+            return $question;
+        }
+
+        $measure = $this->measureLabel($top);
+
+        return match ((string)($top['type'] ?? '')) {
+            'personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige'
+                => 'Wer verweigert die Zustimmung zu ' . $measure . ' und widerspricht ihr damit?',
+            'personnel_100'
+                => 'Wer bestreitet, dass die vorläufige Durchführung der personellen Maßnahme ' . $measure . ' aus sachlichen Gründen dringend erforderlich ist?',
+            'personnel_102', 'kuendigung', 'pe_kuendigung'
+                => 'Wer widerspricht der beabsichtigten Kündigung ' . $measure . ' gemäß § 102 BetrVG?',
+            default
+                => 'Wer stimmt ' . $measure . ' zu?',
+        };
     }
 
     private function personLabel(array $top): string {
