@@ -1,0 +1,33 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Local backups
+_brtop_backups/
+*.bak
+*.bak-*
+*.tmp
+
+# Logs
+*.log
+
+# Runtime Nextcloud core and data
+nextcloud-dev/html/
+
+# DDEV generated/local runtime
+nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml
+nextcloud-dev/.ddev/.dbimageBuild/
+nextcloud-dev/.ddev/.webimageBuild/
+nextcloud-dev/.ddev/.homeadditions/
+nextcloud-dev/.ddev/db_snapshots/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Environment
+.env
+.env.local

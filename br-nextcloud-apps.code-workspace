@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "name": "brtop",
+      "path": "brtop"
+    },
+    {
+      "name": "nextcloud-dev",
+      "path": "nextcloud-dev"
+    },
+    {
+      "name": "docs",
+      "path": "docs"
+    }
+  ],
+  "settings": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.exclude": {
+      "nextcloud-dev/html": true,
+      "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
+      "nextcloud-dev/.ddev/.dbimageBuild": true,
+      "nextcloud-dev/.ddev/.webimageBuild": true
+    },
+    "search.exclude": {
+      "nextcloud-dev/html": true,
+      "nextcloud-dev/.ddev/db_snapshots": true,
+      "nextcloud-dev/.ddev/.dbimageBuild": true,
+      "nextcloud-dev/.ddev/.webimageBuild": true,
+      "**/node_modules": true,
+      "**/vendor": true
+    }
+  }
+}

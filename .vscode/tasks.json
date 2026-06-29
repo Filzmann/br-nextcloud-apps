@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DDEV: start",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev start",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV: stop",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV: restart",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev restart",
+      "problemMatcher": []
+    },
+    {
+      "label": "Nextcloud: occ status",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ status",
+      "problemMatcher": []
+    },
+    {
+      "label": "BRTop: PHP syntax check",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Controller/ApiController.php && ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Service/OdtTemplateRenderer.php && ddev exec php -l /var/www/html/html/custom_apps/brtop/templates/index.php",
+      "problemMatcher": []
+    },
+    {
+      "label": "BRTop: logs",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html tail -n 160 data/nextcloud.log",
+      "problemMatcher": []
+    },
+    {
+      "label": "BRTop: launch app",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/brtop/",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+/* Nextcloud-App-Seite scrollbar machen */
+#content {
+    overflow-y: auto !important;
+    height: calc(100vh - var(--header-height, 50px)) !important;
+}
+
+#brtop-app {
+    box-sizing: border-box;
+    max-width: 1100px;
+    min-height: calc(100vh - var(--header-height, 50px));
+    padding: 24px;
+    padding-bottom: 120px;
+}
+
+.brtop-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 18px;
+}
+
+.brtop-card label {
+    display: block;
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+.brtop-card input,
+.brtop-card select,
+.brtop-card textarea {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 4px;
+}
+
+.brtop-card textarea {
+    resize: vertical;
+}
+
+.brtop-card button {
+    margin-top: 14px;
+    margin-right: 8px;
+}
+
+.brtop-meeting {
+    border-top: 1px solid var(--color-border);
+    padding-top: 14px;
+    margin-top: 14px;
+}
+
+.brtop-notice {
+    padding: 10px;
+    border-left: 4px solid var(--color-warning);
+    background: var(--color-background-hover);
+}
+
+.brtop-checkline {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-weight: 600;
+}
+
+.brtop-checkline input {
+    width: auto !important;
+    margin: 0 !important;
+}
+
+#result-box {
+    width: 100%;
+    max-width: 900px;
+    font-family: monospace;
+}
+
+.brtop-help {
+    max-width: 850px;
+}
