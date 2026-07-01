@@ -347,6 +347,10 @@ class OdtTemplateRenderer {
         ];
 
         foreach ($tops as $top) {
+            if (($top['agenda_item_kind'] ?? '') === 'section') {
+                continue;
+            }
+
             $type = (string)($top['type'] ?? '');
 
             $key = match ($type) {

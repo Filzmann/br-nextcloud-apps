@@ -5,7 +5,9 @@ return [
         ['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
 
         ['name' => 'api#state', 'url' => '/api/state', 'verb' => 'GET'],
+        ['name' => 'api#updateSettings', 'url' => '/api/settings', 'verb' => 'POST'],
         ['name' => 'api#createMeeting', 'url' => '/api/meetings', 'verb' => 'POST'],
+        ['name' => 'api#planNextRegularMeeting', 'url' => '/api/meetings/next-regular', 'verb' => 'POST'],
         ['name' => 'api#addTop', 'url' => '/api/meetings/{meetingId}/tops', 'verb' => 'POST'],
 
         ['name' => 'api#generateInvitation', 'url' => '/api/meetings/{meetingId}/invitation', 'verb' => 'POST'],

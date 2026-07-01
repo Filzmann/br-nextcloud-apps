@@ -327,11 +327,12 @@ Grundmodell:
 - Sitzungen werden nicht automatisch vorerzeugt, sondern über „nächste Sitzung planen“ angelegt.
 - Beim Erzeugen einer Einladung wird die Ladungsliste als rechtssicherer Snapshot gespeichert; spätere Gruppenänderungen dürfen alte Einladungen nicht verändern.
 - Standard-TOPs und Sitzungstypen sollen konfigurierbar werden.
-- TOPs und Sub-TOPs werden mit Überschrift, Reihenfolge und späterem Protokollinhalt in der Datenbank gespeichert.
+- TOPs und Sub-TOPs werden bis Ebene 3 mit Überschrift, Reihenfolge, fachlicher TOP-Art und späterem Protokollinhalt in der Datenbank gespeichert.
 - Aus denselben gespeicherten Sitzungs- und TOP-Daten werden TOP-Liste für die Einladung, Mailtext und Protokollvorlage erzeugt.
 - Alte Einladungen, Protokolle und Beschlussdokumente sollen über eine eigene Dokumentübersicht mit DB-Metadaten auffindbar sein, nicht nur über Dateipfade.
 - E-Mail-Versand soll mittelfristig direkt aus der App möglich sein; die Absenderadresse muss konfigurierbar sein.
-- Neben regulären BR-Sitzungen können andere Sitzungstypen mit eigener Struktur existieren, z. B. Monatsgespräche, Betriebsausschuss, AGs und Ausschüsse.
+- Start-Sitzungstypen sind reguläre BR-Sitzung, Monatsgespräch, Betriebsausschuss, Ausschuss / AG und freie Sitzung. Sie sollen später konfigurierbar werden.
+- Aktuelle Ausschüsse bzw. AG-Codes sind ASA, DPA, IKT, BA und IBF. Auch diese Liste soll später konfigurierbar werden.
 
 Architekturfolge: Refactorings sollen zuerst dieses Prozessmodell, Sitzungstypen, Konfiguration, Agenda-Templates, Ladungssnapshots und Dokumentmetadaten berücksichtigen, bevor Renderer- oder Controller-Details großflächig umgebaut werden.
 
@@ -360,6 +361,7 @@ Einladung:
 Protokoll:
 
 - §99-, §100- und §102-Fälle müssen getrennt aufgeführt werden.
+- Nicht jeder TOP ist beschlussrelevant. TOPs können fachlich Gliederungspunkte, Berichte, Beratungen oder Beschlüsse sein.
 
 Beschlüsse:
 
