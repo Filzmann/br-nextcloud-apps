@@ -36,6 +36,8 @@ DDEV wird immer aus diesem Ordner gesteuert:
 
     cd ~/projects/br-nextcloud-apps/nextcloud-dev
 
+In Codex-Sessions können DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlässig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler; den gleichen Befehl mit eskaliertem Zugriff erneut ausführen. DDEV-Prüfungen deshalb bündeln, lokale PHP-/Node-Prüfungen bevorzugen und wiederverwendbare Prefix-Freigaben für `ddev exec` nutzen.
+
 Wichtige Befehle:
 
     ddev start
