@@ -1,7 +1,11 @@
 <?php
+use OCA\BrTop\View\UiComponents;
+
 script('brtop', 'modules/api');
 script('brtop', 'modules/ui');
+script('brtop', 'models/protocol-block');
 script('brtop', 'models/agenda-item');
+script('brtop', 'models/generated-document');
 script('brtop', 'models/meeting');
 script('brtop', 'components/meeting-list');
 script('brtop', 'components/agenda-list');
@@ -16,10 +20,7 @@ style('brtop', 'style');
     <section id="sessions-view" class="brtop-card brtop-view is-active" aria-hidden="false">
         <div class="brtop-section-head">
             <h2>Sitzungen</h2>
-            <button id="new-meeting" class="brtop-icon-button" type="button" title="Neue Sitzung">
-                <span class="brtop-icon">+</span>
-                <span class="brtop-button-label">Neue Sitzung</span>
-            </button>
+            <?= UiComponents::preset('newMeeting', ['id' => 'new-meeting']) ?>
         </div>
         <div id="state"></div>
     </section>
@@ -28,37 +29,22 @@ style('brtop', 'style');
         <div class="brtop-section-head">
             <h2 id="meeting-detail-heading">Sitzung</h2>
             <div class="brtop-actions">
-                <button id="back-to-sessions" class="brtop-icon-button" type="button" title="Zurück">
-                    <span class="brtop-icon">&larr;</span>
-                    <span class="brtop-button-label">Zurück</span>
-                </button>
-                <button id="detail-create-invitation" class="brtop-icon-button" type="button" title="Ladung erzeugen">
-                    <span class="brtop-icon">&#9993;</span>
-                    <span class="brtop-button-label">Ladung erzeugen</span>
-                </button>
-                <button id="detail-edit-protocol" class="brtop-icon-button" type="button" title="Protokoll bearbeiten">
-                    <span class="brtop-icon">&#9998;</span>
-                    <span class="brtop-button-label">Protokoll bearbeiten</span>
-                </button>
+                <?= UiComponents::preset('backSessions', ['id' => 'back-to-sessions']) ?>
+                <?= UiComponents::preset('createInvitation', ['id' => 'detail-create-invitation']) ?>
+                <?= UiComponents::preset('editProtocol', ['id' => 'detail-edit-protocol']) ?>
             </div>
         </div>
 
         <div id="meeting-detail-content"></div>
 
         <div class="brtop-top-create-actions">
-            <button id="show-top-form" class="brtop-icon-button brtop-icon-button-primary" type="button" title="TOP hinzufügen" aria-expanded="false">
-                <span class="brtop-icon">+</span>
-                <span class="brtop-button-label">TOP hinzufügen</span>
-            </button>
+            <?= UiComponents::preset('addTop', ['id' => 'show-top-form', 'aria-expanded' => 'false']) ?>
         </div>
 
         <div id="top-form-panel" class="brtop-inline-panel" hidden>
             <div class="brtop-section-head">
                 <h3>TOP hinzufügen</h3>
-                <button id="hide-top-form" class="brtop-icon-button" type="button" title="Schließen">
-                    <span class="brtop-icon">&times;</span>
-                    <span class="brtop-button-label">Schließen</span>
-                </button>
+                <?= UiComponents::preset('close', ['id' => 'hide-top-form']) ?>
             </div>
 
             <label>Einordnung</label>
@@ -128,10 +114,7 @@ style('brtop', 'style');
             <label>Protokollinhalt / Vorlage</label>
             <textarea id="top-protocol-content" rows="4" placeholder="optional, wird in die Protokollvorlage übernommen"></textarea>
 
-            <button id="add-top" class="brtop-icon-button brtop-icon-button-primary" type="button" title="TOP speichern">
-                <span class="brtop-icon">&#10003;</span>
-                <span class="brtop-button-label">TOP speichern</span>
-            </button>
+            <?= UiComponents::preset('saveTop', ['id' => 'add-top']) ?>
         </div>
     </section>
 
@@ -139,14 +122,8 @@ style('brtop', 'style');
         <div class="brtop-section-head">
             <h2 id="protocol-heading">Protokoll bearbeiten</h2>
             <div class="brtop-actions">
-                <button id="back-to-detail" class="brtop-icon-button" type="button" title="Zur Sitzung">
-                    <span class="brtop-icon">&larr;</span>
-                    <span class="brtop-button-label">Zur Sitzung</span>
-                </button>
-                <button id="generate-protocol-document" class="brtop-icon-button" type="button" title="Protokolldokument erzeugen">
-                    <span class="brtop-icon">&#10003;</span>
-                    <span class="brtop-button-label">Protokolldokument erzeugen</span>
-                </button>
+                <?= UiComponents::preset('backDetail', ['id' => 'back-to-detail']) ?>
+                <?= UiComponents::preset('generateProtocolDocument', ['id' => 'generate-protocol-document']) ?>
             </div>
         </div>
         <div id="protocol-editor"></div>

@@ -7,6 +7,8 @@
     } = window.BRTop.ui;
 
     function protocolBlockHtml(top, block) {
+        const content = block && typeof block.content === 'string' ? block.content : '';
+
         return `
             <div class="brtop-protocol-block-row">
                 <textarea
@@ -14,7 +16,7 @@
                     rows="4"
                     data-action="protocol-block-content"
                     data-top-id="${esc(top.id)}"
-                    data-block-id="${esc(block.id)}">${esc(block.content || '')}</textarea>
+                    data-block-id="${esc(block.id)}">${esc(content)}</textarea>
                 <small class="brtop-block-status">Gespeichert</small>
             </div>
         `;

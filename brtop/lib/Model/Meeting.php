@@ -87,7 +87,10 @@ class Meeting {
     }
 
     public function setDocuments(array $documents): void {
-        $this->documents = array_values($documents);
+        $this->documents = array_values(array_map(
+            static fn($document): GeneratedDocument => $document instanceof GeneratedDocument ? $document : new GeneratedDocument((array)$document),
+            $documents
+        ));
     }
 
     public function isRegularBrMeeting(): bool {
@@ -121,7 +124,10 @@ class Meeting {
                 static fn(AgendaItem $item): array => $item->toApiArray(),
                 $this->agendaItems()
             ),
-            'documents' => $this->documents(),
+            'documents' => array_map(
+                static fn(GeneratedDocument $document): array => $document->toApiArray(),
+                $this->documents()
+            ),
         ]);
     }
 }

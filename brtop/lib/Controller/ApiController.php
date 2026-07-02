@@ -9,7 +9,6 @@ use OCA\BrTop\Exception\DocumentGenerationException;
 use OCA\BrTop\Model\Meeting;
 use OCA\BrTop\Repository\DocumentRepository;
 use OCA\BrTop\Repository\MeetingRepository;
-use OCA\BrTop\Repository\ProtocolBlockRepository;
 use OCA\BrTop\Service\AgendaService;
 use OCA\BrTop\Service\AgendaTemplateService;
 use OCA\BrTop\Service\BrtopLogger;
@@ -18,6 +17,7 @@ use OCA\BrTop\Service\DocumentGenerationService;
 use OCA\BrTop\Service\MeetingScheduleService;
 use OCA\BrTop\Service\MeetingStateService;
 use OCA\BrTop\Store\MeetingStore;
+use OCA\BrTop\Store\ProtocolBlockStore;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
@@ -36,9 +36,9 @@ class ApiController extends Controller {
         private MeetingStateService $meetingStateService,
         private DocumentGenerationService $documentGenerationService,
         private MeetingStore $meetingStore,
+        private ProtocolBlockStore $protocolBlockStore,
         private MeetingRepository $meetingRepository,
-        private DocumentRepository $documentRepository,
-        private ProtocolBlockRepository $protocolBlockRepository
+        private DocumentRepository $documentRepository
     ) {
         parent::__construct(Application::APP_ID, $request);
     }
@@ -285,7 +285,7 @@ class ApiController extends Controller {
             $this->meetingRepository->transactional(function () use ($meetingId, $topId): void {
                 $deletedTopIds = $this->agendaService->deleteItem($meetingId, $topId);
                 foreach ($deletedTopIds as $deletedTopId) {
-                    $this->protocolBlockRepository->deleteForTop($meetingId, $deletedTopId);
+                    $this->protocolBlockStore->deleteForTop($meetingId, $deletedTopId);
                 }
             });
         } catch (\InvalidArgumentException $e) {
@@ -313,7 +313,7 @@ class ApiController extends Controller {
 
         try {
             $this->meetingRepository->transactional(function () use ($meetingId): void {
-                $this->protocolBlockRepository->deleteForMeeting($meetingId);
+                $this->protocolBlockStore->deleteForMeeting($meetingId);
                 $this->documentRepository->deleteForMeeting($meetingId);
                 $this->agendaService->deleteItemsForMeeting($meetingId);
                 $this->meetingRepository->deleteInvitationRecipients($meetingId);
@@ -349,11 +349,11 @@ class ApiController extends Controller {
         if ($blockType !== 'text') {
             $blockType = 'text';
         }
-        $blockId = $this->protocolBlockRepository->insert($meetingId, $topId, $blockType, $content);
+        $block = $this->protocolBlockStore->addBlock($meetingId, $topId, $blockType, $content);
 
         return new DataResponse([
             'ok' => true,
-            'block' => $this->protocolBlockRepository->findOneForMeeting($meetingId, $topId, $blockId),
+            'block' => $block->toApiArray(),
         ]);
     }
 
@@ -372,7 +372,7 @@ class ApiController extends Controller {
             ], Http::STATUS_NOT_FOUND);
         }
 
-        $updated = $this->protocolBlockRepository->updateContent($meetingId, $topId, $blockId, $content);
+        $updated = $this->protocolBlockStore->updateContent($meetingId, $topId, $blockId, $content);
         if (!$updated) {
             return new DataResponse([
                 'ok' => false,
@@ -412,7 +412,7 @@ class ApiController extends Controller {
         $meeting = $this->assertMeetingOwner($meetingId);
 
         try {
-            return new DataResponse($this->documentGenerationService->generateInvitation($this->uid(), $meetingId, $meeting->toRepositoryData()));
+            return new DataResponse($this->documentGenerationService->generateInvitation($this->uid(), $meeting));
         } catch (\Throwable $e) {
             return $this->documentErrorResponse(
                 'generate_invitation',
@@ -428,7 +428,7 @@ class ApiController extends Controller {
         $meeting = $this->assertMeetingOwner($meetingId);
 
         try {
-            return new DataResponse($this->documentGenerationService->generateProtocol($this->uid(), $meetingId, $meeting->toRepositoryData()));
+            return new DataResponse($this->documentGenerationService->generateProtocol($this->uid(), $meeting));
         } catch (\Throwable $e) {
             return $this->documentErrorResponse(
                 'generate_protocol',
@@ -444,7 +444,7 @@ class ApiController extends Controller {
         $meeting = $this->assertMeetingOwner($meetingId);
 
         try {
-            return new DataResponse($this->documentGenerationService->generateResolutions($this->uid(), $meetingId, $meeting->toRepositoryData()));
+            return new DataResponse($this->documentGenerationService->generateResolutions($this->uid(), $meeting));
         } catch (\Throwable $e) {
             return $this->documentErrorResponse(
                 'generate_resolutions',

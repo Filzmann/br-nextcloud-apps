@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\BrTop\Service;
 
+use OCA\BrTop\Model\Meeting;
 use OCP\Files\IRootFolder;
 
 class FileExportService {
@@ -12,8 +13,10 @@ class FileExportService {
     ) {
     }
 
-    public function meetingFolder(array $meeting): string {
-        return 'BR-Sitzungen/' . $meeting['meeting_date'] . ' - ' . $this->safeName((string)$meeting['title']);
+    public function meetingFolder(array|Meeting $meeting): string {
+        $meetingData = $this->meetingData($meeting);
+
+        return 'BR-Sitzungen/' . $meetingData['meeting_date'] . ' - ' . $this->safeName((string)$meetingData['title']);
     }
 
     public function ensureFolder(string $uid, string $path): void {
@@ -52,5 +55,9 @@ class FileExportService {
         $name = preg_replace('/\s+/', '_', trim($name)) ?? '';
 
         return $name ?: 'ohne_titel';
+    }
+
+    private function meetingData(array|Meeting $meeting): array {
+        return $meeting instanceof Meeting ? $meeting->toRepositoryData() : $meeting;
     }
 }

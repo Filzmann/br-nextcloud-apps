@@ -50,7 +50,12 @@ class AgendaItem {
         $this->resolutionCount = max(0, (int)($data['resolution_count'] ?? $data['resolutionCount'] ?? 0));
         $this->createdAt = (string)($data['created_at'] ?? $data['createdAt'] ?? '');
         $this->agendaNumber = (string)($data['agenda_number'] ?? $data['agendaNumber'] ?? '');
-        $this->protocolBlocks = is_array($data['protocol_blocks'] ?? null) ? $data['protocol_blocks'] : [];
+        $this->protocolBlocks = is_array($data['protocol_blocks'] ?? null)
+            ? array_values(array_map(
+                static fn($block): ProtocolBlock => $block instanceof ProtocolBlock ? $block : new ProtocolBlock((array)$block),
+                $data['protocol_blocks']
+            ))
+            : [];
     }
 
     public function setStore(AgendaItemStore $store): void {
@@ -171,7 +176,10 @@ class AgendaItem {
             'requires_resolution' => $this->requiresResolution ? 1 : 0,
             'created_at' => $this->createdAt,
             'agenda_number' => $this->agendaNumber,
-            'protocol_blocks' => $this->protocolBlocks,
+            'protocol_blocks' => array_map(
+                static fn(ProtocolBlock $block): array => $block->toApiArray(),
+                $this->protocolBlocks
+            ),
         ]);
     }
 }

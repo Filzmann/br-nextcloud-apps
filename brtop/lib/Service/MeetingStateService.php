@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace OCA\BrTop\Service;
 
 use OCA\BrTop\Model\AgendaItem;
-use OCA\BrTop\Repository\DocumentRepository;
-use OCA\BrTop\Repository\ProtocolBlockRepository;
+use OCA\BrTop\Store\DocumentStore;
 use OCA\BrTop\Store\MeetingStore;
+use OCA\BrTop\Store\ProtocolBlockStore;
 
 class MeetingStateService {
     public function __construct(
         private MeetingStore $meetingStore,
-        private DocumentRepository $documentRepository,
-        private ProtocolBlockRepository $protocolBlockRepository
+        private DocumentStore $documentStore,
+        private ProtocolBlockStore $protocolBlockStore
     ) {
     }
 
@@ -26,7 +26,7 @@ class MeetingStateService {
             $meeting->setAgendaItems(
                 $this->attachProtocolBlocks($meetingId, $meeting->agendaItems())
             );
-            $meeting->setDocuments($this->documentRepository->findForMeeting($meetingId));
+            $meeting->setDocuments($this->documentStore->forMeeting($meetingId));
             $payload[] = $meeting->toApiArray();
         }
 
@@ -34,7 +34,7 @@ class MeetingStateService {
     }
 
     private function attachProtocolBlocks(int $meetingId, array $tops): array {
-        $blocksByTop = $this->protocolBlockRepository->findForMeetingGrouped($meetingId);
+        $blocksByTop = $this->protocolBlockStore->groupedForMeeting($meetingId);
 
         foreach ($tops as $top) {
             if ($top instanceof AgendaItem && $top->id !== null) {

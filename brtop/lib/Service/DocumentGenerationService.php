@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace OCA\BrTop\Service;
 
 use OCA\BrTop\Exception\DocumentGenerationException;
+use OCA\BrTop\Model\Meeting;
 use OCA\BrTop\Repository\DocumentRepository;
 use OCA\BrTop\Repository\MeetingRepository;
-use OCA\BrTop\Repository\ProtocolBlockRepository;
+use OCA\BrTop\Model\ProtocolBlock;
+use OCA\BrTop\Store\ProtocolBlockStore;
 
 class DocumentGenerationService {
     public function __construct(
@@ -17,13 +19,14 @@ class DocumentGenerationService {
         private DocumentContentService $documentContentService,
         private DocumentRepository $documentRepository,
         private MeetingRepository $meetingRepository,
-        private ProtocolBlockRepository $protocolBlockRepository,
+        private ProtocolBlockStore $protocolBlockStore,
         private BrtopLogger $logger
     ) {
     }
 
-    public function generateInvitation(string $uid, int $meetingId, array $meeting): array {
+    public function generateInvitation(string $uid, Meeting $meeting): array {
         $created = [];
+        $meetingId = $this->meetingId($meeting);
 
         try {
             $tops = $this->agendaService->itemsForMeeting($meetingId);
@@ -59,9 +62,11 @@ class DocumentGenerationService {
         }
     }
 
-    public function generateProtocol(string $uid, int $meetingId, array $meeting): array {
+    public function generateProtocol(string $uid, Meeting $meeting): array {
         $created = [];
         $warnings = [];
+        $meetingId = $this->meetingId($meeting);
+        $meetingData = $meeting->toRepositoryData();
 
         try {
             $tops = $this->withProtocolBlocks($meetingId, $this->agendaService->itemsForMeeting($meetingId));
@@ -75,7 +80,7 @@ class DocumentGenerationService {
 
             try {
                 if (class_exists(OdtTemplateRenderer::class)) {
-                    $odt = (new OdtTemplateRenderer())->renderProtocol($meeting, $tops);
+                    $odt = (new OdtTemplateRenderer())->renderProtocol($meetingData, $tops);
                     $this->writeDocument($uid, $meetingId, $basePath, '02_Protokollvorlage.odt', $odt, 'protocol_odt', 'Protokollvorlage ODT');
                     $created[] = '02_Protokollvorlage.odt';
                 } else {
@@ -105,8 +110,9 @@ class DocumentGenerationService {
         }
     }
 
-    public function generateResolutions(string $uid, int $meetingId, array $meeting): array {
+    public function generateResolutions(string $uid, Meeting $meeting): array {
         $created = [];
+        $meetingId = $this->meetingId($meeting);
 
         try {
             $tops = $this->agendaService->itemsForMeeting($meetingId);
@@ -163,11 +169,23 @@ class DocumentGenerationService {
         $this->documentRepository->insert($meetingId, $documentType, $title, $path);
     }
 
+    private function meetingId(Meeting $meeting): int {
+        $meetingId = (int)$meeting->id;
+        if ($meetingId <= 0) {
+            throw new \InvalidArgumentException('Dokumenterzeugung benötigt ein gespeichertes Meeting.');
+        }
+
+        return $meetingId;
+    }
+
     private function withProtocolBlocks(int $meetingId, array $tops): array {
-        $blocksByTop = $this->protocolBlockRepository->findForMeetingGrouped($meetingId);
+        $blocksByTop = $this->protocolBlockStore->groupedForMeeting($meetingId);
 
         foreach ($tops as &$top) {
-            $top['protocol_blocks'] = $blocksByTop[(int)$top['id']] ?? [];
+            $top['protocol_blocks'] = array_map(
+                static fn(ProtocolBlock $block): array => $block->toApiArray(),
+                $blocksByTop[(int)$top['id']] ?? []
+            );
         }
 
         return $tops;

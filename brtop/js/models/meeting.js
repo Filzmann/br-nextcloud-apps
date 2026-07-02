@@ -1,5 +1,5 @@
 (function() {
-    const { AgendaItem } = window.BRTop.models;
+    const { AgendaItem, GeneratedDocument } = window.BRTop.models;
 
     class Meeting {
         constructor(data = {}) {
@@ -16,7 +16,7 @@
             this.status = data.status || 'draft';
             this.created_at = data.created_at || data.createdAt || '';
             this.tops = Array.isArray(data.tops) ? data.tops.map(AgendaItem.fromApi) : [];
-            this.documents = Array.isArray(data.documents) ? data.documents : [];
+            this.documents = Array.isArray(data.documents) ? data.documents.map(GeneratedDocument.fromApi) : [];
         }
 
         static fromApi(data) {
@@ -46,7 +46,7 @@
                 status: this.status,
                 created_at: this.created_at,
                 tops: this.tops.map(top => top.toApi()),
-                documents: this.documents
+                documents: this.documents.map(document => document.toApi())
             };
         }
     }

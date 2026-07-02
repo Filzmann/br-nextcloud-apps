@@ -66,7 +66,9 @@
         }
 
         const items = documents.map(document => {
-            const title = document.title || document.document_type || 'Dokument';
+            const title = typeof document.displayTitle === 'function'
+                ? document.displayTitle()
+                : (document.title || document.document_type || 'Dokument');
             return `<li>${esc(title)} <small>${esc(document.file_path || '')}</small></li>`;
         }).join('');
 

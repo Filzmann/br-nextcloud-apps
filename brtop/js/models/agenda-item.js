@@ -1,4 +1,6 @@
 (function() {
+    const { ProtocolBlock } = window.BRTop.models;
+
     class AgendaItem {
         constructor(data = {}) {
             this.id = data.id ?? null;
@@ -19,7 +21,7 @@
             this.resolution_count = Math.max(0, Number(data.resolution_count || data.resolutionCount || 0));
             this.created_at = data.created_at || data.createdAt || '';
             this.agenda_number = data.agenda_number || data.agendaNumber || '';
-            this.protocol_blocks = Array.isArray(data.protocol_blocks) ? data.protocol_blocks : [];
+            this.protocol_blocks = Array.isArray(data.protocol_blocks) ? data.protocol_blocks.map(ProtocolBlock.fromApi) : [];
         }
 
         static fromApi(data) {
@@ -92,7 +94,7 @@
                 resolution_count: this.resolution_count,
                 created_at: this.created_at,
                 agenda_number: this.agenda_number,
-                protocol_blocks: this.protocol_blocks
+                protocol_blocks: this.protocol_blocks.map(block => block.toApi())
             };
         }
     }

@@ -5,7 +5,7 @@
     <name>BR TOP- und Sitzungsverwaltung</name>
     <summary>Prototyp zur Erstellung von Ladungen, Protokollvorlagen und Beschlussdokumenten für Betriebsratsarbeit.</summary>
     <description>Verwaltet Sitzungen, TOPs, Ladungen, Protokollvorlagen und Beschlussdokumente. Die Ersatzmitgliedslogik ist im Prototyp vorbereitet, aber noch nicht rechtssicher umgesetzt.</description>
-    <version>0.1.16</version>
+    <version>0.1.17</version>
     <licence>agpl</licence>
     <author>Simon / ChatGPT-Prototyp</author>
     <namespace>BrTop</namespace>
