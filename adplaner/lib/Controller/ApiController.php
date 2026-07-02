@@ -60,10 +60,10 @@ class ApiController extends Controller {
         string $teamCode,
         string $displayName = '',
         string $meetingDay = '',
-        string $earlyStart = '06:00',
+        string $shiftsJson = '',
+        string $earlyStart = '08:00',
         string $lateStart = '14:00',
-        string $nightStart = '22:00',
-        bool $enabledBeforeEarly = true,
+        string $nightStart = '20:00',
         bool $enabledEarly = true,
         bool $enabledLate = true,
         bool $enabledNight = true
@@ -72,29 +72,35 @@ class ApiController extends Controller {
             $teamCode,
             $displayName,
             $meetingDay,
+            $shiftsJson,
             $earlyStart,
             $lateStart,
             $nightStart,
-            $enabledBeforeEarly,
             $enabledEarly,
             $enabledLate,
             $enabledNight
         ): array {
             $team = $this->teamAccess->assertCanCoordinate($teamCode);
-            $settings = $this->teamSettings->saveFromApi($team->code, $displayName, [
+            $config = [
                 'meetingDay' => $meetingDay,
-                'shiftStarts' => [
+            ];
+            $shifts = $this->decodeShiftsJson($shiftsJson);
+            if ($shifts !== null) {
+                $config['shifts'] = $shifts;
+            } else {
+                $config['shiftStarts'] = [
                     'early' => $earlyStart,
                     'late' => $lateStart,
                     'night' => $nightStart,
-                ],
-                'enabledSegments' => [
-                    'before_early' => $enabledBeforeEarly,
+                ];
+                $config['enabledSegments'] = [
                     'early' => $enabledEarly,
                     'late' => $enabledLate,
                     'night' => $enabledNight,
-                ],
-            ]);
+                ];
+            }
+
+            $settings = $this->teamSettings->saveFromApi($team->code, $displayName, $config);
 
             return ['ok' => true, 'settings' => $settings];
         }, 'save_team_settings', ['team_code' => $teamCode]);
@@ -182,5 +188,19 @@ class ApiController extends Controller {
                 'message' => 'Die Aktion konnte nicht ausgefuehrt werden. Details stehen im Nextcloud-Log.',
             ], Http::STATUS_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private function decodeShiftsJson(string $shiftsJson): ?array {
+        $shiftsJson = trim($shiftsJson);
+        if ($shiftsJson === '') {
+            return null;
+        }
+
+        $decoded = json_decode($shiftsJson, true);
+        if (!is_array($decoded)) {
+            throw new \InvalidArgumentException('Schichten konnten nicht gelesen werden.');
+        }
+
+        return $decoded;
     }
 }

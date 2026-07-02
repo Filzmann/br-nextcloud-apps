@@ -3,7 +3,13 @@
     const { byId, esc, showNotice } = window.ADPlaner.ui;
     const { render: renderMonthPlan } = window.ADPlaner.monthPlan;
     const { render: renderVacationPlan } = window.ADPlaner.vacationPlan;
-    const { render: renderSettingsPanel } = window.ADPlaner.settingsPanel;
+    const {
+        render: renderSettingsPanel,
+        addShiftRow,
+        removeShiftRow,
+        collectShifts
+    } = window.ADPlaner.settingsPanel;
+    const { open: openAssignmentPicker } = window.ADPlaner.assignmentControl;
 
     const state = {
         currentUser: null,
@@ -146,14 +152,33 @@
         }
 
         const action = button.dataset.action;
+        if (action === 'add-shift-row') {
+            addShiftRow();
+            return;
+        }
+
+        if (action === 'remove-shift-row') {
+            removeShiftRow(button);
+            return;
+        }
+
+        if (action === 'open-assignment-picker') {
+            openAssignmentPicker(button);
+            return;
+        }
+
         try {
             if (action === 'add-self') {
                 await post(teamPath() + '/months/' + encode(state.month) + '/slots/' + encode(button.dataset.slotId) + '/candidates');
                 await loadMonth();
             } else if (action === 'add-selected') {
                 const select = byId('adp-panel').querySelector(`select[data-add-select="${CSS.escape(button.dataset.slotId)}"]`);
+                if (!select || select.disabled || !select.value) {
+                    return;
+                }
+
                 await post(teamPath() + '/months/' + encode(state.month) + '/slots/' + encode(button.dataset.slotId) + '/candidates', {
-                    targetUid: select ? select.value : ''
+                    targetUid: select.value
                 });
                 await loadMonth();
             } else if (action === 'remove-candidate') {
@@ -219,16 +244,15 @@
             event.preventDefault();
             const data = new FormData(form);
             try {
+                const shifts = collectShifts(form);
+                if (shifts.length === 0) {
+                    throw new Error('Mindestens eine Schicht muss konfiguriert sein.');
+                }
+
                 await post(teamPath() + '/settings', {
                     displayName: data.get('displayName') || '',
                     meetingDay: data.get('meetingDay') || '',
-                    earlyStart: data.get('earlyStart') || '06:00',
-                    lateStart: data.get('lateStart') || '14:00',
-                    nightStart: data.get('nightStart') || '22:00',
-                    enabledBeforeEarly: data.has('enabledBeforeEarly'),
-                    enabledEarly: data.has('enabledEarly'),
-                    enabledLate: data.has('enabledLate'),
-                    enabledNight: data.has('enabledNight')
+                    shiftsJson: JSON.stringify(shifts)
                 });
                 await refreshState();
                 state.activeView = 'month';

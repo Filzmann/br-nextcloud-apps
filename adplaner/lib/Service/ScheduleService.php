@@ -25,11 +25,16 @@ class ScheduleService {
         $enabledSlots = array_values(array_filter($slots, static fn(ShiftSlot $slot): bool => $slot->enabled));
         $candidatesBySlot = $this->store->candidatesForSlotIds(array_map(static fn(ShiftSlot $slot): int => $slot->id, $enabledSlots));
         $assistantLabels = $this->teamAccess->assistantLabelMap($team->assistants);
+        $assignableUids = $this->assignableAssistantUidMap($team);
         $notes = $this->store->dayNotesForMonth($team->code, $month);
         $slotsByDate = [];
 
         foreach ($enabledSlots as $slot) {
-            $slot->candidates = $this->candidatePayload($candidatesBySlot[$slot->id] ?? [], $assistantLabels, $currentUid);
+            $slotCandidates = array_values(array_filter(
+                $candidatesBySlot[$slot->id] ?? [],
+                static fn(ShiftCandidate $candidate): bool => isset($assignableUids[$candidate->assistantUid])
+            ));
+            $slot->candidates = $this->candidatePayload($slotCandidates, $assistantLabels, $currentUid);
             $slotsByDate[$slot->workDate][] = $slot->toApiArray();
         }
 
@@ -56,10 +61,16 @@ class ScheduleService {
     public function addCandidate(Team $team, string $month, int $slotId, string $targetUid, string $currentUid): void {
         $month = $this->shiftConfig->normalizeMonth($month);
         $slot = $this->requireSlot($slotId, $team->code, $month);
-        $targetUid = $targetUid === '' ? $currentUid : $targetUid;
+        if ($targetUid === '') {
+            if ($team->isEb) {
+                throw new \DomainException('Bitte eine Assistenzkraft auswaehlen.');
+            }
+
+            $targetUid = $currentUid;
+        }
 
         $this->assertCandidateMutationAllowed($team, $targetUid, $currentUid);
-        $this->assertAssistantInTeam($team, $targetUid);
+        $this->assertAssignableAssistantInTeam($team, $targetUid);
 
         $this->store->addCandidate($slot->id, $targetUid, $currentUid);
     }
@@ -70,7 +81,7 @@ class ScheduleService {
         $targetUid = $targetUid === '' ? $currentUid : $targetUid;
 
         $this->assertCandidateMutationAllowed($team, $targetUid, $currentUid);
-        $this->assertAssistantInTeam($team, $targetUid);
+        $this->assertAssignableAssistantInTeam($team, $targetUid);
 
         $this->store->removeCandidate($slot->id, $targetUid);
     }
@@ -91,8 +102,24 @@ class ScheduleService {
             $existing[$slot->workDate . '|' . $slot->segmentKey] = $slot;
         }
 
+        $segments = $this->shiftConfig->segments($team->settings);
+        $segmentKeys = array_flip(array_map(static fn(array $segment): string => (string)$segment['key'], $segments));
+        foreach ($existingSlots as $slot) {
+            if (isset($segmentKeys[$slot->segmentKey])) {
+                continue;
+            }
+
+            $this->store->updateSlotDefinition(
+                $slot->id,
+                $slot->label,
+                $slot->startsAt,
+                $slot->endsAt,
+                false
+            );
+        }
+
         foreach ($this->shiftConfig->monthDays($month) as $day) {
-            foreach ($this->shiftConfig->segments($team->settings) as $segment) {
+            foreach ($segments as $segment) {
                 $key = $day['date'] . '|' . $segment['key'];
                 if (isset($existing[$key])) {
                     $this->store->updateSlotDefinition(
@@ -151,13 +178,30 @@ class ScheduleService {
         throw new \DomainException('Assistenzkraefte duerfen nur eigene Eintraege bearbeiten.');
     }
 
-    private function assertAssistantInTeam(Team $team, string $assistantUid): void {
+    private function assertAssignableAssistantInTeam(Team $team, string $assistantUid): void {
         foreach ($team->assistants as $assistant) {
             if ($assistant['uid'] === $assistantUid) {
+                if (($assistant['canReceiveShifts'] ?? true) === false) {
+                    throw new \DomainException('Einsatzbegleitungen koennen keiner Schicht zugeteilt werden.');
+                }
+
                 return;
             }
         }
 
         throw new \DomainException('Diese Assistenz gehoert nicht zum Team.');
+    }
+
+    private function assignableAssistantUidMap(Team $team): array {
+        $map = [];
+        foreach ($team->assistants as $assistant) {
+            if (($assistant['canReceiveShifts'] ?? true) === false) {
+                continue;
+            }
+
+            $map[(string)$assistant['uid']] = true;
+        }
+
+        return $map;
     }
 }

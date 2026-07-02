@@ -1,5 +1,6 @@
 (function() {
     const { esc, dateShort, dayHeader } = window.ADPlaner.ui;
+    const { render: renderAssignmentControl } = window.ADPlaner.assignmentControl;
 
     function render(plan, currentUser) {
         if (!plan || !plan.team) {
@@ -57,6 +58,9 @@
         const candidates = slot.candidates || [];
         const selfUid = currentUser && currentUser.uid ? currentUser.uid : '';
         const hasSelf = candidates.some(candidate => candidate.uid === selfUid);
+        const selfAction = !canCoordinate && !hasSelf
+            ? `<button type="button" class="adp-small" data-action="add-self" data-slot-id="${esc(slot.id)}">+ ich</button>`
+            : '';
 
         return `
             <td>
@@ -64,8 +68,8 @@
                     ${candidates.map(candidate => candidateChip(candidate, canCoordinate, slot.id)).join('')}
                 </div>
                 <div class="adp-cell-actions">
-                    ${hasSelf ? '' : `<button type="button" class="adp-small" data-action="add-self" data-slot-id="${esc(slot.id)}">+ ich</button>`}
-                    ${canCoordinate ? ebAddControl(slot, team) : ''}
+                    ${selfAction}
+                    ${canCoordinate ? renderAssignmentControl(slot, team, candidates) : ''}
                 </div>
             </td>
         `;
@@ -81,19 +85,6 @@
         `;
     }
 
-    function ebAddControl(slot, team) {
-        const options = (team.assistants || []).map(assistant => {
-            return `<option value="${esc(assistant.uid)}">${esc(assistant.displayName || assistant.uid)}</option>`;
-        }).join('');
-
-        return `
-            <span class="adp-eb-add">
-                <select data-add-select="${esc(slot.id)}">${options}</select>
-                <button type="button" class="adp-small" data-action="add-selected" data-slot-id="${esc(slot.id)}">+</button>
-            </span>
-        `;
-    }
-
     function noteCell(day, canCoordinate) {
         if (!canCoordinate) {
             return `<span class="adp-note-text">${esc(day.note || '')}</span>`;
@@ -101,7 +92,7 @@
 
         return `
             <textarea rows="2" data-note-date="${esc(day.date)}">${esc(day.note || '')}</textarea>
-            <button type="button" class="adp-small" data-action="save-note" data-date="${esc(day.date)}">Speichern</button>
+            <button type="button" class="adp-small adp-icon-button" title="Bemerkung speichern" data-action="save-note" data-date="${esc(day.date)}">&#10003;</button>
         `;
     }
 

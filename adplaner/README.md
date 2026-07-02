@@ -1,4 +1,4 @@
-# adplaner 0.1.2
+# adplaner 0.1.5
 
 Nextcloud-App-Prototyp fuer Dienstplaene und Urlaubsplanung in Assistenzteams.
 
@@ -10,8 +10,8 @@ Enthalten:
 
 - Assistenznehmer aus Nextcloud-Gruppen `ad-ASN-<Kuerzel>`, zum Beispiel `ad-ASN-ThoJa`, `ad-ASN-HaMü` oder `ad-ASN-RaKeLi`.
 - EB-Recht fuer Nutzer*innen, die zugleich im Team und in einer Gruppe `ad-EB-*` sind.
-- Monatlicher Wunschplan mit konfigurierbaren Schichtgrenzen.
-- Kandidat*innen je Schicht: eigene Eintraege durch Assistenz, fremde Eintraege nur durch EB.
+- Monatlicher Wunschplan mit variabler Schichtliste; Standard ist 08-14, 14-20 und 20-08, Luecken und Ueberlappungen sind moeglich.
+- Zuweisungen je Schicht: eigene Eintraege durch Assistenz, fremde Zuweisungen nur durch EB; EB-Konten selbst sind nicht schichtfaehig.
 - Jahres-Urlaubsplan mit allen Tagen als Spalten und Assistenzkraeften als Zeilen.
 - Urlaubswuensche als globale Eintraege pro Assistenz, sichtbar in allen Teams der Person.
 - Optionale Urlaubssichtbarkeit ueber `ad-ASN-<Kuerzel>-Urlaub`; ohne diese Gruppe wird die Assistenznehmer-Gruppe selbst verwendet.

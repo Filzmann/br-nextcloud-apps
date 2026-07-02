@@ -8,76 +8,47 @@ class ShiftConfigService {
     public function defaults(): array {
         return [
             'meetingDay' => '',
-            'shiftStarts' => [
-                'early' => '06:00',
-                'late' => '14:00',
-                'night' => '22:00',
-            ],
-            'enabledSegments' => [
-                'before_early' => true,
-                'early' => true,
-                'late' => true,
-                'night' => true,
+            'shifts' => [
+                [
+                    'key' => 'early',
+                    'label' => 'Frueh',
+                    'startsAt' => '08:00',
+                    'endsAt' => '14:00',
+                    'enabled' => true,
+                ],
+                [
+                    'key' => 'late',
+                    'label' => 'Spaet',
+                    'startsAt' => '14:00',
+                    'endsAt' => '20:00',
+                    'enabled' => true,
+                ],
+                [
+                    'key' => 'night',
+                    'label' => 'Nacht',
+                    'startsAt' => '20:00',
+                    'endsAt' => '08:00',
+                    'enabled' => true,
+                ],
             ],
         ];
     }
 
     public function normalize(array $settings): array {
         $defaults = $this->defaults();
-        $shiftStarts = $settings['shiftStarts'] ?? [];
-        $enabledSegments = $settings['enabledSegments'] ?? [];
+        $shifts = $settings['shifts'] ?? null;
+        if (!is_array($shifts)) {
+            $shifts = $this->legacyShifts($settings);
+        }
 
         return [
             'meetingDay' => $this->normalizeOptionalDate((string)($settings['meetingDay'] ?? $defaults['meetingDay'])),
-            'shiftStarts' => [
-                'early' => $this->normalizeTime((string)($shiftStarts['early'] ?? $defaults['shiftStarts']['early'])),
-                'late' => $this->normalizeTime((string)($shiftStarts['late'] ?? $defaults['shiftStarts']['late'])),
-                'night' => $this->normalizeTime((string)($shiftStarts['night'] ?? $defaults['shiftStarts']['night'])),
-            ],
-            'enabledSegments' => [
-                'before_early' => (bool)($enabledSegments['before_early'] ?? $defaults['enabledSegments']['before_early']),
-                'early' => (bool)($enabledSegments['early'] ?? $defaults['enabledSegments']['early']),
-                'late' => (bool)($enabledSegments['late'] ?? $defaults['enabledSegments']['late']),
-                'night' => (bool)($enabledSegments['night'] ?? $defaults['enabledSegments']['night']),
-            ],
+            'shifts' => $this->normalizeShifts($shifts),
         ];
     }
 
     public function segments(array $settings): array {
-        $settings = $this->normalize($settings);
-        $starts = $settings['shiftStarts'];
-        $enabled = $settings['enabledSegments'];
-
-        return [
-            [
-                'key' => 'before_early',
-                'label' => '0 bis Frueh',
-                'startsAt' => '00:00',
-                'endsAt' => $starts['early'],
-                'enabled' => $enabled['before_early'],
-            ],
-            [
-                'key' => 'early',
-                'label' => 'Frueh',
-                'startsAt' => $starts['early'],
-                'endsAt' => $starts['late'],
-                'enabled' => $enabled['early'],
-            ],
-            [
-                'key' => 'late',
-                'label' => 'Spaet',
-                'startsAt' => $starts['late'],
-                'endsAt' => $starts['night'],
-                'enabled' => $enabled['late'],
-            ],
-            [
-                'key' => 'night',
-                'label' => 'Nacht bis 24',
-                'startsAt' => $starts['night'],
-                'endsAt' => '24:00',
-                'enabled' => $enabled['night'],
-            ],
-        ];
+        return $this->normalize($settings)['shifts'];
     }
 
     public function monthDays(string $month): array {
@@ -151,6 +122,137 @@ class ShiftConfigService {
         }
 
         return $time;
+    }
+
+    private function normalizeShifts(array $shifts): array {
+        if ($shifts === []) {
+            throw new \InvalidArgumentException('Mindestens eine Schicht muss konfiguriert sein.');
+        }
+
+        if (count($shifts) > 64) {
+            throw new \InvalidArgumentException('Hoechstens 64 Schichten koennen konfiguriert werden.');
+        }
+
+        $normalized = [];
+        $keys = [];
+        foreach (array_values($shifts) as $index => $shift) {
+            if (!is_array($shift)) {
+                throw new \InvalidArgumentException('Schichten muessen als Liste uebergeben werden.');
+            }
+
+            $key = $this->normalizeShiftKey((string)($shift['key'] ?? ''), $index);
+            if (isset($keys[$key])) {
+                throw new \InvalidArgumentException('Schicht-Keys muessen eindeutig sein.');
+            }
+
+            $label = trim((string)($shift['label'] ?? ''));
+            if ($label === '') {
+                $label = 'Schicht ' . ($index + 1);
+            }
+
+            if (strlen($label) > 64) {
+                throw new \InvalidArgumentException('Schichtnamen duerfen hoechstens 64 Zeichen lang sein.');
+            }
+
+            $startsAt = $this->normalizeTime((string)($shift['startsAt'] ?? ''));
+            $endsAt = $this->normalizeTime((string)($shift['endsAt'] ?? ''));
+            $this->assertShiftFitsInDay($startsAt, $endsAt);
+
+            $keys[$key] = true;
+            $normalized[] = [
+                'key' => $key,
+                'label' => $label,
+                'startsAt' => $startsAt,
+                'endsAt' => $endsAt,
+                'enabled' => $this->normalizeBoolean($shift['enabled'] ?? true),
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeShiftKey(string $key, int $index): string {
+        $key = trim($key);
+        if ($key === '') {
+            return 'shift_' . ($index + 1);
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_-]{1,32}$/', $key)) {
+            throw new \InvalidArgumentException('Schicht-Keys duerfen nur Buchstaben, Ziffern, Unterstriche und Bindestriche enthalten.');
+        }
+
+        return $key;
+    }
+
+    private function assertShiftFitsInDay(string $startsAt, string $endsAt): void {
+        $duration = $this->minutesOfDay($endsAt) - $this->minutesOfDay($startsAt);
+        if ($duration <= 0) {
+            $duration += 1440;
+        }
+
+        if ($duration < 1 || $duration > 1440) {
+            throw new \InvalidArgumentException('Eine Schicht muss innerhalb von 24 Stunden liegen.');
+        }
+    }
+
+    private function minutesOfDay(string $time): int {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+
+        return ($hours * 60) + $minutes;
+    }
+
+    private function normalizeBoolean(mixed $value): bool {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value)) {
+            return $value !== 0;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return (bool)$value;
+    }
+
+    private function legacyShifts(array $settings): array {
+        $defaults = $this->defaults();
+        $shiftStarts = $settings['shiftStarts'] ?? [];
+        $enabledSegments = $settings['enabledSegments'] ?? [];
+
+        $earlyStart = $this->normalizeTime((string)($shiftStarts['early'] ?? '08:00'));
+        $lateStart = $this->normalizeTime((string)($shiftStarts['late'] ?? '14:00'));
+        $nightStart = $this->normalizeTime((string)($shiftStarts['night'] ?? '20:00'));
+
+        if ($shiftStarts === [] && $enabledSegments === []) {
+            return $defaults['shifts'];
+        }
+
+        return [
+            [
+                'key' => 'early',
+                'label' => 'Frueh',
+                'startsAt' => $earlyStart,
+                'endsAt' => $lateStart,
+                'enabled' => $this->normalizeBoolean($enabledSegments['early'] ?? true),
+            ],
+            [
+                'key' => 'late',
+                'label' => 'Spaet',
+                'startsAt' => $lateStart,
+                'endsAt' => $nightStart,
+                'enabled' => $this->normalizeBoolean($enabledSegments['late'] ?? true),
+            ],
+            [
+                'key' => 'night',
+                'label' => 'Nacht',
+                'startsAt' => $nightStart,
+                'endsAt' => $earlyStart,
+                'enabled' => $this->normalizeBoolean($enabledSegments['night'] ?? true),
+            ],
+        ];
     }
 
     private function normalizeOptionalDate(string $date): string {

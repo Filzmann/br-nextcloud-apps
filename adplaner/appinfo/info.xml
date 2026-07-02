@@ -5,7 +5,7 @@
     <name>Assistenz Dienst- und Urlaubsplanung</name>
     <summary>Prototyp fuer Wunschdienstplaene und Urlaubsplanung in Assistenzteams.</summary>
     <description>Verwaltet monatliche Wunschdienstplaene und jahresbezogene Urlaubswuensche fuer Assistenzteams auf Basis von Nextcloud-Gruppen ad-ASN-&lt;Kuerzel&gt; und ad-ASN-&lt;Kuerzel&gt;-Urlaub.</description>
-    <version>0.1.2</version>
+    <version>0.1.5</version>
     <licence>agpl</licence>
     <author>Simon / ChatGPT-Prototyp</author>
     <namespace>AdPlaner</namespace>

@@ -128,9 +128,12 @@ class TeamAccessService {
         $assistants = [];
         foreach ($group->getUsers() as $user) {
             $uid = $user->getUID();
+            $isEb = $this->userHasEbGroup($user);
             $assistants[] = [
                 'uid' => $uid,
                 'displayName' => $user->getDisplayName() ?: $uid,
+                'isEb' => $isEb,
+                'canReceiveShifts' => !$isEb,
             ];
         }
 
@@ -159,6 +162,14 @@ class TeamAccessService {
 
     private function currentUserHasEbGroup(): bool {
         $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->userHasEbGroup($user);
+    }
+
+    private function userHasEbGroup($user): bool {
         if ($user === null) {
             return false;
         }

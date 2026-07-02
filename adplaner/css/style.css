@@ -194,14 +194,22 @@
     padding: 3px 8px;
 }
 
-.adp-eb-add {
+.adp-icon-button {
+    width: 32px;
+    min-width: 32px;
+    padding: 3px;
+    text-align: center;
+}
+
+.adp-assignment-control,
+.adp-assignment-picker {
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
 
-.adp-eb-add select {
-    width: 130px;
+.adp-assignment-picker select {
+    width: 150px;
 }
 
 .adp-note-cell textarea {
@@ -291,7 +299,7 @@
 
 .adp-settings-form fieldset {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     flex-wrap: wrap;
     border: 1px solid var(--color-border);
@@ -326,6 +334,44 @@
     font-weight: 700;
 }
 
+.adp-shift-list {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+}
+
+.adp-shift-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.4fr) 130px 130px auto 40px;
+    gap: 10px;
+    align-items: end;
+    width: 100%;
+}
+
+.adp-shift-row .adp-small {
+    min-width: 34px;
+}
+
+.adp-readonly-shifts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.adp-readonly-shift {
+    display: inline-flex;
+    min-height: 26px;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 2px 8px;
+    background: var(--color-background-hover);
+}
+
+.adp-readonly-shift.is-disabled {
+    opacity: .55;
+}
+
 .adp-loading {
     color: var(--color-text-maxcontrast);
 }
@@ -346,5 +392,9 @@
 
     .adp-controls label {
         flex: 1 1 160px;
+    }
+
+    .adp-shift-row {
+        grid-template-columns: 1fr 1fr;
     }
 }

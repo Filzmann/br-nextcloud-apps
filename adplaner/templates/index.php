@@ -1,6 +1,7 @@
 <?php
 script('adplaner', 'modules/api');
 script('adplaner', 'modules/ui');
+script('adplaner', 'components/assignment-control');
 script('adplaner', 'components/month-plan');
 script('adplaner', 'components/vacation-plan');
 script('adplaner', 'components/settings-panel');
