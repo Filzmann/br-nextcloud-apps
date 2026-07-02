@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>adplaner</id>
+    <name>Assistenz Dienst- und Urlaubsplanung</name>
+    <summary>Prototyp fuer Wunschdienstplaene und Urlaubsplanung in Assistenzteams.</summary>
+    <description>Verwaltet monatliche Wunschdienstplaene und jahresbezogene Urlaubswuensche fuer Assistenzteams auf Basis von Nextcloud-Gruppen ad-ASN-&lt;Kuerzel&gt; und ad-ASN-&lt;Kuerzel&gt;-Urlaub.</description>
+    <version>0.1.2</version>
+    <licence>agpl</licence>
+    <author>Simon / ChatGPT-Prototyp</author>
+    <namespace>AdPlaner</namespace>
+    <category>organization</category>
+    <bugs>https://example.invalid</bugs>
+    <dependencies>
+        <nextcloud min-version="29" max-version="35"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <name>Assistenzplanung</name>
+            <route>adplaner.page.index</route>
+            <icon>app.svg</icon>
+            <order>81</order>
+        </navigation>
+    </navigations>
+</info>

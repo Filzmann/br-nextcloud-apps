@@ -24,6 +24,29 @@ Nextcloud-App-ID:
 
     brtop
 
+Weitere eigene App:
+
+    adplaner
+
+App-Quellcode:
+
+    ~/projects/br-nextcloud-apps/adplaner
+
+Lokale App-URL:
+
+    https://nextcloud-dev.ddev.site/apps/adplaner/
+
+Nextcloud-App-ID:
+
+    adplaner
+
+Gruppenschema fuer `adplaner`:
+
+- Assistenznehmer-Gruppen: `ad-ASN-<Kuerzel>`, zum Beispiel `ad-ASN-ThoJa`, `ad-ASN-HaMü`, `ad-ASN-RaKeLi`.
+- `<Kuerzel>` ist das Kuerzel eines Assistenznehmers und darf Unicode-Buchstaben sowie Ziffern enthalten.
+- Optionale Urlaubssichtbarkeitsgruppe: `ad-ASN-<Kuerzel>-Urlaub`.
+- EB-Rechte: Nutzer*innen, die zugleich in der Assistenznehmer-Gruppe und einer Gruppe nach `ad-EB-*` sind.
+
 ## Grundregeln
 
 Terminal/CLI vor GUI.
@@ -45,8 +68,10 @@ Wichtige Befehle:
     ddev restart
     ddev describe
     ddev launch /apps/brtop/
+    ddev launch /apps/adplaner/
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
+    ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 
 ## Architektur- und Codequalitätsregeln für BRTop
 
@@ -76,6 +101,10 @@ Für BRTop gelten diese angepassten Prinzipien verbindlich:
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
 
+### Geltung für weitere Nextcloud-Apps
+
+Die Grundprinzipien dieses Abschnitts gelten sinngemäß für alle eigenen Nextcloud-Apps in diesem Repository, also auch für `adplaner`. App-spezifische Namen, Fachservices und Beispiele werden an die jeweilige App angepasst; Struktur, Trennung von Verantwortlichkeiten, sichere Fehlerbehandlung und Modell-/Repository-Regeln bleiben verbindlich.
+
 ### Zielstruktur
 
 Die App soll schrittweise in diese Richtung wachsen:
@@ -94,6 +123,7 @@ brtop/
 │   ├── Db/
 │   ├── Model/
 │   ├── Repository/
+│   ├── Store/
 │   ├── Service/
 │   └── Exception/
 └── templates/
@@ -143,7 +173,19 @@ Services sollen möglichst wenig Framework-Code enthalten. Nextcloud-spezifische
 
 ### Modelle, DTOs und Repositories
 
-Bei wiederkehrenden Datenstrukturen sind Modelle oder DTOs zu prüfen. Sinnvolle Kandidaten:
+Persistente Kernobjekte und CRUD-nahe Datenstrukturen bekommen früh eigene Modelle, DTOs oder Value Objects unter `lib/Model/`. Rohe Datenbank-Arrays sollen nicht dauerhaft durch Controller, Services und Templates wandern.
+
+Für jede fachliche CRUD-Entität gilt als Standardmuster:
+
+- `lib/Model/<Entity>.php`: typisierte Eigenschaften, `fromRow()` oder vergleichbare Factory für Datenbankzeilen, `toApiArray()` für sichere API-Ausgaben.
+- `lib/Repository/<Entity>Repository.php`: QueryBuilder-Zugriff und einfache Datenbankoperationen.
+- `lib/Store/<Entity>Store.php` oder ein klar benannter Service: koordiniert CRUD-Abläufe, Validierung an der Datenzugriffsgrenze und Modell-Erzeugung, wenn Repository allein zu dünn oder zu roh wäre.
+- Controller nehmen Requests entgegen und geben Responses zurück; sie bauen keine dauerhaften CRUD-Datenstrukturen per Hand zusammen.
+- Services arbeiten bevorzugt mit Modellen/DTOs oder klar dokumentierten Payloads. Arrays sind an API- und Framework-Rändern erlaubt, aber nicht als stilles internes Domänenmodell.
+
+Diese Regel gilt auch für Prototypen. Kleine, rein lokale Helper-Arrays sind okay; sobald eine Struktur persistiert wird, in mehreren Schichten vorkommt oder in API-Antworten wiederkehrt, wird sie als Modell/DTO beschrieben.
+
+Für BRTop sind sinnvolle Kandidaten:
 
 - `Meeting`
 - `AgendaItem`

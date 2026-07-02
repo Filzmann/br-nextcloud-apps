@@ -5,6 +5,10 @@
       "path": "brtop"
     },
     {
+      "name": "adplaner",
+      "path": "adplaner"
+    },
+    {
       "name": "nextcloud-dev",
       "path": "nextcloud-dev"
     },
