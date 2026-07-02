@@ -7,16 +7,14 @@ namespace OCA\BrTop\Controller;
 use OCA\BrTop\AppInfo\Application;
 use OCA\BrTop\Exception\DocumentGenerationException;
 use OCA\BrTop\Model\Meeting;
-use OCA\BrTop\Repository\DocumentRepository;
-use OCA\BrTop\Repository\MeetingRepository;
 use OCA\BrTop\Service\AgendaService;
+use OCA\BrTop\Service\AgendaMutationService;
 use OCA\BrTop\Service\AgendaTemplateService;
 use OCA\BrTop\Service\BrtopLogger;
 use OCA\BrTop\Service\BrtopSettingsService;
 use OCA\BrTop\Service\DocumentGenerationService;
-use OCA\BrTop\Service\MeetingScheduleService;
+use OCA\BrTop\Service\MeetingService;
 use OCA\BrTop\Service\MeetingStateService;
-use OCA\BrTop\Store\MeetingStore;
 use OCA\BrTop\Store\ProtocolBlockStore;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -30,15 +28,13 @@ class ApiController extends Controller {
         private IUserSession $userSession,
         private BrtopLogger $logger,
         private BrtopSettingsService $settings,
-        private MeetingScheduleService $meetingScheduleService,
         private AgendaTemplateService $agendaTemplateService,
         private AgendaService $agendaService,
+        private AgendaMutationService $agendaMutationService,
         private MeetingStateService $meetingStateService,
         private DocumentGenerationService $documentGenerationService,
-        private MeetingStore $meetingStore,
-        private ProtocolBlockStore $protocolBlockStore,
-        private MeetingRepository $meetingRepository,
-        private DocumentRepository $documentRepository
+        private MeetingService $meetingService,
+        private ProtocolBlockStore $protocolBlockStore
     ) {
         parent::__construct(Application::APP_ID, $request);
     }
@@ -115,59 +111,27 @@ class ApiController extends Controller {
         string $meetingType = 'custom',
         string $committeeCode = ''
     ): DataResponse {
-        $uid = $this->uid();
-        $meetingType = $this->settings->normalizeMeetingType($meetingType);
-        $committeeCode = $this->normalizeCommitteeCodeForMeeting($meetingType, $committeeCode);
-
-        $meeting = new Meeting([
-            'owner_uid' => $uid,
-            'title' => $title,
-            'meeting_date' => $meetingDate,
-            'meeting_time' => $meetingTime,
-            'location' => $location,
-            'meeting_type' => $meetingType,
-            'committee_code' => $committeeCode,
-            'invitation_date' => null,
-            'invitation_status' => 'not_created',
-            'status' => 'draft',
-        ], $this->meetingStore);
-
-        return new DataResponse(['ok' => true, 'id' => $meeting->save()]);
+        return new DataResponse([
+            'ok' => true,
+            'id' => $this->meetingService->create(
+                $this->uid(),
+                $title,
+                $meetingDate,
+                $meetingTime,
+                $location,
+                $meetingType,
+                $committeeCode
+            ),
+        ]);
     }
 
     public function planNextRegularMeeting(): DataResponse {
-        $uid = $this->uid();
-        $defaults = $this->meetingScheduleService->nextRegularMeetingDefaults();
-        $items = $this->agendaTemplateService->regularBrMeetingItems();
-
         try {
-            $id = $this->meetingRepository->transactional(function () use ($uid, $defaults, $items): int {
-                $meeting = new Meeting([
-                    'owner_uid' => $uid,
-                    'title' => $defaults['title'],
-                    'meeting_date' => $defaults['meetingDate'],
-                    'meeting_time' => $defaults['meetingTime'],
-                    'location' => $defaults['location'],
-                    'meeting_type' => 'regular_br',
-                    'committee_code' => '',
-                    'invitation_date' => $defaults['invitationDate'],
-                    'invitation_status' => 'planned',
-                    'status' => 'draft',
-                ], $this->meetingStore);
-                $meetingId = $meeting->save();
-
-                $this->agendaService->addTemplateItems($meetingId, $items);
-
-                return $meetingId;
-            });
+            $planned = $this->meetingService->planNextRegular($this->uid());
 
             return new DataResponse([
                 'ok' => true,
-                'id' => $id,
-                'meetingDate' => $defaults['meetingDate'],
-                'invitationDate' => $defaults['invitationDate'],
-                'agendaItemsCreated' => count($items),
-            ]);
+            ] + $planned);
         } catch (\Throwable $e) {
             $this->logger->error('plan_next_regular_meeting', $e);
 
@@ -176,18 +140,6 @@ class ApiController extends Controller {
                 'message' => 'Die nächste BR-Sitzung konnte nicht geplant werden. Details stehen im Nextcloud-Log.',
             ], Http::STATUS_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private function normalizeCommitteeCodeForMeeting(string $meetingType, string $committeeCode): string {
-        if ($meetingType === 'works_committee') {
-            return 'BA';
-        }
-
-        if ($meetingType !== 'committee') {
-            return '';
-        }
-
-        return $this->settings->normalizeCommitteeCode($committeeCode);
     }
 
     public function addTop(
@@ -208,7 +160,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->agendaService->addItem(
+            $this->agendaMutationService->addItem(
                 $meetingId,
                 $type,
                 $subject,
@@ -217,7 +169,6 @@ class ApiController extends Controller {
                 $resolutionText,
                 $requiresResolution,
                 $agendaItemKind,
-                0,
                 $protocolContent,
                 $invitationNote,
                 $attachmentPaths,
@@ -237,7 +188,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->agendaService->moveItem($meetingId, $topId, $direction);
+            $this->agendaMutationService->moveItem($meetingId, $topId, $direction);
         } catch (\InvalidArgumentException $e) {
             return new DataResponse([
                 'ok' => false,
@@ -252,7 +203,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->agendaService->changeItemDepth($meetingId, $topId, $direction);
+            $this->agendaMutationService->changeItemDepth($meetingId, $topId, $direction);
         } catch (\InvalidArgumentException $e) {
             return new DataResponse([
                 'ok' => false,
@@ -267,7 +218,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->agendaService->updateItemSubject($meetingId, $topId, $subject);
+            $this->agendaMutationService->updateItemSubject($meetingId, $topId, $subject);
         } catch (\InvalidArgumentException $e) {
             return new DataResponse([
                 'ok' => false,
@@ -282,12 +233,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->meetingRepository->transactional(function () use ($meetingId, $topId): void {
-                $deletedTopIds = $this->agendaService->deleteItem($meetingId, $topId);
-                foreach ($deletedTopIds as $deletedTopId) {
-                    $this->protocolBlockStore->deleteForTop($meetingId, $deletedTopId);
-                }
-            });
+            $this->agendaMutationService->deleteItemWithProtocolBlocks($meetingId, $topId);
         } catch (\InvalidArgumentException $e) {
             return new DataResponse([
                 'ok' => false,
@@ -312,13 +258,7 @@ class ApiController extends Controller {
         $this->assertMeetingOwner($meetingId);
 
         try {
-            $this->meetingRepository->transactional(function () use ($meetingId): void {
-                $this->protocolBlockStore->deleteForMeeting($meetingId);
-                $this->documentRepository->deleteForMeeting($meetingId);
-                $this->agendaService->deleteItemsForMeeting($meetingId);
-                $this->meetingRepository->deleteInvitationRecipients($meetingId);
-                $this->meetingRepository->deleteById($meetingId);
-            });
+            $this->meetingService->delete($meetingId);
         } catch (\Throwable $e) {
             $this->logger->error('delete_meeting', $e, ['meeting_id' => $meetingId]);
 
@@ -480,12 +420,7 @@ class ApiController extends Controller {
     }
 
     private function assertMeetingOwner(int $meetingId): Meeting {
-        $meeting = $this->meetingStore->getOwned($meetingId, $this->uid());
-        if ($meeting === null) {
-            throw new \RuntimeException('Sitzung nicht gefunden oder keine Berechtigung.');
-        }
-
-        return $meeting;
+        return $this->meetingService->assertOwnedMeeting($meetingId, $this->uid());
     }
 
 }
