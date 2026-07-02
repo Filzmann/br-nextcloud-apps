@@ -6,66 +6,26 @@ namespace OCA\BrTop\Service;
 
 class DocumentContentService {
     public function __construct(
-        private AgendaService $agendaService
+        private AgendaService $agendaService,
+        private InvitationContentService $invitationContentService,
+        private DocumentDateFormatter $dateFormatter
     ) {
     }
 
     public function invitationSubject(array $meeting): string {
-        return 'Ladung zur Sitzung am ' . $this->formatGermanDate((string)$meeting['meeting_date']);
+        return $this->invitationContentService->subject($meeting);
     }
 
     public function invitationEmail(array $meeting, array $tops, array $recipients = []): string {
-        $lines = [];
-
-        $lines[] = 'Liebe Kolleg*innen,';
-        $lines[] = '';
-        $lines[] = 'hiermit lade ich euch zur Sitzung ein.';
-        $lines[] = '';
-        $lines[] = 'Sitzung: ' . (($meeting['title'] ?? '') ?: 'ohne Titel');
-        $lines[] = 'Datum: ' . $this->formatGermanDate((string)$meeting['meeting_date']);
-        $lines[] = 'Uhrzeit: ' . (($meeting['meeting_time'] ?? '') ?: 'noch offen');
-        $lines[] = 'Ort: ' . (($meeting['location'] ?? '') ?: 'noch offen');
-        $lines[] = '';
-        $lines[] = 'Geladene Mitglieder: ' . count($recipients);
-        $lines[] = '';
-        $lines[] = 'Tagesordnung:';
-        $lines[] = '';
-
-        $this->appendAgendaLines($lines, $tops);
-
-        $lines[] = '';
-        $lines[] = 'Viele Grüße';
-        $lines[] = '{{ABSENDER}}';
-
-        return implode("\n", $lines) . "\n";
+        return $this->invitationContentService->email($meeting, $tops, $recipients);
     }
 
     public function invitationMarkdown(string $subject, string $email): string {
-        return "# " . $subject . "\n\n```text\n" . $email . "\n```\n";
+        return $this->invitationContentService->markdown($subject, $email);
     }
 
     public function invitationRecipientList(array $recipients): string {
-        $lines = [
-            'Ladungsliste',
-            '',
-            'Snapshot zum Zeitpunkt der Einladung. Spätere Gruppenänderungen verändern diese Liste nicht.',
-            '',
-        ];
-
-        foreach ($recipients as $recipient) {
-            $label = (string)($recipient['display_name'] ?? '');
-            if ($label === '') {
-                $label = (string)$recipient['user_uid'];
-            }
-
-            $line = $recipient['snapshot_position'] . '. ' . $label . ' (' . $recipient['user_uid'] . ')';
-            if (!empty($recipient['email'])) {
-                $line .= ' <' . $recipient['email'] . '>';
-            }
-            $lines[] = $line;
-        }
-
-        return implode("\n", $lines) . "\n";
+        return $this->invitationContentService->recipientList($recipients);
     }
 
     public function protocolTemplate(array $meeting, array $tops): string {
@@ -74,7 +34,7 @@ class DocumentContentService {
         $lines[] = '# Protokollvorlage';
         $lines[] = '';
         $lines[] = '**Sitzung:** ' . $meeting['title'];
-        $lines[] = '**Datum:** ' . $this->formatGermanDate((string)$meeting['meeting_date']);
+        $lines[] = '**Datum:** ' . $this->dateFormatter->germanDate((string)$meeting['meeting_date']);
         $lines[] = '**Beginn:** ';
         $lines[] = '**Ende:** ';
         $lines[] = '**Anwesende BR-Mitglieder:** ';
@@ -95,21 +55,26 @@ class DocumentContentService {
         return implode("\n", $lines) . "\n";
     }
 
-    public function resolutionDocument(array $meeting, array $top): string {
+    public function resolutionDocument(array $meeting, array $top, int $resolutionIndex = 1): string {
         $lines = [];
+        $resolutionCount = max(1, $this->agendaService->resolutionCount($top));
 
         $lines[] = '# Beschlussdokument';
         $lines[] = '';
         $lines[] = '**Sitzung:** ' . $meeting['title'];
-        $lines[] = '**Datum:** ' . $this->formatGermanDate((string)$meeting['meeting_date']);
+        $lines[] = '**Datum:** ' . $this->dateFormatter->germanDate((string)$meeting['meeting_date']);
         $lines[] = '**TOP:** ' . $this->agendaService->numberForItem($top) . ' - ' . $top['subject'];
+        if ($resolutionCount > 1) {
+            $lines[] = '**Beschluss:** ' . $resolutionIndex . ' von ' . $resolutionCount;
+        }
         $lines[] = '**Verfahren:** ' . $this->agendaService->typeLabel((string)$top['type']);
         $lines[] = '**Rechtsgrundlage:** ' . (($top['legal_basis'] ?? '') ?: '-');
         $lines[] = '**Betroffene Person:** ' . (($top['person_name'] ?? '') ?: '-');
         $lines[] = '';
         $lines[] = '## Beschlussfrage';
         $lines[] = '';
-        $lines[] = ($top['resolution_text'] ?? '') ?: $this->agendaService->defaultResolutionText($top);
+        $questions = $this->resolutionQuestionsForTop($top, $resolutionCount);
+        $lines[] = $questions[max(0, min($resolutionCount - 1, $resolutionIndex - 1))];
         $lines[] = '';
         $lines[] = '## Abstimmung';
         $lines[] = '';
@@ -156,7 +121,7 @@ class DocumentContentService {
             }
         }
 
-        $content = trim((string)($top['protocol_content'] ?? ''));
+        $content = $this->protocolContentForTop($top);
 
         if ($kind === 'section') {
             if ($content !== '') {
@@ -181,10 +146,13 @@ class DocumentContentService {
         $lines[] = $content !== '' ? $content : '> ';
 
         if ($this->agendaService->isResolutionItem($top)) {
+            $resolutionCount = max(1, $this->agendaService->resolutionCount($top));
             $lines[] = '';
-            $lines[] = '**Beschlussfrage:**';
+            $lines[] = $resolutionCount > 1 ? '**Beschlussfragen:**' : '**Beschlussfrage:**';
             $lines[] = '';
-            $lines[] = ($top['resolution_text'] ?? '') ?: $this->agendaService->defaultResolutionText($top);
+            foreach ($this->resolutionQuestionsForTop($top, $resolutionCount) as $index => $question) {
+                $lines[] = $resolutionCount > 1 ? (($index + 1) . '. ' . $question) : $question;
+            }
             $lines[] = '';
             $lines[] = '**Abstimmung:**';
             $lines[] = '';
@@ -197,39 +165,38 @@ class DocumentContentService {
         }
     }
 
-    private function appendAgendaLines(array &$lines, array $tops): void {
-        if (count($tops) === 0) {
-            $lines[] = 'Keine Tagesordnungspunkte vorhanden.';
-            return;
+    private function resolutionQuestionsForTop(array $top, int $resolutionCount): array {
+        $raw = trim((string)($top['resolution_text'] ?? ''));
+        $questions = $raw === ''
+            ? []
+            : array_values(array_filter(array_map('trim', preg_split('/\R/', $raw) ?: []), static fn(string $line): bool => $line !== ''));
+
+        if (count($questions) === 0) {
+            $questions[] = $this->agendaService->defaultResolutionText($top);
         }
 
-        foreach ($tops as $top) {
-            $indent = str_repeat('  ', max(0, (int)($top['level'] ?? 1) - 1));
-            $line = $indent . $this->agendaService->numberForItem($top) . '. ' . $top['subject'];
-
-            if (!empty($top['legal_basis'])) {
-                $line .= ' (' . $top['legal_basis'] . ')';
-            }
-
-            $kind = $this->agendaService->itemKind($top);
-            if ($kind === 'report') {
-                $line .= ' [Bericht]';
-            } elseif ($kind === 'discussion') {
-                $line .= ' [Beratung]';
-            } elseif ($this->agendaService->isResolutionItem($top)) {
-                $line .= ' [Beschluss vorgesehen]';
-            }
-
-            $lines[] = $line;
+        while (count($questions) < $resolutionCount) {
+            $questions[] = 'Beschlussfrage ' . (count($questions) + 1) . ' ergänzen.';
         }
+
+        return array_slice($questions, 0, $resolutionCount);
     }
 
-    private function formatGermanDate(string $date): string {
-        $ts = strtotime($date);
-        if ($ts === false) {
-            return $date;
+    private function protocolContentForTop(array $top): string {
+        $blocks = $top['protocol_blocks'] ?? [];
+        if (is_array($blocks) && count($blocks) > 0) {
+            $contents = [];
+            foreach ($blocks as $block) {
+                $content = trim((string)($block['content'] ?? ''));
+                if ($content !== '') {
+                    $contents[] = $content;
+                }
+            }
+
+            return implode("\n\n", $contents);
         }
 
-        return date('d.m.Y', $ts);
+        return trim((string)($top['protocol_content'] ?? ''));
     }
+
 }

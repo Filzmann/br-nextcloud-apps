@@ -7,6 +7,7 @@ namespace OCA\BrTop\Service;
 use OCA\BrTop\Exception\DocumentGenerationException;
 use OCA\BrTop\Repository\DocumentRepository;
 use OCA\BrTop\Repository\MeetingRepository;
+use OCA\BrTop\Repository\ProtocolBlockRepository;
 
 class DocumentGenerationService {
     public function __construct(
@@ -16,6 +17,7 @@ class DocumentGenerationService {
         private DocumentContentService $documentContentService,
         private DocumentRepository $documentRepository,
         private MeetingRepository $meetingRepository,
+        private ProtocolBlockRepository $protocolBlockRepository,
         private BrtopLogger $logger
     ) {
     }
@@ -62,7 +64,7 @@ class DocumentGenerationService {
         $warnings = [];
 
         try {
-            $tops = $this->agendaService->itemsForMeeting($meetingId);
+            $tops = $this->withProtocolBlocks($meetingId, $this->agendaService->itemsForMeeting($meetingId));
 
             $basePath = $this->fileExportService->meetingFolder($meeting);
             $this->fileExportService->ensureFolder($uid, $basePath);
@@ -117,17 +119,22 @@ class DocumentGenerationService {
                     continue;
                 }
 
-                $filename = '03_Beschluss_' . $this->agendaService->numberForItem($top) . '_' . $this->fileExportService->safeName((string)$top['subject']) . '.md';
-                $this->writeDocument(
-                    $uid,
-                    $meetingId,
-                    $basePath,
-                    $filename,
-                    $this->documentContentService->resolutionDocument($meeting, $top),
-                    'resolution_markdown',
-                    'Beschluss ' . $this->agendaService->numberForItem($top)
-                );
-                $created[] = $filename;
+                $resolutionCount = max(1, $this->agendaService->resolutionCount($top));
+                for ($resolutionIndex = 1; $resolutionIndex <= $resolutionCount; $resolutionIndex++) {
+                    $number = $this->agendaService->numberForItem($top);
+                    $suffix = $resolutionCount > 1 ? '_' . str_pad((string)$resolutionIndex, 2, '0', STR_PAD_LEFT) : '';
+                    $filename = '03_Beschluss_' . $number . $suffix . '_' . $this->fileExportService->safeName((string)$top['subject']) . '.md';
+                    $this->writeDocument(
+                        $uid,
+                        $meetingId,
+                        $basePath,
+                        $filename,
+                        $this->documentContentService->resolutionDocument($meeting, $top, $resolutionIndex),
+                        'resolution_markdown',
+                        'Beschluss ' . $number . ($resolutionCount > 1 ? '.' . $resolutionIndex : '')
+                    );
+                    $created[] = $filename;
+                }
             }
 
             return [
@@ -154,5 +161,15 @@ class DocumentGenerationService {
         $path = $basePath . '/' . $filename;
         $this->fileExportService->putUserFile($uid, $path, $content);
         $this->documentRepository->insert($meetingId, $documentType, $title, $path);
+    }
+
+    private function withProtocolBlocks(int $meetingId, array $tops): array {
+        $blocksByTop = $this->protocolBlockRepository->findForMeetingGrouped($meetingId);
+
+        foreach ($tops as &$top) {
+            $top['protocol_blocks'] = $blocksByTop[(int)$top['id']] ?? [];
+        }
+
+        return $tops;
     }
 }

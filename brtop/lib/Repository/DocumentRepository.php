@@ -37,4 +37,11 @@ class DocumentRepository {
             ]);
         $qb->executeStatement();
     }
+
+    public function deleteForMeeting(int $meetingId): void {
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete('brtop_documents')
+            ->where($qb->expr()->eq('meeting_id', $qb->createNamedParameter($meetingId, IQueryBuilder::PARAM_INT)));
+        $qb->executeStatement();
+    }
 }

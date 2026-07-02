@@ -4,17 +4,30 @@ declare(strict_types=1);
 
 namespace OCA\BrTop\Service;
 
+use OCA\BrTop\Model\AgendaItem;
 use OCA\BrTop\Repository\AgendaItemRepository;
+use OCA\BrTop\Store\AgendaItemStore;
 
 class AgendaService {
     public function __construct(
         private AgendaItemRepository $agendaItemRepository,
-        private AgendaTemplateService $agendaTemplateService
+        private AgendaItemStore $agendaItemStore,
+        private AgendaTemplateService $agendaTemplateService,
+        private AgendaTreeService $agendaTreeService,
+        private AgendaAttachmentService $agendaAttachmentService
     ) {
     }
 
     public function itemsForMeeting(int $meetingId): array {
-        return $this->numberedItems($this->agendaItemRepository->findForMeeting($meetingId));
+        return $this->agendaTreeService->numberedItems($this->agendaItemRepository->findForMeeting($meetingId));
+    }
+
+    public function itemForMeeting(int $meetingId, int $topId): ?AgendaItem {
+        return $this->agendaItemStore->findOneForMeeting($meetingId, $topId);
+    }
+
+    public function deleteItemsForMeeting(int $meetingId): void {
+        $this->agendaItemRepository->deleteForMeeting($meetingId);
     }
 
     public function addTemplateItems(int $meetingId, array $items): void {
@@ -37,20 +50,24 @@ class AgendaService {
                 throw new \InvalidArgumentException('TOP-Vorlage enthält eine ungültige Ebene.');
             }
 
-            $id = $this->agendaItemRepository->insert(
-                $meetingId,
-                $position + 1,
-                (string)$item['type'],
-                (string)$item['subject'],
-                (string)$item['personName'],
-                (string)$item['legalBasis'],
-                (string)$item['resolutionText'],
-                (bool)$item['requiresResolution'],
-                $parentId,
-                $level,
-                (string)$item['agendaItemKind'],
-                (string)$item['protocolContent']
-            );
+            $agendaItem = new AgendaItem([
+                'meeting_id' => $meetingId,
+                'position' => $position + 1,
+                'type' => (string)$item['type'],
+                'subject' => (string)$item['subject'],
+                'person_name' => (string)$item['personName'],
+                'legal_basis' => (string)$item['legalBasis'],
+                'resolution_text' => (string)$item['resolutionText'],
+                'requires_resolution' => (bool)$item['requiresResolution'],
+                'parent_id' => $parentId,
+                'level' => $level,
+                'agenda_item_kind' => (string)$item['agendaItemKind'],
+                'protocol_content' => (string)$item['protocolContent'],
+                'invitation_note' => $this->agendaAttachmentService->normalizeInvitationNote((string)($item['invitationNote'] ?? '')),
+                'attachment_paths' => $this->agendaAttachmentService->normalizeAttachmentPaths((string)($item['attachmentPaths'] ?? '')),
+                'resolution_count' => (bool)$item['requiresResolution'] ? max(1, (int)($item['resolutionCount'] ?? 1)) : 0,
+            ], $this->agendaItemStore);
+            $id = $agendaItem->save();
 
             $key = trim((string)($item['key'] ?? ''));
             if ($key !== '') {
@@ -72,116 +89,195 @@ class AgendaService {
         bool $requiresResolution,
         string $agendaItemKind,
         int $parentId,
-        string $protocolContent
+        string $protocolContent,
+        string $invitationNote = '',
+        string $attachmentPaths = '',
+        int $resolutionCount = 0
     ): int {
         $position = count($this->agendaItemRepository->findForMeeting($meetingId)) + 1;
-        $parentTop = $parentId > 0 ? $this->agendaItemRepository->findOneForMeeting($meetingId, $parentId) : null;
-        if ($parentId > 0 && $parentTop === null) {
-            throw new \InvalidArgumentException('Parent-TOP nicht gefunden.');
-        }
-
-        $level = $parentTop === null ? 1 : ((int)$parentTop['level'] + 1);
-        if ($level > 3) {
-            throw new \InvalidArgumentException('Sub-TOPs sind nur bis Ebene 3 möglich.');
-        }
 
         if ($legalBasis === '') {
             $legalBasis = $this->defaultLegalBasis($type);
         }
 
         $agendaItemKind = $this->agendaTemplateService->normalizeKind($agendaItemKind, $type, $requiresResolution);
-        $requiresResolution = $agendaItemKind === 'resolution';
+        $requiresResolution = $requiresResolution || $agendaItemKind === 'resolution';
+        $resolutionCount = $requiresResolution ? max(1, $resolutionCount) : 0;
+        $invitationNote = $this->agendaAttachmentService->normalizeInvitationNote($invitationNote);
+        $attachmentPaths = $this->agendaAttachmentService->normalizeAttachmentPaths($attachmentPaths);
 
-        return $this->agendaItemRepository->insert(
-            $meetingId,
-            $position,
-            $type,
-            $subject,
-            $personName,
-            $legalBasis,
-            $resolutionText,
-            $requiresResolution,
-            $parentTop === null ? null : (int)$parentTop['id'],
-            $level,
-            $agendaItemKind,
-            $protocolContent
-        );
+        $item = new AgendaItem([
+            'meeting_id' => $meetingId,
+            'position' => $position,
+            'type' => $type,
+            'subject' => $subject,
+            'person_name' => $personName,
+            'legal_basis' => $legalBasis,
+            'resolution_text' => $resolutionText,
+            'requires_resolution' => $requiresResolution,
+            'parent_id' => null,
+            'level' => 1,
+            'agenda_item_kind' => $agendaItemKind,
+            'protocol_content' => $protocolContent,
+            'invitation_note' => $invitationNote,
+            'attachment_paths' => $attachmentPaths,
+            'resolution_count' => $resolutionCount,
+        ], $this->agendaItemStore);
+        $id = $item->save();
+        $this->normalizeHierarchy($meetingId);
+
+        return $id;
     }
 
-    public function numberForItem(array $top): string {
-        if (!empty($top['agenda_number'])) {
-            return (string)$top['agenda_number'];
+    public function moveItem(int $meetingId, int $topId, string $direction): void {
+        if (!in_array($direction, ['up', 'down'], true)) {
+            throw new \InvalidArgumentException('Unbekannte Verschieberichtung.');
         }
 
-        $type = (string)($top['type'] ?? '');
-        $position = (int)($top['position'] ?? 0);
+        $items = $this->agendaItemRepository->findForMeeting($meetingId);
+        $target = $this->agendaTreeService->findItem($items, $topId);
+        if ($target === null) {
+            throw new \InvalidArgumentException('TOP nicht gefunden.');
+        }
 
-        return match ($type) {
-            'protocol', 'protokolle' => '1.' . $position,
-            'personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige' => '2.1.' . $position,
-            'personnel_100' => '2.2.' . $position,
-            'personnel_102', 'kuendigung', 'pe_kuendigung' => '2.3.' . $position,
-            'organisation' => '3.' . $position,
-            'consultation_report', 'sprechstunden' => '4.' . $position,
-            default => '5.' . $position,
-        };
+        $siblings = array_values(array_filter($items, static function (array $item) use ($target): bool {
+            return (int)($item['parent_id'] ?? 0) === (int)($target['parent_id'] ?? 0);
+        }));
+
+        $index = $this->agendaTreeService->indexOfItem($siblings, $topId);
+        if ($index === null) {
+            throw new \InvalidArgumentException('TOP nicht gefunden.');
+        }
+
+        $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+        if (!isset($siblings[$swapIndex])) {
+            return;
+        }
+
+        $this->agendaItemRepository->updateHierarchyState(
+            $meetingId,
+            (int)$target['id'],
+            $this->agendaTreeService->parentId($target),
+            (int)$target['level'],
+            (int)$siblings[$swapIndex]['position']
+        );
+        $this->agendaItemRepository->updateHierarchyState(
+            $meetingId,
+            (int)$siblings[$swapIndex]['id'],
+            $this->agendaTreeService->parentId($siblings[$swapIndex]),
+            (int)$siblings[$swapIndex]['level'],
+            (int)$target['position']
+        );
+
+        $this->normalizeHierarchy($meetingId);
+    }
+
+    public function changeItemDepth(int $meetingId, int $topId, string $direction): void {
+        if (!in_array($direction, ['indent', 'outdent'], true)) {
+            throw new \InvalidArgumentException('Unbekannte Ebenenrichtung.');
+        }
+
+        $items = $this->agendaItemRepository->findForMeeting($meetingId);
+        $target = $this->agendaTreeService->findItem($items, $topId);
+        if ($target === null) {
+            throw new \InvalidArgumentException('TOP nicht gefunden.');
+        }
+
+        if ($direction === 'indent') {
+            $previousSibling = $this->agendaTreeService->previousSibling($items, $target);
+            if ($previousSibling === null) {
+                throw new \InvalidArgumentException('Dieser TOP kann nicht weiter eingerückt werden.');
+            }
+
+            if ($this->agendaTreeService->maxSubtreeLevel($items, $topId) >= 3) {
+                throw new \InvalidArgumentException('Sub-TOPs sind nur bis Ebene 3 möglich.');
+            }
+
+            $this->agendaItemRepository->updateHierarchyState(
+                $meetingId,
+                $topId,
+                (int)$previousSibling['id'],
+                (int)$target['level'] + 1,
+                (int)$target['position']
+            );
+            $this->normalizeHierarchy($meetingId);
+
+            return;
+        }
+
+        $parentId = $this->agendaTreeService->parentId($target);
+        if ($parentId === null) {
+            throw new \InvalidArgumentException('Dieser TOP ist bereits auf der obersten Ebene.');
+        }
+
+        $parent = $this->agendaTreeService->findItem($items, $parentId);
+        $this->agendaItemRepository->updateHierarchyState(
+            $meetingId,
+            $topId,
+            $parent === null ? null : $this->agendaTreeService->parentId($parent),
+            max(1, (int)$target['level'] - 1),
+            (int)$target['position']
+        );
+        $this->normalizeHierarchy($meetingId);
+    }
+
+    public function deleteItem(int $meetingId, int $topId): array {
+        $items = $this->agendaItemRepository->findForMeeting($meetingId);
+        if ($this->agendaTreeService->findItem($items, $topId) === null) {
+            throw new \InvalidArgumentException('TOP nicht gefunden.');
+        }
+
+        $ids = $this->agendaTreeService->subtreeIds($items, $topId);
+        foreach ($ids as $id) {
+            $this->agendaItemRepository->deleteOneForMeeting($meetingId, $id);
+        }
+
+        $this->normalizeHierarchy($meetingId);
+
+        return $ids;
+    }
+
+    public function updateItemSubject(int $meetingId, int $topId, string $subject): void {
+        $subject = trim($subject);
+        if ($subject === '') {
+            throw new \InvalidArgumentException('Der TOP-Betreff darf nicht leer sein.');
+        }
+
+        $item = $this->agendaItemStore->findOneForMeeting($meetingId, $topId);
+        if ($item === null) {
+            throw new \InvalidArgumentException('TOP nicht gefunden.');
+        }
+
+        $item->subject = $subject;
+        $item->save();
+    }
+
+    public function numberForItem(array|AgendaItem $top): string {
+        return $this->asAgendaItem($top)->number();
     }
 
     public function typeLabel(string $type): string {
-        return match ($type) {
-            'protocol', 'protokolle' => 'Protokolle',
-            'personnel' => 'Personelle Angelegenheiten',
-            'personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige' => 'Personelle Einzelmaßnahme nach § 99 BetrVG',
-            'personnel_100' => 'Vorläufige personelle Maßnahme nach § 100 BetrVG',
-            'personnel_102', 'kuendigung', 'pe_kuendigung' => 'Anhörung zu Kündigung nach § 102 BetrVG',
-            'organisation' => 'Arbeitsorganisatorisches',
-            'consultation_report', 'sprechstunden' => 'Bericht aus den Sprechstunden',
-            default => 'Weiterer Tagesordnungspunkt',
-        };
+        return (new AgendaItem(['type' => $type]))->typeLabel();
     }
 
-    public function itemKind(array $top): string {
-        $kind = (string)($top['agenda_item_kind'] ?? '');
-        if (in_array($kind, ['section', 'report', 'discussion', 'resolution'], true)) {
-            return $kind;
-        }
-
-        return (int)($top['requires_resolution'] ?? 0) === 1 ? 'resolution' : 'discussion';
+    public function itemKind(array|AgendaItem $top): string {
+        return $this->asAgendaItem($top)->kind();
     }
 
     public function kindLabel(string $kind): string {
-        return match ($kind) {
-            'section' => 'Gliederungspunkt',
-            'report' => 'Bericht',
-            'resolution' => 'Beschluss',
-            default => 'Beratung',
-        };
+        return (new AgendaItem(['agenda_item_kind' => $kind]))->kindLabel();
     }
 
-    public function isResolutionItem(array $top): bool {
-        return $this->itemKind($top) === 'resolution' || (int)($top['requires_resolution'] ?? 0) === 1;
+    public function isResolutionItem(array|AgendaItem $top): bool {
+        return $this->asAgendaItem($top)->isResolutionItem();
     }
 
-    public function defaultResolutionText(array $top): string {
-        $type = (string)($top['type'] ?? '');
-        $subject = trim((string)($top['subject'] ?? ''));
-        $person = trim((string)($top['person_name'] ?? ''));
+    public function resolutionCount(array|AgendaItem $top): int {
+        return $this->asAgendaItem($top)->resolutionCount();
+    }
 
-        $measure = $subject !== '' ? $subject : ($person !== '' ? $person : 'die Maßnahme');
-
-        return match ($type) {
-            'personnel_99', 'personelle_einzelmassnahme', 'pe_einstellung', 'pe_sonstige'
-                => 'Wer verweigert die Zustimmung zu ' . $measure . ' und widerspricht ihr damit?',
-
-            'personnel_100'
-                => 'Wer bestreitet, dass die vorläufige Durchführung der personellen Maßnahme ' . $measure . ' aus sachlichen Gründen dringend erforderlich ist?',
-
-            'personnel_102', 'kuendigung', 'pe_kuendigung'
-                => 'Wer widerspricht der beabsichtigten Kündigung ' . $measure . ' gemäß § 102 BetrVG?',
-
-            default
-                => 'Wer stimmt ' . $measure . ' zu?',
-        };
+    public function defaultResolutionText(array|AgendaItem $top): string {
+        return $this->asAgendaItem($top)->defaultResolutionText();
     }
 
     private function defaultLegalBasis(string $type): string {
@@ -193,59 +289,22 @@ class AgendaService {
         };
     }
 
-    private function numberedItems(array $tops): array {
-        $nodes = [];
-        $rootIds = [];
+    private function normalizeHierarchy(int $meetingId): void {
+        $items = $this->agendaItemRepository->findForMeeting($meetingId);
+        $ordered = $this->agendaTreeService->orderedTreeItems($items);
 
-        foreach ($tops as $top) {
-            $id = (int)$top['id'];
-            $top['children'] = [];
-            $nodes[$id] = $top;
+        foreach ($ordered as $index => $item) {
+            $this->agendaItemRepository->updateHierarchyState(
+                $meetingId,
+                (int)$item['id'],
+                $this->agendaTreeService->parentId($item),
+                (int)$item['level'],
+                $index + 1
+            );
         }
+    }
 
-        foreach ($nodes as $id => &$node) {
-            $parentId = (int)($node['parent_id'] ?? 0);
-            if ($parentId > 0 && isset($nodes[$parentId]) && $parentId !== $id) {
-                $nodes[$parentId]['children'][] = $id;
-            } else {
-                $rootIds[] = $id;
-            }
-        }
-        unset($node);
-
-        $result = [];
-        $visited = [];
-
-        $walk = function (array $ids, string $prefix) use (&$walk, &$nodes, &$result, &$visited): void {
-            foreach ($ids as $index => $id) {
-                if (isset($visited[$id])) {
-                    continue;
-                }
-                $visited[$id] = true;
-
-                $number = $prefix === '' ? (string)($index + 1) : $prefix . '.' . ($index + 1);
-                $node = $nodes[$id];
-                $children = $node['children'];
-                unset($node['children']);
-                $node['agenda_number'] = $number;
-                $result[] = $node;
-
-                if (count($children) > 0) {
-                    $walk($children, $number);
-                }
-            }
-        };
-
-        $walk($rootIds, '');
-
-        foreach ($nodes as $id => $node) {
-            if (!isset($visited[$id])) {
-                unset($node['children']);
-                $node['agenda_number'] = (string)(count($result) + 1);
-                $result[] = $node;
-            }
-        }
-
-        return $result;
+    private function asAgendaItem(array|AgendaItem $top): AgendaItem {
+        return $top instanceof AgendaItem ? $top : new AgendaItem($top);
     }
 }
