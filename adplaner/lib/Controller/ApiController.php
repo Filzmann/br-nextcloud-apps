@@ -12,6 +12,7 @@ use OCA\AdPlaner\Service\TeamSettingsService;
 use OCA\AdPlaner\Service\VacationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
 
@@ -27,6 +28,7 @@ class ApiController extends Controller {
         parent::__construct(Application::APP_ID, $request);
     }
 
+    #[NoAdminRequired]
     public function state(): DataResponse {
         return $this->respond(function (): array {
             $uid = $this->teamAccess->currentUserId();
@@ -44,6 +46,7 @@ class ApiController extends Controller {
         }, 'state');
     }
 
+    #[NoAdminRequired]
     public function monthPlan(string $teamCode, string $month): DataResponse {
         return $this->respond(function () use ($teamCode, $month): array {
             $team = $this->teamAccess->assertTeamAccess($teamCode);
@@ -52,6 +55,7 @@ class ApiController extends Controller {
         }, 'month_plan', ['team_code' => $teamCode, 'month' => $month]);
     }
 
+    #[NoAdminRequired]
     public function saveTeamSettings(
         string $teamCode,
         string $displayName = '',
@@ -96,6 +100,7 @@ class ApiController extends Controller {
         }, 'save_team_settings', ['team_code' => $teamCode]);
     }
 
+    #[NoAdminRequired]
     public function saveDayNote(string $teamCode, string $month, string $workDate, string $note = ''): DataResponse {
         return $this->respond(function () use ($teamCode, $workDate, $note): array {
             $team = $this->teamAccess->assertCanCoordinate($teamCode);
@@ -105,6 +110,7 @@ class ApiController extends Controller {
         }, 'save_day_note', ['team_code' => $teamCode, 'month' => $month, 'work_date' => $workDate]);
     }
 
+    #[NoAdminRequired]
     public function addShiftCandidate(string $teamCode, string $month, int $slotId, string $targetUid = ''): DataResponse {
         return $this->respond(function () use ($teamCode, $month, $slotId, $targetUid): array {
             $team = $this->teamAccess->assertTeamAccess($teamCode);
@@ -114,6 +120,7 @@ class ApiController extends Controller {
         }, 'add_shift_candidate', ['team_code' => $teamCode, 'month' => $month, 'slot_id' => $slotId]);
     }
 
+    #[NoAdminRequired]
     public function removeShiftCandidate(string $teamCode, string $month, int $slotId, string $targetUid = ''): DataResponse {
         return $this->respond(function () use ($teamCode, $month, $slotId, $targetUid): array {
             $team = $this->teamAccess->assertTeamAccess($teamCode);
@@ -123,6 +130,7 @@ class ApiController extends Controller {
         }, 'remove_shift_candidate', ['team_code' => $teamCode, 'month' => $month, 'slot_id' => $slotId]);
     }
 
+    #[NoAdminRequired]
     public function yearVacation(string $teamCode, int $year): DataResponse {
         return $this->respond(function () use ($teamCode, $year): array {
             $team = $this->teamAccess->assertTeamAccess($teamCode);
@@ -131,6 +139,7 @@ class ApiController extends Controller {
         }, 'year_vacation', ['team_code' => $teamCode, 'year' => $year]);
     }
 
+    #[NoAdminRequired]
     public function createVacationRequest(string $dateFrom, string $dateTo, string $note = ''): DataResponse {
         return $this->respond(function () use ($dateFrom, $dateTo, $note): array {
             $id = $this->vacationService->createVacationRequest($this->teamAccess->currentUserId(), $dateFrom, $dateTo, $note);
@@ -139,6 +148,7 @@ class ApiController extends Controller {
         }, 'create_vacation_request');
     }
 
+    #[NoAdminRequired]
     public function deleteVacationRequest(int $requestId): DataResponse {
         return $this->respond(function () use ($requestId): array {
             $this->vacationService->deleteOwnRequest($this->teamAccess->currentUserId(), $requestId);
@@ -147,6 +157,7 @@ class ApiController extends Controller {
         }, 'delete_vacation_request', ['request_id' => $requestId]);
     }
 
+    #[NoAdminRequired]
     public function setVacationStatus(string $teamCode, int $year, string $assistantUid, string $date, string $status): DataResponse {
         return $this->respond(function () use ($teamCode, $assistantUid, $date, $status): array {
             $team = $this->teamAccess->assertCanCoordinate($teamCode);

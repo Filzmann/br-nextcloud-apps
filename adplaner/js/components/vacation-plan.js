@@ -69,17 +69,23 @@
         const cell = row.days && row.days[day.date] ? row.days[day.date] : { status: '' };
         const status = cell.status || '';
         const title = [row.displayName || row.uid, dateShort(day.date), statusLabel(status)].filter(Boolean).join(' - ');
+        const classes = [
+            'adp-vac-cell',
+            status ? 'adp-vac-' + status : '',
+            status ? 'has-vacation' : '',
+            day.weekday >= 6 ? 'is-weekend' : ''
+        ].filter(Boolean).map(esc).join(' ');
 
         if (team.canCoordinate) {
             const nextStatus = status === '' ? 'planned' : (status === 'planned' ? 'approved' : 'planned');
             return `
-                <td class="adp-vac-cell adp-vac-${esc(status)} ${day.weekday >= 6 ? 'is-weekend' : ''}">
-                    <button type="button" title="${esc(title)}" data-action="set-vacation-status" data-target-uid="${esc(row.uid)}" data-date="${esc(day.date)}" data-status="${esc(nextStatus)}"></button>
+                <td class="${classes}">
+                    <button type="button" title="${esc(title)}" aria-label="${esc(title || 'Urlaubsstatus setzen')}" data-action="set-vacation-status" data-target-uid="${esc(row.uid)}" data-date="${esc(day.date)}" data-status="${esc(nextStatus)}"></button>
                 </td>
             `;
         }
 
-        return `<td class="adp-vac-cell adp-vac-${esc(status)} ${day.weekday >= 6 ? 'is-weekend' : ''}" title="${esc(title)}"></td>`;
+        return `<td class="${classes}" title="${esc(title)}"></td>`;
     }
 
     window.ADPlaner = window.ADPlaner || {};

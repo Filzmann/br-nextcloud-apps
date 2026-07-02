@@ -25,14 +25,24 @@ class FakeVacationRepository extends VacationRepository {
     public function findForUsersInYear(array $assistantUids, int $year): array {
         $this->seenAssistantUids = $assistantUids;
 
-        return [[
-            'id' => 42,
-            'assistant_uid' => 'vac-a',
-            'date_from' => $year . '-07-01',
-            'date_to' => $year . '-07-02',
-            'status' => 'planned',
-            'note' => '',
-        ]];
+        return [
+            [
+                'id' => 42,
+                'assistant_uid' => 'vac-a',
+                'date_from' => $year . '-07-01',
+                'date_to' => $year . '-07-02',
+                'status' => 'planned',
+                'note' => '',
+            ],
+            [
+                'id' => 43,
+                'assistant_uid' => 'team-b',
+                'date_from' => $year . '-07-03',
+                'date_to' => $year . '-07-03',
+                'status' => 'approved',
+                'note' => '',
+            ],
+        ];
     }
 
     public function findCoveringDate(string $assistantUid, string $date): ?array {
@@ -78,6 +88,13 @@ $plan = $service->yearPlan($team, 2026, 'vac-a');
 
 $checkSame(['vac-a', 'team-b'], $repository->seenAssistantUids, 'Vacation plan should query vacation visibility assistants.');
 $checkSame(['vac-a', 'team-b'], array_column($plan['assistants'], 'uid'), 'Vacation plan rows should use vacation visibility assistants.');
+$rowsByUid = [];
+foreach ($plan['assistants'] as $row) {
+    $rowsByUid[$row['uid']] = $row;
+}
+$checkSame('planned', $rowsByUid['vac-a']['days']['2026-07-01']['status'] ?? null, 'Vacation cells should expose planned days.');
+$checkSame('approved', $rowsByUid['team-b']['days']['2026-07-03']['status'] ?? null, 'Vacation cells should expose approved days.');
+$checkSame('', $rowsByUid['team-b']['days']['2026-07-04']['status'] ?? null, 'Vacation cells should stay empty outside vacation ranges.');
 
 $service->setStatusForDate($team, 'vac-a', '2026-07-03', 'approved', 'eb');
 $checkSame('vac-a', $repository->created[0]['assistantUid'] ?? null, 'EB should be able to set status for vacation-visible assistants.');

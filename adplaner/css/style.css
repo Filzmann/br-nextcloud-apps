@@ -263,16 +263,20 @@
     background: transparent;
 }
 
-.adp-vac-planned,
+.adp-year-table .adp-vac-cell.adp-vac-planned,
 .adp-request-planned {
-    background: #f3d27a;
+    background-color: #f3d27a;
     color: #2d2300;
 }
 
-.adp-vac-approved,
+.adp-year-table .adp-vac-cell.adp-vac-approved,
 .adp-request-approved {
-    background: #7ccf91;
+    background-color: #7ccf91;
     color: #082412;
+}
+
+.adp-year-table .adp-vac-cell.has-vacation button {
+    background: transparent;
 }
 
 .adp-table .is-weekend {
