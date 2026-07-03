@@ -64,6 +64,17 @@ Wichtige Befehle:
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler; den gleichen Befehl mit eskaliertem Zugriff erneut ausfuehren. DDEV-Pruefungen deshalb buendeln, lokale PHP-/Node-Pruefungen bevorzugen und wiederverwendbare Prefix-Freigaben fuer `ddev exec` nutzen.
 
+## Nextcloud-App-Installation und Migrationen
+
+In der lokalen Nextcloud 34-Umgebung gibt es keinen `occ migrations:migrate`-Befehl. App-Migrationen laufen beim Aktivieren einer App mit `occ app:enable <app-id>` bzw. ueber `occ upgrade`, wenn `occ status` `needsDbUpgrade: true` meldet.
+
+Nach dem Aktivieren oder Aktualisieren einer App pruefen:
+
+    ddev exec -d /var/www/html/html php occ status
+    ddev exec -d /var/www/html/html php occ app:list | grep -i <app-id>
+
+Bei neuen Tabellen oder Background-Jobs zusaetzlich gezielt pruefen, ob die erwartete Tabelle bzw. der erwartete Eintrag in `oc_jobs` existiert.
+
 ## DDEV-Mounts
 
 Die App-Repos werden per DDEV-Bind-Mount eingebunden.

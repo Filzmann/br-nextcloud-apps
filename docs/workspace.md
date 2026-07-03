@@ -68,6 +68,19 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
 
+## App-Installation und Migrationen
+
+Die lokale Nextcloud 34-Umgebung hat keinen `occ migrations:migrate`-Befehl. App-Migrationen laufen beim Aktivieren einer App mit `occ app:enable <app-id>` bzw. ueber `occ upgrade`, wenn `occ status` `needsDbUpgrade: true` meldet.
+
+Nach App-Aktivierung oder Updates pruefen:
+
+```bash
+ddev exec -d /var/www/html/html php occ status
+ddev exec -d /var/www/html/html php occ app:list | grep -i <app-id>
+```
+
+Bei neuen Tabellen oder Background-Jobs zusaetzlich direkt kontrollieren, ob die erwartete Tabelle bzw. der erwartete Eintrag in `oc_jobs` existiert.
+
 ## Mounts
 
 BRTop:
