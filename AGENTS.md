@@ -50,6 +50,34 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - Die grundsaetzlichen Architektur- und Codequalitaetsregeln bleiben fuer alle eigenen Nextcloud-Apps gleich; fachliche Anwendungsfaelle und app-spezifische Regeln werden im jeweiligen App-Repo gepflegt.
 - App-Repos enthalten eigene `AGENTS.md`, damit Regeln auch gelten, wenn nur das einzelne Plugin geoeffnet wird.
 
+## Anlegen neuer Apps
+
+Neue eigene Nextcloud-Apps werden nicht als Unterordner im Parent-Git entwickelt, sondern als eigene App-Repos neben den bestehenden Apps.
+
+Checkliste fuer neue Apps:
+
+1. Fachlich einordnen: BR-App, AD-App oder anderer eigener Anwendungsbereich.
+2. App-ID, lokaler Pfad, lokale URL und DDEV-Mount festlegen.
+3. Eigenes Git-Repo im App-Verzeichnis initialisieren.
+4. Eigene `AGENTS.md` anlegen mit Zielsetzung, Fachkontext, Architekturregeln, Git-Regeln, DDEV-Hinweisen und Learning-Regel.
+5. Eigene `.gitignore` anlegen.
+6. Parent-Workspace nur fuer DDEV-/Meta-Dokumentation anpassen; App-Code darf im Parent nicht getrackt werden.
+7. Architektur-Grundregeln uebernehmen: duenne Controller, Services fuer Fachlogik, Repositories/Stores fuer Datenzugriff, Modelle/DTOs fuer persistente Strukturen, ausgelagerte UI-Komponenten.
+8. App-spezifische Ziele und Fachregeln im App-Repo formulieren, nicht nur im Parent.
+9. Erst wenn mindestens zwei Apps dieselben konkreten Repository-, DTO-, Export- oder UI-Muster brauchen, eine gemeinsame Bibliothek pruefen.
+10. Vor dem ersten Commit Status, Diff-Statistik und Dateiliste im neuen App-Repo zeigen; Dateien gezielt stagen, nicht `git add .`.
+
+## Learnings und Wissensablage
+
+Wenn bei der Arbeit ein echtes, wiederverwendbares Projekt-Learning entsteht, soll Codex vorschlagen, es in `AGENTS.md` zu ergaenzen. Die Ergaenzung erfolgt erst nach ausdruecklicher Freigabe.
+
+Speicherort:
+
+- App-spezifische Fachlogik, Zielprozesse, Tests und lokale Architekturentscheidungen gehoeren in die `AGENTS.md` des jeweiligen App-Repos.
+- App-uebergreifende Arbeitsweise, DDEV-Regeln, Repo-Trennung, neue-App-Checklisten und gemeinsame Architekturprinzipien gehoeren in diese Parent-`AGENTS.md`.
+- Wenn ein Learning beide Ebenen betrifft, wird es im Parent beschrieben und in den betroffenen App-`AGENTS.md` als konkrete Arbeitsregel wiederholt.
+- Regeln sollen dort stehen, wo Codex sie beim Arbeiten tatsaechlich liest.
+
 Gruppenschema fuer `adplaner`:
 
 - Assistenznehmer-Gruppen: `ad-ASN-<Kuerzel>`, zum Beispiel `ad-ASN-ThoJa`, `ad-ASN-HaMü`, `ad-ASN-RaKeLi`.
@@ -83,13 +111,13 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 
-## Architektur- und Codequalitätsregeln für BRTop
+## Architektur- und Codequalitaetsregeln fuer eigene Nextcloud-Apps
 
-Diese Regeln sind eigenständige Projektregeln für die Nextcloud-App `brtop`. Sie bleiben gültig, auch wenn sich Regeln in anderen Projekten ändern. Externe Projektkonfigurationen dürfen nur als Denkanstoß dienen, aber nicht als automatisch geltende Quelle.
+Diese Regeln bilden die gemeinsame Basis fuer eigene Nextcloud-Apps in diesem Workspace. App-spezifische Zielprozesse, Fachlogik und Tests werden zusaetzlich in der jeweiligen App-`AGENTS.md` gepflegt. Externe Projektkonfigurationen duerfen nur als Denkanstoss dienen, aber nicht als automatisch geltende Quelle.
 
 ### Nicht anwendbare Regeln
 
-Für BRTop gelten nicht:
+Fuer eigene Nextcloud-Apps gelten nicht:
 
 - WordPress-spezifische APIs, Konzepte und Prüfungen wie Shortcodes, Gutenberg-Blöcke, `$wpdb`, WordPress-Nonces, `current_user_can()`, `esc_html()` oder WordPress-Capabilities.
 - Namenskonventionen anderer Projekte wie `flz_`.
@@ -99,7 +127,7 @@ Für BRTop gelten nicht:
 
 ### Übertragene Grundprinzipien
 
-Für BRTop gelten diese angepassten Prinzipien verbindlich:
+Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien verbindlich:
 
 - Controller bleiben dünn.
 - Fachlogik, Datenzugriff, Darstellung, Dokumenterzeugung und Dateiablage werden getrennt.
@@ -113,7 +141,7 @@ Für BRTop gelten diese angepassten Prinzipien verbindlich:
 
 ### Geltung für weitere Nextcloud-Apps
 
-Die Grundprinzipien dieses Abschnitts gelten sinngemäß für alle eigenen Nextcloud-Apps in diesem Repository, also auch für `adplaner`. App-spezifische Namen, Fachservices und Beispiele werden an die jeweilige App angepasst; Struktur, Trennung von Verantwortlichkeiten, sichere Fehlerbehandlung und Modell-/Repository-Regeln bleiben verbindlich.
+Die Grundprinzipien dieses Abschnitts gelten sinngemaess fuer alle eigenen Nextcloud-Apps in diesem Workspace. App-spezifische Namen, Fachservices und Beispiele werden an die jeweilige App angepasst; Struktur, Trennung von Verantwortlichkeiten, sichere Fehlerbehandlung und Modell-/Repository-Regeln bleiben verbindlich.
 
 ### Zielstruktur
 
@@ -342,18 +370,22 @@ git checkout -b refactor/repository-layer
 git checkout -b feat/resolution-vote-groups
 ```
 
-## Mount
+## Mounts
 
-Die App wird per DDEV-Bind-Mount eingebunden:
+Die App-Repos werden per DDEV-Bind-Mount eingebunden:
 
     ~/projects/br-nextcloud-apps/brtop
     -> /var/www/html/html/custom_apps/brtop
 
-Konfiguration:
+    ~/projects/br-nextcloud-apps/adplaner
+    -> /var/www/html/html/custom_apps/adplaner
+
+Konfigurationen:
 
     nextcloud-dev/.ddev/docker-compose.brtop.yaml
+    nextcloud-dev/.ddev/docker-compose.adplaner.yaml
 
-Der Mount muss den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
+Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
 ## Relevante App-Dateien
 
@@ -502,7 +534,13 @@ Nicht ohne ausdrückliche Freigabe:
 
 Statt `git add .` gezielt Dateien hinzufügen.
 
-Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem Repo-Root `~/projects/br-nextcloud-apps` ausführen. Das `.git`-Verzeichnis liegt dort und nicht in `brtop/`; bei einer Codex-Session mit Workspace-Root `brtop/` muss dafür eskalierter Schreibzugriff auf die Git-Metadaten genutzt werden.
+Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem jeweils betroffenen Repo-Root ausfuehren:
+
+- Parent-/DDEV-/Meta-Aenderungen: `~/projects/br-nextcloud-apps`
+- BRTop-Aenderungen: `~/projects/br-nextcloud-apps/brtop`
+- AdPlaner-Aenderungen: `~/projects/br-nextcloud-apps/adplaner`
+
+In Codex-Sessions kann das Schreiben in `.git` je nach Sandbox-Kontext eskalierten Zugriff benoetigen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten Git-Stand.
 
 ## Arbeitsweise für Codex
 
@@ -519,5 +557,3 @@ Nach Änderungen:
 2. Relevante grep-Prüfung ausführen.
 3. DDEV/Nextcloud nur neu starten, wenn nötig.
 4. Ergebnis knapp melden.
-
-Wenn bei der Arbeit ein echtes, wiederverwendbares Projekt-Learning entsteht, soll Codex vorschlagen, es in `AGENTS.md` zu ergänzen. Die Ergänzung erfolgt erst nach ausdrücklicher Freigabe.
