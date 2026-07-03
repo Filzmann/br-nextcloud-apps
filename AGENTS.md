@@ -2,7 +2,7 @@
 
 ## Projekt
 
-Lokale Nextcloud-Entwicklungsumgebung für die Betriebsrats-App `brtop`.
+Lokale Nextcloud-Entwicklungsumgebung und Meta-Workspace fuer eigene Nextcloud-Apps.
 
 Projektwurzel:
 
@@ -39,6 +39,16 @@ Lokale App-URL:
 Nextcloud-App-ID:
 
     adplaner
+
+## Repo-Trennung
+
+Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
+
+- BR-Plugins, aktuell `brtop`, leben in eigenen App-Repos.
+- AD-Plugins, aktuell `adplaner`, leben in eigenen App-Repos.
+- Dieser Parent-Workspace bleibt Meta-/DDEV-/Dokumentationskontext und soll App-Quellcode nicht mehr direkt tracken.
+- Die grundsaetzlichen Architektur- und Codequalitaetsregeln bleiben fuer alle eigenen Nextcloud-Apps gleich; fachliche Anwendungsfaelle und app-spezifische Regeln werden im jeweiligen App-Repo gepflegt.
+- App-Repos enthalten eigene `AGENTS.md`, damit Regeln auch gelten, wenn nur das einzelne Plugin geoeffnet wird.
 
 Gruppenschema fuer `adplaner`:
 

@@ -17,6 +17,10 @@ _brtop_backups/
 # Runtime Nextcloud core and data
 nextcloud-dev/html/
 
+# Split app repositories
+brtop/
+adplaner/
+
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml
 nextcloud-dev/.ddev/.dbimageBuild/
