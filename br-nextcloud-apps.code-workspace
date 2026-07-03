@@ -1,20 +1,8 @@
 {
   "folders": [
     {
-      "name": "brtop",
-      "path": "brtop"
-    },
-    {
-      "name": "adplaner",
-      "path": "adplaner"
-    },
-    {
-      "name": "nextcloud-dev",
-      "path": "nextcloud-dev"
-    },
-    {
-      "name": "docs",
-      "path": "docs"
+      "name": "br-nextcloud-apps-meta",
+      "path": "."
     }
   ],
   "settings": {
@@ -23,29 +11,28 @@
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.exclude": {
+      "brtop": true,
+      "adplaner": true,
+      "brstunden": true,
       "nextcloud-dev/html": true,
       "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
       "nextcloud-dev/.ddev/.webimageBuild": true,
-      "html": true,
-      ".ddev/.ddev-docker-compose-full.yaml": true,
-      ".ddev/.dbimageBuild": true,
-      ".ddev/.webimageBuild": true,
-      ".ddev/.homeadditions": true,
-      ".ddev/db_snapshots": true
+      "nextcloud-dev/.ddev/.homeadditions": true,
+      "nextcloud-dev/.ddev/db_snapshots": true
     },
     "search.exclude": {
+      "brtop": true,
+      "adplaner": true,
+      "brstunden": true,
       "nextcloud-dev/html": true,
-      "nextcloud-dev/.ddev/db_snapshots": true,
+      "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
       "nextcloud-dev/.ddev/.webimageBuild": true,
+      "nextcloud-dev/.ddev/.homeadditions": true,
+      "nextcloud-dev/.ddev/db_snapshots": true,
       "**/node_modules": true,
-      "**/vendor": true,
-      "html": true,
-      ".ddev/db_snapshots": true,
-      ".ddev/.dbimageBuild": true,
-      ".ddev/.webimageBuild": true,
-      ".ddev/.homeadditions": true
+      "**/vendor": true
     }
   }
 }
