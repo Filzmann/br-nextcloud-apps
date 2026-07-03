@@ -2,7 +2,6 @@
     let meetings = [];
     let currentSettings = {};
     let selectedMeetingId = null;
-    let lastAddedProtocolBlockId = null;
     let editingTopId = null;
 
     const { request: api } = window.BRTop.api;
@@ -17,7 +16,15 @@
     const { Meeting } = window.BRTop.models;
     const { sessionTableHtml } = window.BRTop.meetingList;
     const { agendaListHtml, documentsHtml } = window.BRTop.agendaList;
-    const { protocolEditorHtml } = window.BRTop.protocolEditor;
+    const { protocolEditorHtml, createController: createProtocolEditorController } = window.BRTop.protocolEditor;
+    const topForm = window.BRTop.topForm.createController(byId);
+    const protocolEditor = createProtocolEditorController({
+        byId,
+        api,
+        getMeetingId: () => selectedMeetingId,
+        loadState,
+        render: renderProtocolEditor
+    });
 
     const meetingTypeLabel = (type) => {
         const found = (currentSettings.meetingTypes || []).find(t => t.value === type);
@@ -103,19 +110,8 @@
     function openMeetingDetail(id) {
         selectedMeetingId = String(id);
         renderMeetingDetail();
-        hideTopForm();
+        topForm.hide();
         showView('meeting-detail-view');
-    }
-
-    function showTopForm() {
-        refreshTopFormContext();
-        byId('top-form-panel').hidden = false;
-        byId('show-top-form').setAttribute('aria-expanded', 'true');
-    }
-
-    function hideTopForm() {
-        byId('top-form-panel').hidden = true;
-        byId('show-top-form').setAttribute('aria-expanded', 'false');
     }
 
     function focusEditingTopInput() {
@@ -144,70 +140,12 @@
 
         const tops = meeting.tops || [];
         editor.innerHTML = protocolEditorHtml(tops);
-
-        editor.querySelectorAll('textarea[data-action="protocol-block-content"]').forEach(textarea => {
-            textarea.dataset.lastSaved = textarea.value;
-            textarea.dataset.dirty = '0';
-        });
-
-        if (lastAddedProtocolBlockId) {
-            const textarea = Array.from(editor.querySelectorAll('textarea[data-action="protocol-block-content"]'))
-                .find(element => element.dataset.blockId === lastAddedProtocolBlockId);
-            lastAddedProtocolBlockId = null;
-            if (textarea) {
-                textarea.focus();
-            }
-        }
+        protocolEditor.afterRender();
     }
 
     function openProtocolEditor() {
         renderProtocolEditor();
         showView('protocol-view');
-    }
-
-    async function saveProtocolBlock(textarea) {
-        if (textarea.dataset.lastSaved === textarea.value && textarea.dataset.dirty !== '1') {
-            return;
-        }
-
-        const meetingId = selectedMeetingId;
-        const topId = textarea.dataset.topId;
-        const blockId = textarea.dataset.blockId;
-        const status = textarea.closest('.brtop-protocol-block-row').querySelector('.brtop-block-status');
-
-        status.textContent = 'Speichert...';
-
-        await api(`/api/meetings/${meetingId}/tops/${topId}/protocol-blocks/${blockId}`, {
-            method: 'POST',
-            body: JSON.stringify({ content: textarea.value })
-        });
-
-        textarea.dataset.lastSaved = textarea.value;
-        textarea.dataset.dirty = '0';
-        status.textContent = 'Gespeichert';
-    }
-
-    async function saveDirtyProtocolBlocks() {
-        const blocks = Array.from(byId('protocol-editor').querySelectorAll('textarea[data-action="protocol-block-content"]'))
-            .filter(textarea => textarea.dataset.dirty === '1' || textarea.dataset.lastSaved !== textarea.value);
-
-        for (const textarea of blocks) {
-            await saveProtocolBlock(textarea);
-        }
-    }
-
-    async function addProtocolBlock(topId) {
-        const result = await api(`/api/meetings/${selectedMeetingId}/tops/${topId}/protocol-blocks`, {
-            method: 'POST',
-            body: JSON.stringify({ blockType: 'text', content: '' })
-        });
-
-        if (result.block && result.block.id) {
-            lastAddedProtocolBlockId = String(result.block.id);
-        }
-
-        await loadState();
-        renderProtocolEditor();
     }
 
     async function createNewMeeting() {
@@ -289,143 +227,12 @@
     }
 
     async function generateProtocolDocument() {
-        await saveDirtyProtocolBlocks();
+        await protocolEditor.saveDirty();
 
         const result = await api(`/api/meetings/${selectedMeetingId}/protocol`, { method: 'POST' });
         await loadState();
         renderProtocolEditor();
         alert(documentResultText(result) || 'Protokolldokument erzeugt.');
-    }
-
-    function defaultResolutionKind(type) {
-        if (type === 'personnel_99') {
-            return 'consent_refusal';
-        }
-        if (type === 'personnel_100') {
-            return 'urgency_dispute';
-        }
-        if (type === 'personnel_102') {
-            return 'dismissal_objection';
-        }
-        if (type === 'protocol') {
-            return 'protocol_approval';
-        }
-        return 'approval_general';
-    }
-
-    function defaultAgendaKind(type) {
-        if (type === 'consultation_report') {
-            return 'report';
-        }
-        if (type === 'personnel') {
-            return 'section';
-        }
-        return 'discussion';
-    }
-
-    function buildResolutionQuestion(kind, type, measure) {
-        const m = (measure || 'die Maßnahme').trim();
-
-        if (kind === 'consent_refusal') {
-            return `Wer verweigert die Zustimmung zu ${m} und widerspricht ihr damit?`;
-        }
-
-        if (kind === 'urgency_dispute') {
-            return `Wer bestreitet, dass die vorläufige Durchführung der personellen Maßnahme ${m} aus sachlichen Gründen dringend erforderlich ist?`;
-        }
-
-        if (kind === 'dismissal_objection') {
-            return `Wer widerspricht der beabsichtigten Kündigung ${m} gemäß § 102 BetrVG?`;
-        }
-
-        return `Wer stimmt ${m} zu?`;
-    }
-
-    function setResolutionQuestion(force = false) {
-        const checkbox = byId('top-requires-resolution');
-        const kind = byId('top-resolution-kind');
-        const subject = byId('top-subject');
-        const resolution = byId('top-resolution');
-        const type = byId('top-type');
-
-        if (!checkbox.checked) {
-            return;
-        }
-
-        const isAuto = resolution.dataset.autoGenerated !== '0';
-        if (force || isAuto || resolution.value.trim() === '') {
-            const count = Math.max(1, Number(byId('top-resolution-count').value || 1));
-            const questions = [buildResolutionQuestion(kind.value, type.value, subject.value)];
-            while (questions.length < count) {
-                questions.push(`Beschlussfrage ${questions.length + 1} ergänzen.`);
-            }
-            resolution.value = questions.join('\n');
-            resolution.dataset.autoGenerated = '1';
-        }
-    }
-
-    function isResolutionSelected() {
-        return byId('top-requires-resolution').checked;
-    }
-
-    function setFieldVisible(id, visible) {
-        byId(id).hidden = !visible;
-    }
-
-    function usesPersonnelContext(type) {
-        return ['personnel_99', 'personnel_100', 'personnel_102'].includes(type);
-    }
-
-    function refreshTopFormContext() {
-        const type = byId('top-type').value;
-        const resolutionSelected = isResolutionSelected();
-        const personnelSelected = usesPersonnelContext(type);
-
-        setFieldVisible('top-person-field', personnelSelected);
-        setFieldVisible('top-legal-field', personnelSelected || resolutionSelected);
-        setFieldVisible('top-resolution-options', resolutionSelected);
-
-        if (!resolutionSelected) {
-            byId('top-resolution').dataset.autoGenerated = '1';
-        }
-    }
-
-    function updateResolutionDefault() {
-        const type = byId('top-type').value;
-        const box = byId('top-requires-resolution');
-        const legal = byId('top-legal');
-        const kind = byId('top-resolution-kind');
-        const agendaKind = byId('top-agenda-kind');
-
-        agendaKind.value = defaultAgendaKind(type);
-        kind.value = defaultResolutionKind(type);
-
-        if (type === 'personnel_99') {
-            legal.value = '§ 99 BetrVG';
-        } else if (type === 'personnel_100') {
-            legal.value = '§ 100 BetrVG';
-        } else if (type === 'personnel_102') {
-            legal.value = '§ 102 BetrVG';
-        } else if (['§ 99 BetrVG', '§ 100 BetrVG', '§ 102 BetrVG'].includes(legal.value)) {
-            legal.value = '';
-        }
-
-        setResolutionQuestion(true);
-        refreshTopFormContext();
-    }
-
-    function clearTopForm() {
-        byId('top-subject').value = '';
-        byId('top-person').value = '';
-        byId('top-legal').value = '';
-        byId('top-resolution').value = '';
-        byId('top-invitation-note').value = '';
-        byId('top-attachments').value = '';
-        byId('top-resolution-count').value = '1';
-        byId('top-requires-resolution').checked = false;
-        byId('top-protocol-content').value = '';
-        byId('top-resolution').dataset.autoGenerated = '1';
-        updateResolutionDefault();
     }
 
     byId('new-meeting').addEventListener('click', async () => {
@@ -470,14 +277,6 @@
 
     byId('detail-edit-protocol').addEventListener('click', () => {
         openProtocolEditor();
-    });
-
-    byId('show-top-form').addEventListener('click', () => {
-        showTopForm();
-    });
-
-    byId('hide-top-form').addEventListener('click', () => {
-        hideTopForm();
     });
 
     byId('meeting-detail-content').addEventListener('click', async (event) => {
@@ -535,7 +334,7 @@
 
     byId('back-to-detail').addEventListener('click', async () => {
         try {
-            await saveDirtyProtocolBlocks();
+            await protocolEditor.saveDirty();
             await loadState();
             openMeetingDetail(selectedMeetingId);
         } catch (e) {
@@ -558,34 +357,15 @@
                 return;
             }
 
-            const type = byId('top-type').value;
-            const resolutionSelected = isResolutionSelected();
-            const resolutionCount = resolutionSelected ? Math.max(1, Number(byId('top-resolution-count').value || 1)) : 0;
-            const personnelSelected = usesPersonnelContext(type);
-            const legalSelected = personnelSelected || resolutionSelected;
-
-            const payload = {
-                type,
-                parentId: 0,
-                agendaItemKind: byId('top-agenda-kind').value,
-                subject: byId('top-subject').value,
-                personName: personnelSelected ? byId('top-person').value : '',
-                legalBasis: legalSelected ? byId('top-legal').value : '',
-                resolutionText: resolutionSelected ? byId('top-resolution').value : '',
-                requiresResolution: resolutionSelected,
-                resolutionCount,
-                invitationNote: byId('top-invitation-note').value,
-                attachmentPaths: byId('top-attachments').value,
-                protocolContent: byId('top-protocol-content').value
-            };
+            const payload = topForm.payload();
 
             await api(`/api/meetings/${selectedMeetingId}/tops`, {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
 
-            clearTopForm();
-            hideTopForm();
+            topForm.clear();
+            topForm.hide();
             await loadState();
             renderMeetingDetail();
         } catch (e) {
@@ -593,74 +373,7 @@
         }
     });
 
-    byId('protocol-editor').addEventListener('click', async (event) => {
-        const button = event.target instanceof Element ? event.target.closest('button[data-action="add-protocol-block"]') : null;
-        if (!button) {
-            return;
-        }
-
-        try {
-            await saveDirtyProtocolBlocks();
-            await addProtocolBlock(button.getAttribute('data-top-id'));
-        } catch (e) {
-            alert('Fehler beim Hinzufügen des Protokollblocks:\n' + e.message);
-        }
-    });
-
-    byId('protocol-editor').addEventListener('input', (event) => {
-        const textarea = event.target;
-        if (!(textarea instanceof HTMLTextAreaElement) || textarea.dataset.action !== 'protocol-block-content') {
-            return;
-        }
-
-        textarea.dataset.dirty = '1';
-        const status = textarea.closest('.brtop-protocol-block-row').querySelector('.brtop-block-status');
-        status.textContent = 'Ungespeichert';
-    });
-
-    byId('protocol-editor').addEventListener('blur', (event) => {
-        const textarea = event.target;
-        if (!(textarea instanceof HTMLTextAreaElement) || textarea.dataset.action !== 'protocol-block-content') {
-            return;
-        }
-
-        saveProtocolBlock(textarea).catch(() => {
-            const status = textarea.closest('.brtop-protocol-block-row').querySelector('.brtop-block-status');
-            status.textContent = 'Fehler beim Speichern';
-        });
-    }, true);
-
-    byId('top-type').addEventListener('change', updateResolutionDefault);
-
-    byId('top-subject').addEventListener('input', () => setResolutionQuestion(false));
-
-    byId('top-resolution-kind').addEventListener('change', () => setResolutionQuestion(true));
-
-    byId('top-agenda-kind').addEventListener('change', () => {
-        setResolutionQuestion(true);
-        refreshTopFormContext();
-    });
-
-    byId('top-requires-resolution').addEventListener('change', () => {
-        const box = byId('top-requires-resolution');
-        if (box.checked) {
-            byId('top-resolution-count').value = Math.max(1, Number(byId('top-resolution-count').value || 1));
-        }
-        setResolutionQuestion(false);
-        refreshTopFormContext();
-    });
-
-    byId('top-resolution-count').addEventListener('input', () => {
-        if (Number(byId('top-resolution-count').value || 0) < 1) {
-            byId('top-resolution-count').value = '1';
-        }
-        setResolutionQuestion(false);
-    });
-
-    byId('top-resolution').addEventListener('input', () => {
-        byId('top-resolution').dataset.autoGenerated = '0';
-    });
-
-    updateResolutionDefault();
+    protocolEditor.init();
+    topForm.init();
     loadState().catch(e => alert('Fehler beim Laden der Sitzungen:\n' + e.message));
 })();
