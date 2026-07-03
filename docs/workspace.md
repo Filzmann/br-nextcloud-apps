@@ -137,9 +137,9 @@ Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`
 
 ## VS-Code Workspace
 
-`br-nextcloud-apps.code-workspace` oeffnet standardmaessig den Parent-Meta-Workspace. App-Repos sind in Explorer und Suche ausgeblendet, damit Parent-only-Arbeit nicht versehentlich App-Code beruehrt.
+`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/` und `brstunden/` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
 
-Wenn an einer App gearbeitet wird, das App-Repo gezielt separat oeffnen oder bewusst in dessen Repo-Kontext wechseln.
+Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen.
 
 ## Git-Regeln
 

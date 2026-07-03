@@ -3,6 +3,18 @@
     {
       "name": "br-nextcloud-apps-meta",
       "path": "."
+    },
+    {
+      "name": "brtop",
+      "path": "brtop"
+    },
+    {
+      "name": "adplaner",
+      "path": "adplaner"
+    },
+    {
+      "name": "brstunden",
+      "path": "brstunden"
     }
   ],
   "settings": {
@@ -11,9 +23,6 @@
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.exclude": {
-      "brtop": true,
-      "adplaner": true,
-      "brstunden": true,
       "nextcloud-dev/html": true,
       "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
@@ -22,9 +31,6 @@
       "nextcloud-dev/.ddev/db_snapshots": true
     },
     "search.exclude": {
-      "brtop": true,
-      "adplaner": true,
-      "brstunden": true,
       "nextcloud-dev/html": true,
       "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
