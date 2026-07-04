@@ -163,6 +163,9 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Services arbeiten bevorzugt mit Modellen/DTOs statt rohen Arrays.
 - Groessere HTML-Bloecke werden aus `templates/index.php` in Partials ausgelagert.
 - Wiederkehrende Frontend-Logik wird app-intern in `js/components/`, `js/modules/` oder `js/repositories/` ausgelagert.
+- JavaScript wird gut gekapselt, wiederverwendbar und weitgehend objektorientiert strukturiert. App-spezifische API-Zugriffe gehoeren in Repositories/API-Adapter, Daten in Modelle/ViewModels, Workflows in kleine Services/Controller und Rendering/Eventbindung in Komponenten.
+- DRY und KISS gelten gemeinsam: echte Duplizierung wird entfernt, aber einfache Lesbarkeit und klare lokale Fachgrenzen bleiben wichtiger als fruehe generische Abstraktionen.
+- Eine gemeinsame UI-Component-Library ist sinnvoll, sobald mindestens zwei Apps dieselben UI-Primitives oder Komponenten semantisch gleich brauchen, inklusive gleicher Zustaende, Events und Accessibility-Regeln. Bis dahin werden nur kleine, stabile Helfer wie Escaping, Notices, Buttons oder Formatierer nach `localbase` verschoben; keine grosse Design-System-Schicht vorsorglich bauen.
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
 
