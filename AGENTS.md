@@ -170,6 +170,32 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
 
+## Gemeinsame Teststrategie
+
+Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonders bei gemeinsamen Libraries.
+
+- Vor groesseren Refactorings zuerst kleine Charakterisierungstests schreiben oder aktualisieren, die das gewuenschte bestehende Verhalten festhalten.
+- Danach refaktorieren und dieselben Tests erneut laufen lassen.
+- `localbase` ist Multiplikator-Code und wird strenger behandelt als einzelne Apps: Jede Aenderung an oeffentlichen LocalBase-Vertraegen braucht passende PHP-/JavaScript-Tests in LocalBase und betroffene Contract-/Smoke-Tests in den nutzenden Apps.
+- App-Repos testen ihre eigene Fachlogik und die Integration mit LocalBase, duplizieren aber nicht die vollstaendige LocalBase-Testabdeckung.
+- Jedes App-Repo soll schnelle, dependency-arme Einstiegspunkte fuer lokale Tests anbieten: `php tests/run.php` fuer PHP und `node tests/run-js.mjs` fuer JavaScript.
+- Vor jedem Commit laufen die schnellen Tests des betroffenen Repos. Nach LocalBase-Aenderungen laufen zusaetzlich die schnellen Tests der betroffenen Apps.
+- Bei Controller-, DI-, Migrations- oder Nextcloud-Container-Aenderungen zusaetzlich gezielte DDEV-/`occ`-Checks ausfuehren.
+- Vor groesseren Architekturentscheidungen und spaeter vor Production-Releases die schnelle Suite ueber alle eigenen Apps laufen lassen.
+- Ein groesseres Testframework wie PHPUnit, Pest, Vitest oder Jest wird erst eingefuehrt, wenn die einfachen Testlaeufer, Assertion-Helfer, Mocks oder Fixtures selbst spuerbar dupliziert werden oder Tests dadurch deutlich lesbarer werden.
+
+## Codex-Credit-Spar-Strategie
+
+Codex soll sparsam arbeiten, ohne Pruefsicherheit an den falschen Stellen zu verlieren.
+
+- Zuerst lokalen Kontext mit `rg`, gezielten Dateiauszuegen und Git-Status klaeren; keine breiten Re-Scans ohne neuen Anlass.
+- Kleine, naheliegende Aenderungen direkt im betroffenen Repo erledigen und nur die relevanten Tests laufen lassen.
+- Teure oder langsame Checks wie DDEV, vollstaendige App-Suiten oder browsernahe Pruefungen buendeln und erst ausfuehren, wenn lokale Syntax-/Unit-/Smoke-Checks sauber sind.
+- Keine Internetrecherche, Dependency-Installation oder Plugin-/Tool-Suche ohne konkreten Bedarf.
+- Subagents oder kleinere Spezialagenten nur fuer wirklich unabhaengige, groessere Such- oder Audit-Aufgaben einsetzen; lineare Codeaenderungen bleiben beim Hauptagenten, damit kein Kontext doppelt bezahlt wird.
+- Wenn Modellwahl verfuegbar ist, einfache mechanische Aufgaben mit einem kleineren Modell bearbeiten und groessere Architekturentscheidungen, Sicherheitsfragen oder schwierige Refactorings mit einem staerkeren Modell.
+- Kleine, abgeschlossene Commits bevorzugen, damit nach einem Fehler nicht dieselbe Analyse wiederholt werden muss.
+
 ## Gemeinsame Sicherheitsregeln
 
 Bei App-Aenderungen ist in den jeweiligen App-Repos zu pruefen:
