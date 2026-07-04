@@ -40,7 +40,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
-- Keine gemeinsame Bibliothek vorsorglich anlegen. Gemeinsame Packages werden erst geprueft, wenn mindestens zwei Apps dieselben konkreten Repository-, DTO-, Export- oder UI-Muster wirklich brauchen.
+- Keine gemeinsame Bibliothek vorsorglich anlegen. Eine gemeinsame Library wird sinnvoll, sobald mindestens zwei Apps denselben Code nicht nur aehnlich, sondern semantisch gleich brauchen, die Schnittstelle stabil genug ist und app-uebergreifend getestet werden kann. In der lokalen Vor-Production-Phase darf diese Extraktion frueher erfolgen, wenn sie sofort echte Duplizierung entfernt; sie bleibt trotzdem ein eigener bewusster Schritt.
 
 ## DDEV
 
@@ -145,6 +145,8 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Fachlogik, Datenzugriff, Darstellung, Dokumenterzeugung und Dateiablage werden getrennt.
 - Wiederkehrende Logik wird nicht mehrfach in Controllern oder `main.js` dupliziert.
 - Persistente Kernobjekte bekommen Modelle/DTOs oder Value Objects, sobald rohe Arrays unuebersichtlich werden oder mehrere Schichten durchlaufen.
+- Modelle/DTOs werden bei Neu- und Weiterentwicklungen in PHP und JavaScript einheitlich angefasst: `get(...)` fuer ein einzelnes Payload/Row/Objekt, `get_all([...])` fuer Listen, `toArray()` fuer Serialisierung und `save()` nur fuer wirklich persistierbare, store-gebundene Modelle. Nicht persistierbare DTOs duerfen `save()` bewusst mit klarer Fehlermeldung blockieren.
+- Neue Modellarbeit fuehrt keine neuen `fromApi`-/`toApi`-Kompatibilitaetsaliase ein. Bestehende PHP-`toApiArray()`-Call-sites duerfen schrittweise auf `toArray()` migriert werden, wenn die betroffene Schicht ohnehin angefasst wird.
 - Datenzugriffe laufen ueber Repository-, Mapper-, Store- oder Service-Klassen.
 - Services arbeiten bevorzugt mit Modellen/DTOs statt rohen Arrays.
 - Groessere HTML-Bloecke werden aus `templates/index.php` in Partials ausgelagert.
