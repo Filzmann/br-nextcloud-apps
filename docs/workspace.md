@@ -20,10 +20,12 @@ br-nextcloud-apps/
 |       |-- config.yaml
 |       |-- docker-compose.brtop.yaml
 |       |-- docker-compose.adplaner.yaml
-|       `-- docker-compose.brstunden.yaml
+|       |-- docker-compose.brstunden.yaml
+|       `-- docker-compose.localbase.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
-`-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
+|-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
+`-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
 ```
 
 ## Aktuelle App-Repos
@@ -33,13 +35,14 @@ br-nextcloud-apps/
 | BRTop | `brtop` | `~/projects/br-nextcloud-apps/brtop` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
 | AdPlaner | `adplaner` | `~/projects/br-nextcloud-apps/adplaner` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
 | BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
+| LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation |
 
 App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`.
 
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/` und `brstunden/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/` und `localbase/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -64,6 +67,7 @@ ddev exec -d /var/www/html/html php occ status
 ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
+ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -122,6 +126,19 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.brstunden.yaml
 ```
 
+LocalBase:
+
+```text
+~/projects/br-nextcloud-apps/localbase
+-> /var/www/html/html/custom_apps/localbase
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.localbase.yaml
+```
+
 Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`.
 
 ## Neue App anlegen
@@ -137,7 +154,7 @@ Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`
 
 ## VS-Code Workspace
 
-`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/` und `brstunden/` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
+`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/`, `brstunden/` und `localbase/` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
 
 Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen.
 

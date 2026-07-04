@@ -21,6 +21,7 @@ nextcloud-dev/html/
 brtop/
 adplaner/
 brstunden/
+localbase/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

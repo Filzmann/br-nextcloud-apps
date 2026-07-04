@@ -15,6 +15,10 @@
     {
       "name": "brstunden",
       "path": "brstunden"
+    },
+    {
+      "name": "localbase",
+      "path": "localbase"
     }
   ],
   "settings": {

@@ -21,6 +21,7 @@ Aktuelle eigene Apps:
 | BRTop | `brtop` | `~/projects/br-nextcloud-apps/brtop` | `https://nextcloud-dev.ddev.site/apps/brtop/` | `/var/www/html/html/custom_apps/brtop` |
 | AdPlaner | `adplaner` | `~/projects/br-nextcloud-apps/adplaner` | `https://nextcloud-dev.ddev.site/apps/adplaner/` | `/var/www/html/html/custom_apps/adplaner` |
 | BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` | `/var/www/html/html/custom_apps/brstunden` |
+| LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation | `/var/www/html/html/custom_apps/localbase` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -37,6 +38,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `brtop/` ist ein eigenes Git-Repository.
 - `adplaner/` ist ein eigenes Git-Repository.
 - `brstunden/` ist ein eigenes Git-Repository.
+- `localbase/` ist ein eigenes Git-Repository fuer gemeinsame, fachlich neutrale Basisbausteine.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -61,6 +63,7 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
     ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
+    ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler; den gleichen Befehl mit eskaliertem Zugriff erneut ausfuehren. DDEV-Pruefungen deshalb buendeln, lokale PHP-/Node-Pruefungen bevorzugen und wiederverwendbare Prefix-Freigaben fuer `ddev exec` nutzen.
 
@@ -105,6 +108,15 @@ BRStunden:
 Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.brstunden.yaml
+
+LocalBase:
+
+    ~/projects/br-nextcloud-apps/localbase
+    -> /var/www/html/html/custom_apps/localbase
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.localbase.yaml
 
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
@@ -209,6 +221,7 @@ Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem jeweils b
 - BRTop-Aenderungen: `~/projects/br-nextcloud-apps/brtop`
 - AdPlaner-Aenderungen: `~/projects/br-nextcloud-apps/adplaner`
 - BRStunden-Aenderungen: `~/projects/br-nextcloud-apps/brstunden`
+- LocalBase-Aenderungen: `~/projects/br-nextcloud-apps/localbase`
 
 In Codex-Sessions kann das Schreiben in `.git` je nach Sandbox-Kontext eskalierten Zugriff benoetigen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten Git-Stand.
 
