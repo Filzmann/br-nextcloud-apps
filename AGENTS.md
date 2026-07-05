@@ -174,10 +174,12 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 
 Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonders bei gemeinsamen Libraries.
 
+- Tests sind Teil der Architekturarbeit und kein optionaler Nachtrag. Neue oder refaktorierte Fachlogik bekommt passende Charakterisierungs-, Unit-, Contract- oder Smoke-Tests, bevor darauf weiter aufgebaut wird.
 - Vor groesseren Refactorings zuerst kleine Charakterisierungstests schreiben oder aktualisieren, die das gewuenschte bestehende Verhalten festhalten.
 - Danach refaktorieren und dieselben Tests erneut laufen lassen.
 - `localbase` ist Multiplikator-Code und wird strenger behandelt als einzelne Apps: Jede Aenderung an oeffentlichen LocalBase-Vertraegen braucht passende PHP-/JavaScript-Tests in LocalBase und betroffene Contract-/Smoke-Tests in den nutzenden Apps.
 - App-Repos testen ihre eigene Fachlogik und die Integration mit LocalBase, duplizieren aber nicht die vollstaendige LocalBase-Testabdeckung.
+- Gemeinsame Test-Helper sind sinnvoll, sobald mindestens zwei Repos dieselben Assertions, Fakes, Fixtures oder Setup-Schritte semantisch gleich brauchen. Sie bleiben klein, dependency-arm, test-only und werden in LocalBase selbst getestet, bevor Apps sie nutzen.
 - Jedes App-Repo soll schnelle, dependency-arme Einstiegspunkte fuer lokale Tests anbieten: `php tests/run.php` fuer PHP und `node tests/run-js.mjs` fuer JavaScript.
 - Vor jedem Commit laufen die schnellen Tests des betroffenen Repos. Nach LocalBase-Aenderungen laufen zusaetzlich die schnellen Tests der betroffenen Apps.
 - Bei Controller-, DI-, Migrations- oder Nextcloud-Container-Aenderungen zusaetzlich gezielte DDEV-/`occ`-Checks ausfuehren.
