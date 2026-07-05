@@ -180,6 +180,7 @@ Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonder
 - `localbase` ist Multiplikator-Code und wird strenger behandelt als einzelne Apps: Jede Aenderung an oeffentlichen LocalBase-Vertraegen braucht passende PHP-/JavaScript-Tests in LocalBase und betroffene Contract-/Smoke-Tests in den nutzenden Apps.
 - App-Repos testen ihre eigene Fachlogik und die Integration mit LocalBase, duplizieren aber nicht die vollstaendige LocalBase-Testabdeckung.
 - Gemeinsame Test-Helper sind sinnvoll, sobald mindestens zwei Repos dieselben Assertions, Fakes, Fixtures oder Setup-Schritte semantisch gleich brauchen. Sie bleiben klein, dependency-arm, test-only und werden in LocalBase selbst getestet, bevor Apps sie nutzen.
+- In der lokalen Vor-Production-Phase duerfen Apps gemeinsame LocalBase-Test-Helper pragmatisch per relativen Repo-Pfaden nutzen. Eine stabilere Packaging-/Autoload-/Import-Struktur wird erst geklaert, wenn CI, Distribution, Production-Haertung oder die Pfade selbst spuerbar bremsen.
 - Jedes App-Repo soll schnelle, dependency-arme Einstiegspunkte fuer lokale Tests anbieten: `php tests/run.php` fuer PHP und `node tests/run-js.mjs` fuer JavaScript.
 - Vor jedem Commit laufen die schnellen Tests des betroffenen Repos. Nach LocalBase-Aenderungen laufen zusaetzlich die schnellen Tests der betroffenen Apps.
 - Bei Controller-, DI-, Migrations- oder Nextcloud-Container-Aenderungen zusaetzlich gezielte DDEV-/`occ`-Checks ausfuehren.
