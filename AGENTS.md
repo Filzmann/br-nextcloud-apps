@@ -189,6 +189,31 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
 
+## Gemeinsame Kommentar- und Dokumentationsstruktur im Code
+
+Kommentare und PHPDoc/JSDoc sollen den Code erklaeren, nicht seine Syntax nacherzaehlen. Klassen, Attribute und Methoden werden kommentiert, wenn Zweck, fachliche Bedeutung, Seiteneffekte, Sicherheitsgrenzen oder das Zusammenspiel mit anderen Bausteinen nicht unmittelbar aus Namen, Typen und wenigen Codezeilen hervorgehen.
+
+Fuer erklaerungsbeduerftige Klassen und groessere Funktionen gilt diese Reihenfolge. Nur die jeweils benoetigten Bloecke werden aufgenommen:
+
+```text
+Zweck: Warum existiert der Baustein, welche Verantwortung hat er?
+Zusammenspiel: Welche anderen Klassen/Services rufen ihn auf oder werden von ihm koordiniert?
+Spiegelung: Welches konkrete PHP-/JavaScript-Symbol bildet denselben Vertrag oder Algorithmus ab?
+Vertrag: Welche Invarianten, Berechtigungen, Seiteneffekte, Fehlerfaelle oder Datenformate sind wichtig?
+```
+
+Verbindliche Regeln:
+
+- Klassenkommentare beschreiben bei nicht trivialen Services, Controllern, Repositories, Adaptern, Modellen und UI-Komponenten mindestens den Zweck. `Zusammenspiel` wird ergaenzt, wenn die Rolle erst im Daten- oder Kontrollfluss verstaendlich wird.
+- Methodenkommentare erklaeren fachliche Entscheidungen, Seiteneffekte, Berechtigungsgrenzen, Fehlerverhalten oder nicht offensichtliche Rueckgabevertraege. Getter, einfache Delegationen und selbsterklaerende CRUD-Methoden werden nicht kommentiert.
+- Attribute, Properties und Payload-Felder werden nur kommentiert, wenn Bedeutung, Einheit, Herkunft, Lebensdauer oder Datenschutzrelevanz nicht aus Name und Typ hervorgehen. Dafuer reicht meist `Bedeutung: ...` in einer kurzen Property-Dokumentation.
+- Wenn sich Verhalten in PHP und JavaScript spiegelt, nennen beide Stellen unter `Spiegelung` das exakte Gegenstueck, zum Beispiel `PHP: ExportService::aggregateCell()` und `JS: render.aggregateCell()`. Der Kommentar nennt auch, welcher Vertrag identisch bleiben muss. Wenn sinnvoll, sichert ein Contract-Test diese Uebereinstimmung ab.
+- Bei zusammenarbeitenden Klassen wird der relevante Fluss beschrieben, nicht lediglich die Constructor-Liste wiederholt, zum Beispiel `Controller -> AccessService -> Repository` oder `ScannerService baut Snapshot, DiffService bewertet ihn, SnapshotMapper persistiert ihn`.
+- Kommentare stehen direkt am dokumentierten Symbol. Laengere Architekturerklaerungen gehoeren in die App-`AGENTS.md` oder `docs/` und werden im Code nur knapp referenziert.
+- Bestehende Kommentarstruktur und Sprache eines Repos werden beibehalten. Wo noch kein Stil besteht, werden die obigen deutschen Bezeichnungen einheitlich verwendet.
+- Kommentare werden bei Verhaltensaenderungen mitgepflegt. Veraltete, spekulative oder den Code nur wiederholende Kommentare werden entfernt.
+- Keine Kommentarquote erzwingen: So viel Dokumentation wie zum sicheren Verstaendnis noetig, aber nur so viel wie fachlich oder technisch Mehrwert bietet.
+
 
 ## Gemeinsame Rechte- und Zugriffsschutzregeln
 
