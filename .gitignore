@@ -22,6 +22,7 @@ brtop/
 adplaner/
 brstunden/
 localbase/
+br_permission_matrix/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

@@ -22,6 +22,7 @@ Aktuelle eigene Apps:
 | AdPlaner | `adplaner` | `~/projects/br-nextcloud-apps/adplaner` | `https://nextcloud-dev.ddev.site/apps/adplaner/` | `/var/www/html/html/custom_apps/adplaner` |
 | BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` | `/var/www/html/html/custom_apps/brstunden` |
 | LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation | `/var/www/html/html/custom_apps/localbase` |
+| Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` | `/var/www/html/html/custom_apps/br_permission_matrix` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -39,6 +40,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `adplaner/` ist ein eigenes Git-Repository.
 - `brstunden/` ist ein eigenes Git-Repository.
 - `localbase/` ist ein eigenes Git-Repository fuer gemeinsame, fachlich neutrale Basisbausteine.
+- `br_permission_matrix/` ist ein eigenes Git-Repository fuer die read-only Berechtigungsmatrix.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -59,13 +61,21 @@ Wichtige Befehle:
     ddev launch /apps/brtop/
     ddev launch /apps/adplaner/
     ddev launch /apps/brstunden/
+    ddev launch /apps/br_permission_matrix/
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
     ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
     ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
+    ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
 
-In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler; den gleichen Befehl mit eskaliertem Zugriff erneut ausfuehren. DDEV-Pruefungen deshalb buendeln, lokale PHP-/Node-Pruefungen bevorzugen und wiederverwendbare Prefix-Freigaben fuer `ddev exec` nutzen.
+In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler.
+
+Eskalierter Zugriff darf fuer reine Diagnose- und Testbefehle erneut versucht werden, zum Beispiel `ddev describe`, `ddev exec ... php occ status`, `ddev exec ... php occ app:list`, PHP-/Node-Testlaeufe oder gezielte lesende Checks.
+
+Zustandsaendernde DDEV-/`occ`-Befehle wie `ddev start`, `ddev stop`, `ddev restart`, `occ app:enable`, `occ upgrade`, Migrationen, Installationen oder Bereinigungen duerfen nur mit eskaliertem Zugriff ausgefuehrt werden, wenn Simon die konkrete Aktion angefordert oder freigegeben hat.
+
+DDEV-Pruefungen deshalb buendeln, lokale PHP-/Node-Pruefungen bevorzugen und wiederverwendbare Prefix-Freigaben fuer `ddev exec` nur fuer klar benannte Befehle nutzen.
 
 ## Nextcloud-App-Installation und Migrationen
 
@@ -117,6 +127,15 @@ LocalBase:
 Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.localbase.yaml
+
+Berechtigungsmatrix:
+
+    ~/projects/br-nextcloud-apps/br_permission_matrix
+    -> /var/www/html/html/custom_apps/br_permission_matrix
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
 
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
@@ -170,6 +189,58 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
 
+
+## Gemeinsame Rechte- und Zugriffsschutzregeln
+
+Eine klare, granulare Benutzerrechte- und Zugriffsschutzsteuerung ist fuer alle eigenen Nextcloud-Apps eine harte Architektur- und Sicherheitsanforderung. Codex muss Rechtefragen bei neuen Features, Refactorings, API-Endpunkten, Datenmodellen, Dateioperationen, Dokumenterzeugung und UI-Aenderungen aktiv mitdenken.
+
+Grundprinzipien:
+
+- Deny by default: Zugriff ist nur erlaubt, wenn er bewusst und nachvollziehbar erlaubt wurde.
+- Least privilege: Nutzer*innen erhalten nur die Rechte, die sie fuer die konkrete Funktion brauchen.
+- Server-side first: UI-Ausblendungen sind nur Komfort, kein Schutz. Jeder relevante Controller, API-Endpunkt, Servicepfad und jede Datei-/Datenoperation braucht serverseitige Pruefung.
+- Nextcloud-native Funktionen bevorzugen: Gruppen, Benutzerkontext, Session, App-Konfiguration, Share-/Dateirechte, Capabilities und vorhandene Nextcloud-APIs sollen genutzt werden, statt vorschnell parallele Eigenlogik aufzubauen.
+- App-spezifische Rollen, Gruppen, Rechte und Sonderfaelle gehoeren in die jeweilige App-`AGENTS.md`. App-uebergreifende Muster gehoeren in die Parent-`AGENTS.md` oder nach `localbase`, wenn sie konkret wiederverwendbar sind.
+- Rechtepruefungen sollen moeglichst zentral ueber Permission-, Access-, Policy- oder Capability-Services gebuendelt werden. Keine verstreuten Ad-hoc-Pruefungen in vielen Controllern, Templates oder JavaScript-Dateien.
+- Frontend-Code darf Berechtigungen anzeigen, erklaeren und UI-Zustaende anpassen, aber keine alleinige Autoritaet ueber Zugriff haben.
+- Repositories, Stores und Services duerfen keine unbeschraenkten Datenlisten liefern, wenn der aufrufende Kontext eigentlich eingeschraenkt sein muss. Akteur, Gruppe, Scope oder Permission-Kontext muessen in der Architektur nachvollziehbar sein.
+- Nextcloud-Admin, App-Admin, Gruppenmitglied, normale*r Nutzer*in, Read-only-Rolle, Bearbeitungsrolle und technische Hintergrundaufgabe duerfen nicht automatisch gleichgesetzt werden.
+- Temporare lokale Vereinfachungen sind in der Vor-Production-Phase erlaubt, muessen aber als solche benannt werden und duerfen keine spaetere granulare Rechtearchitektur verbauen.
+
+Bei jeder neuen Funktion muss Codex pruefen und im Plan oder Abschlussbericht benennen:
+
+1. Wer darf die Funktion sehen?
+2. Wer darf die Funktion ausfuehren?
+3. Welche Daten duerfen gelesen werden?
+4. Welche Daten duerfen angelegt, geaendert oder geloescht werden?
+5. Welche Nextcloud-Gruppen, Rollen, Shares, Capabilities oder App-Konfigurationen sind relevant?
+6. Welche serverseitige Pruefung erzwingt die Regel?
+7. Welche Tests oder Smoke-Checks decken erlaubte und verbotene Zugriffe ab?
+
+Tests fuer Berechtigungen muessen mindestens typische Allow- und Deny-Faelle abdecken. Bei sicherheitsrelevanten Funktionen sollen direkte API-Aufrufe ohne passende Berechtigung negativ getestet werden, auch wenn die UI den Button versteckt.
+
+Wenn eine Aufgabe Berechtigungen, Gruppenlogik, Rollen, Zugriffsschutz, Shares, Dateirechte oder Capabilities beruehrt, gelten die Stop-Regeln fuer riskante Aenderungen. Ohne ausdrueckliche Freigabe darf Codex dann nur analysieren und einen Rechte-/Zugriffsplan vorschlagen.
+
+## Gemeinsame UI- und Accessibility-Regeln
+
+Accessibility ist fuer eigene Nextcloud-Apps eine harte Entwicklungsregel, nicht nur ein optionaler Feinschliff.
+
+Bei neuen oder geaenderten Oberflaechen muss Codex auf folgende Mindeststandards achten:
+
+- semantische HTML-Struktur,
+- nutzbare Tastaturbedienung,
+- sichtbare Fokuszustaende,
+- sprechende Labels fuer Formularfelder, Buttons und interaktive Elemente,
+- keine rein farbliche Bedeutungsuebermittlung,
+- verstaendliche Fehlermeldungen,
+- ausreichende Lesbarkeit auf kleineren Bildschirmen,
+- keine versteckten Pflichtaktionen nur per Hover,
+- keine unnoetigen Modals fuer einfache Bestaetigungen,
+- sinnvolle ARIA-Attribute nur dort, wo semantisches HTML nicht reicht,
+- keine bewusst eingefuehrten Tastaturfallen.
+
+Wenn eine UI-Aenderung diese Punkte nicht erfuellt, darf Codex sie nicht als fertig darstellen. Wenn Codex einzelne Punkte nicht pruefen kann, muss das im Abschlussbericht offen als nicht vollstaendig verifiziert genannt werden.
+
 ## Gemeinsame Teststrategie
 
 Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonders bei gemeinsamen Libraries.
@@ -187,6 +258,50 @@ Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonder
 - Vor groesseren Architekturentscheidungen und spaeter vor Production-Releases die schnelle Suite ueber alle eigenen Apps laufen lassen.
 - Ein groesseres Testframework wie PHPUnit, Pest, Vitest oder Jest wird erst eingefuehrt, wenn die einfachen Testlaeufer, Assertion-Helfer, Mocks oder Fixtures selbst spuerbar dupliziert werden oder Tests dadurch deutlich lesbarer werden.
 
+
+## LocalBase in der Vor-Production-Phase
+
+`localbase` ist gemeinsamer Multiplikator-Code, wird aber in der lokalen Vor-Production-Phase noch pragmatisch behandelt.
+
+Codex darf interne LocalBase-Verbesserungen vornehmen, wenn sie:
+
+- konkrete Duplizierung entfernen,
+- Tests vereinfachen,
+- Fachlogik neutral halten,
+- keine nutzende App unbemerkt brechen,
+- durch schnelle LocalBase-Tests und betroffene App-Smoke-/Contract-Tests abgesichert werden.
+
+Strenger zu behandeln sind oeffentliche LocalBase-Vertraege, also Klassen, Funktionen, Modelle, DTOs, Services, Imports, Events oder Rueckgabeformate, die bereits von mehreren Apps genutzt werden.
+
+Bei solchen Vertragsaenderungen muss Codex vor der Umsetzung mindestens:
+
+1. die bekannten Call-Sites in den nutzenden Apps suchen,
+2. den alten und neuen Vertrag knapp beschreiben,
+3. einen pragmatischen Migrationspfad nennen,
+4. passende LocalBase-Tests und betroffene App-Checks benennen,
+5. Simon um Freigabe bitten, ausser Simon hat die konkrete Umsetzung bereits ausdruecklich verlangt.
+
+Solange keine Production-Freigabe besteht, muessen keine schweren Packaging-, Versionierungs- oder SemVer-Prozesse eingefuehrt werden. Rueckwaertskompatibilitaet bleibt wuenschenswert, aber einfache, klar getestete Anpassungen sind erlaubt, wenn alle betroffenen Apps im Workspace mitgezogen werden.
+
+
+## Stop-Regeln fuer riskante Aenderungen
+
+Codex muss die Arbeit unterbrechen und Simon zuerst einen Plan mit Risiko, betroffenen Dateien, Teststrategie und Rueckbauweg vorlegen, wenn eine Aufgabe eines dieser Themen beruehrt:
+
+- Datenbank-Schema, Migrationen oder bestehende produktive Daten,
+- Berechtigungen, Gruppenlogik, Rollen, CSRF, Authentifizierung oder Zugriffsschutz,
+- oeffentliche LocalBase-Vertraege oder Code, der von mehreren Apps genutzt wird,
+- Dateiablage, Dateipfade, Uploads, Downloads oder Dokumenterzeugung,
+- Loeschungen, Umbenennungen oder Verschiebungen groesserer Codebereiche,
+- Aenderungen an DDEV-, Docker-, Nextcloud- oder `occ`-Konfiguration,
+- Cross-App-Aenderungen in mehr als einem App-Repo,
+- Tests, die nur durch breite Refactorings wieder gruen werden,
+- jede Aenderung, bei der Codex den Rueckbauweg nicht klar benennen kann.
+
+Ausnahme: Wenn Simon die Umsetzung ausdruecklich verlangt, zum Beispiel mit Formulierungen wie "setz das jetzt um", "mach die Aenderung", "du darfst fortfahren" oder einer vergleichbar klaren Freigabe, darf Codex nach kurzer Benennung des Risikos weiterarbeiten. Auch dann gilt: Aenderungen klein halten, keine Commits ohne Freigabe, Tests ausfuehren und offene Risiken im Abschlussbericht nennen.
+
+Bis zur Freigabe darf Codex in diesen Faellen nur lesen, analysieren und einen minimalen Aenderungsplan vorschlagen.
+
 ## Codex-Credit-Spar-Strategie
 
 Codex soll sparsam arbeiten, ohne Pruefsicherheit an den falschen Stellen zu verlieren.
@@ -197,7 +312,152 @@ Codex soll sparsam arbeiten, ohne Pruefsicherheit an den falschen Stellen zu ver
 - Keine Internetrecherche, Dependency-Installation oder Plugin-/Tool-Suche ohne konkreten Bedarf.
 - Subagents oder kleinere Spezialagenten nur fuer wirklich unabhaengige, groessere Such- oder Audit-Aufgaben einsetzen; lineare Codeaenderungen bleiben beim Hauptagenten, damit kein Kontext doppelt bezahlt wird.
 - Wenn Modellwahl verfuegbar ist, einfache mechanische Aufgaben mit einem kleineren Modell bearbeiten und groessere Architekturentscheidungen, Sicherheitsfragen oder schwierige Refactorings mit einem staerkeren Modell.
-- Kleine, abgeschlossene Commits bevorzugen, damit nach einem Fehler nicht dieselbe Analyse wiederholt werden muss.
+- Kleine, abgeschlossene Aenderungseinheiten bevorzugen, damit nach einem Fehler nicht dieselbe Analyse wiederholt werden muss. Commits werden nur nach ausdruecklicher Freigabe durch Simon vorbereitet oder ausgefuehrt.
+
+### Subagent-Orchestrierung
+
+Codex darf bei komplexeren Aufgaben einfache Subagents einsetzen, um Kontextarbeit zu parallelisieren und den Hauptagenten schlank zu halten. Subagents sind nur sinnvoll, wenn sie klar abgegrenzte, lesende Such-, Analyse- oder Audit-Aufgaben erledigen. Sie sollen keine linearen Codeänderungen durchführen, keine Dateien schreiben, keine Commits vorbereiten und keine eigenen Architekturentscheidungen treffen.
+
+Der Hauptagent bleibt verantwortlich für:
+
+* das Verstehen der Nutzeranforderung,
+* die Auswahl der betroffenen App und des richtigen Repos,
+* das Lesen der Parent-`AGENTS.md` und der jeweiligen App-`AGENTS.md`,
+* die finale technische Entscheidung,
+* den konkreten Patch,
+* die Testauswahl,
+* die Ergebnisbewertung.
+
+Subagents arbeiten nur als Zuarbeit. Ihre Ergebnisse werden vom Hauptagenten geprüft, zusammengeführt und gegen die Projektregeln bewertet.
+
+#### Wann Subagents eingesetzt werden dürfen
+
+Subagents dürfen eingesetzt werden, wenn mindestens eines zutrifft:
+
+* Die Aufgabe betrifft mehrere voneinander unabhängige Suchräume, zum Beispiel PHP-Backend, JavaScript-Frontend und Templates.
+* Es soll eine größere Codebasis nach bestimmten Mustern durchsucht werden, ohne sofort Änderungen vorzunehmen.
+* Es gibt getrennte Audit-Fragen, zum Beispiel Sicherheit, Tests, Datenmodell oder UI-Auswirkungen.
+* Eine Änderung betrifft mehrere Apps oder `localbase`, und die betroffenen Stellen sollen zunächst nur gefunden werden.
+* Der Hauptagent würde sonst mehrfach große Dateibereiche lesen oder dieselbe Codebasis wiederholt scannen.
+
+Subagents sollen nicht eingesetzt werden bei:
+
+* kleinen mechanischen Änderungen,
+* eindeutig lokalisierter Fehlerbehebung,
+* reinen CSS-/Text-/Template-Korrekturen,
+* linearen Refactorings in wenigen Dateien,
+* Aufgaben, bei denen der Subagent denselben Kontext wie der Hauptagent vollständig lesen müsste.
+
+#### Anzahl und Stärke der Subagents
+
+Die Anzahl der Subagents muss klein bleiben.
+
+* Standard: kein Subagent.
+* Bei klar trennbarer Such- oder Analysearbeit: 1 bis 2 Subagents.
+* Bei größeren Architektur-, Sicherheits- oder Cross-App-Prüfungen: maximal 3 Subagents.
+* Mehr als 3 Subagents nur vorschlagen, nicht selbstständig starten.
+
+Wenn Modellwahl oder Reasoning-Effort verfügbar ist:
+
+* Subagents für reine Suche, Dateikartierung, einfache Pattern-Erkennung oder CSS-/Template-Auswirkungen mit kleinerem Modell und niedrigem Reasoning-Effort starten.
+* Subagents für Tests, Contract-Fragen oder einfache Architekturvergleiche mit kleinerem Modell und mittlerem Reasoning-Effort starten.
+* Sicherheits-, Berechtigungs-, Datenmodell- oder Migrationsanalysen nur dann mit stärkerem Modell oder höherem Reasoning-Effort starten, wenn sie nicht zuverlässig mit einem kleineren Subagent bearbeitet werden können.
+* Ultra-/xhigh-Reasoning nicht für Subagents verwenden, außer Simon fordert es ausdrücklich oder es handelt sich um eine klar abgegrenzte Hochrisikoanalyse.
+
+#### Standardrollen für Subagents
+
+Codex soll Subagents nur mit einer klaren Rolle, einem engen Auftrag und einem begrenzten Rückgabeformat starten.
+
+Geeignete Rollen:
+
+1. **Map-Agent**
+
+   * Zweck: relevante Dateien, Klassen, Funktionen, Routen, Services, Stores, Repositories oder Templates finden.
+   * Darf: lesen, suchen, Fundstellen knapp zusammenfassen.
+   * Darf nicht: bewerten, refactoren, ändern.
+
+2. **Frontend-Agent**
+
+   * Zweck: JavaScript-, CSS-, Template- und UI-Auswirkungen einer geplanten Änderung prüfen.
+   * Darf: betroffene Komponenten, Events, Selektoren, Modelle und Renderingpfade nennen.
+   * Darf nicht: Code ändern oder UI-Architektur neu entwerfen.
+
+3. **Backend-Agent**
+
+   * Zweck: PHP-Controller, Services, Repositories, Stores, Models, DTOs, Migrationen und DI-Verbindungen kartieren.
+   * Darf: Datenflüsse und Abhängigkeiten knapp beschreiben.
+   * Darf nicht: Datenmodellentscheidungen treffen oder Migrationen schreiben.
+
+4. **Test-Agent**
+
+   * Zweck: vorhandene Tests, fehlende Smoke-/Unit-/Contract-Tests und passende schnelle Prüfungen identifizieren.
+   * Darf: konkrete Testdateien und Testbefehle vorschlagen.
+   * Darf nicht: große Testframeworks einführen oder Tests ohne Freigabe breit umbauen.
+
+5. **Security-Agent**
+
+   * Zweck: gezielt Request-Validierung, CSRF, Berechtigungen, Escaping, QueryBuilder-Parameter, Dateipfade und Logging prüfen.
+   * Darf: Risiken und konkrete Fundstellen melden.
+   * Darf nicht: eigenständig Sicherheitsarchitektur umbauen.
+
+#### Standardprompt für Subagents
+
+Subagents sollen nach diesem Muster beauftragt werden:
+
+```text
+Du bist ein lesender Spezialagent in diesem Nextcloud-App-Workspace.
+
+Aufgabe:
+<enge Aufgabe in einem Satz>
+
+Kontextgrenzen:
+- Lies die relevante Parent-AGENTS.md-Regel und die App-AGENTS.md nur soweit noetig.
+- Arbeite nur im betroffenen Repo oder in den ausdruecklich genannten Repos.
+- Nutze gezielte Suche mit rg und kurze Dateiauszuege.
+- Keine Dateien aendern.
+- Keine Commits, kein Staging, kein Push.
+- Keine Dependency-Installation.
+- Keine Internetrecherche.
+- Keine Shell-Befehle mit Schreibwirkung ausfuehren.
+- Kein eskalierter Zugriff durch Subagents.
+- Keine DDEV-, Docker-, `occ`-, Git- oder Installationsbefehle ausfuehren, ausser der Hauptagent hat fuer genau diesen lesenden Check eine ausdrueckliche Freigabe erteilt.
+- Keine breiten Re-Scans ohne konkreten Anlass.
+
+Rueckgabeformat:
+1. Betroffene Dateien und Symbole.
+2. Relevante Fundstellen mit kurzer Begruendung.
+3. Risiken oder offene Fragen.
+4. Maximal 5 konkrete Empfehlungen fuer den Hauptagenten.
+
+Halte die Antwort knapp. Keine vollstaendigen Dateien ausgeben.
+```
+
+#### Ergebnisverwertung durch den Hauptagenten
+
+Nach Subagent-Rueckgaben muss der Hauptagent:
+
+1. doppelte oder widerspruechliche Ergebnisse zusammenführen,
+2. Fundstellen gegen Parent- und App-`AGENTS.md` prüfen,
+3. entscheiden, welche Ergebnisse relevant sind,
+4. einen minimalen Änderungsplan formulieren,
+5. erst danach Dateien ändern,
+6. nach der Änderung passende schnelle Tests ausführen,
+7. offen nennen, welche Subagent-Ergebnisse genutzt oder verworfen wurden.
+
+Subagent-Ergebnisse sind Hinweise, keine Autoritaet. Bei Widerspruch gelten die aktuelle Nutzeranweisung, die jeweilige App-`AGENTS.md`, die Parent-`AGENTS.md`, der aktuelle Code und die Testergebnisse.
+
+#### Learnings aus Subagent-Ergebnissen
+
+Subagents duerfen moegliche Learning-Kandidaten nur markieren. Sie duerfen keine dauerhaften Regeln formulieren oder speichern.
+
+Der Hauptagent prueft Learning-Kandidaten aus Subagent-Ergebnissen gegen diese Kriterien:
+
+- Ist das Ergebnis reproduzierbar oder belegt?
+- Ist es kuenftig wiederverwendbar?
+- Gehoert es in Parent, App-`AGENTS.md`, `docs/`, Tests oder Codekommentare?
+- Ist es eine Regel, ein To-do, eine technische Beobachtung oder nur ein einmaliger Befund?
+
+Nur der Hauptagent darf Simon einen Learning-Vorschlag im Standardformat vorlegen.
 
 ## Gemeinsame Sicherheitsregeln
 
@@ -213,6 +473,34 @@ Bei App-Aenderungen ist in den jeweiligen App-Repos zu pruefen:
 - Keine Secrets in Repository, Logs oder erzeugte Dokumente schreiben.
 - Personenbezogene Daten in Logs minimieren.
 
+
+## Testdaten und generierte Testfaelle
+
+Codex darf Testfaelle generieren, muss dabei aber kuenstliche, neutrale und datenschutzarme Testdaten verwenden.
+
+Nicht erlaubt sind:
+
+- echte personenbezogene Daten,
+- echte BR-Faelle,
+- echte Beschaeftigtendaten,
+- echte Kund*innen-/ASN-Daten,
+- echte interne Dokumentinhalte,
+- echte Mailinhalte,
+- echte Gesundheits-, Konflikt- oder Beschlussdetails.
+
+Fuer Tests, Fixtures, Screenshots, Logs, Beispieldaten und Dokumentation sind synthetische Daten zu verwenden, zum Beispiel neutrale Namen, abstrakte Fallnummern, technische Platzhalter und frei erfundene Inhalte.
+
+Generierte Tests muessen bestehendes oder ausdruecklich gewuenschtes Verhalten pruefen. Codex darf keine Tests erzeugen, die stillschweigend neues Fachverhalten festschreiben, ohne dieses vorher als Annahme oder Aenderung zu benennen.
+
+Wenn Codex Tests aus einer Beobachtung ableitet, muss klar sein:
+
+- Welches Verhalten wird festgehalten?
+- Ist es bestehendes Verhalten, gewuenschtes neues Verhalten oder eine Annahme?
+- Welche Dateien oder Funktionen sind betroffen?
+- Welche schnellen Testbefehle pruefen das Verhalten?
+
+Bei unklarer Fachlogik muss Codex zuerst einen Testvorschlag machen, statt durch generierte Tests eine fachliche Entscheidung zu erzwingen.
+
 ## Dokumentation und Learnings
 
 Wenn bei der Arbeit ein echtes, wiederverwendbares Projekt-Learning entsteht, soll Codex vorschlagen, es zu dokumentieren. Die Ergaenzung erfolgt erst nach ausdruecklicher Freigabe.
@@ -224,11 +512,65 @@ Speicherort:
 - Wenn ein Learning beide Ebenen betrifft, im Parent beschreiben und in den betroffenen App-`AGENTS.md` als konkrete Arbeitsregel wiederholen.
 - Regeln sollen dort stehen, wo Codex sie beim Arbeiten tatsaechlich liest.
 
+### Kriterien fuer Projekt-Learnings
+
+Ein Learning darf nur zur Dokumentation vorgeschlagen werden, wenn es mindestens eines dieser Kriterien erfuellt:
+
+- Es korrigiert eine vorherige falsche oder riskante Annahme.
+- Es beschreibt eine wiederkehrende Projektbesonderheit, die bei kuenftigen Aufgaben erneut relevant ist.
+- Es betrifft eine stabile Architektur-, Test-, DDEV-, Repo-, LocalBase-, Sicherheits- oder Nextcloud-App-Regel.
+- Es verhindert wahrscheinlich kuenftige Fehlentscheidungen, doppelte Arbeit oder falsche Standardloesungen.
+- Es wurde durch Code, Test, Logausgabe, reproduzierbares Verhalten oder Simon bestaetigt.
+
+Nicht als Learning speichern:
+
+- einmalige Zwischenstaende,
+- blosse Vermutungen,
+- temporaere Workarounds ohne bestaetigten Nutzen,
+- aufgabenspezifische To-dos,
+- reine Zusammenfassungen der gerade erledigten Arbeit,
+- Informationen, die nur fuer die aktuelle Session gelten,
+- private oder sensible Inhalte,
+- Details, die besser in Codekommentare, Tests oder normale Projektdokumentation gehoeren.
+
+Wenn ein moegliches Learning plausibel, aber noch nicht bestaetigt ist, muss Codex es als Vorschlag mit Status `unbestaetigt` kennzeichnen und zuerst eine Pruefung oder Freigabe durch Simon anfordern.
+
+### Format fuer Learning-Vorschlaege
+
+Wenn Codex ein Learning vorschlaegt, soll es nicht direkt in Dateien schreiben, sondern zuerst diesen Vorschlag machen:
+
+```text
+Moegliches Learning:
+- Ebene: Parent / App / beide
+- Betroffene Datei: <AGENTS.md oder docs/...>
+- Status: verifiziert / plausibel / unbestaetigt / verworfen
+- Grund: Warum ist das kuenftig wiederverwendbar?
+- Vorgeschlagener Regeltext:
+  <kurzer, konkreter Text>
+```
+
+Codex darf ein Learning erst nach ausdruecklicher Freigabe durch Simon in eine `AGENTS.md` oder Dokumentationsdatei einbauen.
+
 Human-lesbare Workspace-Dokumentation:
 
     docs/workspace.md
 
 Die alte Datei `00_ki_projektkonfiguration_br_nextcloud_apps.md` ist nur noch ein Kompatibilitaets-Hinweis und keine zweite Regelquelle.
+
+
+## Abschlussbericht nach Aenderungen
+
+Nach jeder Code- oder Dokumentationsaenderung meldet Codex knapp:
+
+1. Welche Anforderung umgesetzt wurde.
+2. Welche Dateien geaendert wurden.
+3. Welche Tests oder Checks ausgefuehrt wurden.
+4. Welche Tests oder Checks nicht ausgefuehrt wurden und warum.
+5. Welche Risiken oder offenen Punkte bleiben.
+6. Ob ein Learning-Kandidat entstanden ist.
+7. Ob ein Commit vorbereitet werden soll oder nicht.
+
+Codex darf eine Aufgabe nicht als vollstaendig abgeschlossen darstellen, wenn relevante Tests nicht gelaufen sind oder ein Check wegen Sandbox-, DDEV- oder Docker-Grenzen nicht ausgefuehrt werden konnte. In diesem Fall muss der Status als `teilweise geprueft` oder `nicht vollstaendig verifiziert` benannt werden.
 
 ## Git-Regeln
 
@@ -255,6 +597,7 @@ Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem jeweils b
 - AdPlaner-Aenderungen: `~/projects/br-nextcloud-apps/adplaner`
 - BRStunden-Aenderungen: `~/projects/br-nextcloud-apps/brstunden`
 - LocalBase-Aenderungen: `~/projects/br-nextcloud-apps/localbase`
+- Berechtigungsmatrix-Aenderungen: `~/projects/br-nextcloud-apps/br_permission_matrix`
 
 In Codex-Sessions kann das Schreiben in `.git` je nach Sandbox-Kontext eskalierten Zugriff benoetigen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten Git-Stand.
 

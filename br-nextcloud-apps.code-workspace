@@ -19,6 +19,10 @@
     {
       "name": "localbase",
       "path": "localbase"
+    },
+    {
+      "name": "br_permission_matrix",
+      "path": "br_permission_matrix"
     }
   ],
   "settings": {

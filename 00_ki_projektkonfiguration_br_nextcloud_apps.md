@@ -9,6 +9,7 @@ Die verbindlichen Regeln stehen jetzt hier:
 - `brtop/AGENTS.md`: app-spezifische Regeln fuer BRTop.
 - `adplaner/AGENTS.md`: app-spezifische Regeln fuer AdPlaner.
 - `brstunden/AGENTS.md`: app-spezifische Regeln fuer BRStunden.
+- `br_permission_matrix/AGENTS.md`: app-spezifische Regeln fuer die Berechtigungsmatrix.
 
 Kurzfassung:
 
