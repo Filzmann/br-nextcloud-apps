@@ -262,6 +262,17 @@ Wenn eine Aufgabe Berechtigungen, Gruppenlogik, Rollen, Zugriffsschutz, Shares, 
 
 Accessibility ist fuer eigene Nextcloud-Apps eine harte Entwicklungsregel, nicht nur ein optionaler Feinschliff.
 
+### Nextcloud-Scrollvertrag fuer App-Seiten
+
+Wiederverwendbares Learning: Nextcloud stellt den zentralen App-Inhaltsbereich als begrenzten Layoutbereich bereit und verhindert haeufig das Scrollen des Dokument-Bodys. Jede navigierbare eigene App muss deshalb von Beginn an einen expliziten Scrollvertrag besitzen:
+
+- Der direkte App-Root im Nextcloud-Contentbereich ist der vertikale Scrollcontainer und verwendet mindestens `height: 100%`, `min-height: 0`, `overflow-y: auto` und `box-sizing: border-box`.
+- Der App-Root bekommt einen deckenden Nextcloud-Hintergrund, typischerweise `background: var(--color-main-background)`, damit kein globales Theme-/Login-Wallpaper durchscheint.
+- Breite Kalender, Matrizen und Tabellen scrollen horizontal nur in einem gezielten inneren Wrapper mit `overflow-x: auto`; die gesamte App darf dadurch nicht unkontrolliert horizontal wachsen.
+- In Flex- oder Grid-Eltern muessen scrollende Kinder `min-height: 0` beziehungsweise `min-width: 0` erhalten, damit der Browser den Overflow tatsaechlich innerhalb des vorgesehenen Containers berechnet.
+- `body`, globale Nextcloud-Container und Core-Selektoren werden von Apps nicht ueberschrieben. Der Scrollvertrag bleibt auf app-eigene Klassen begrenzt.
+- Jede neue navigierbare App und jede groessere Layoutaenderung bekommt einen Layout-Smoke-Test oder eine gezielte Browserpruefung fuer vertikales App-Scrolling, horizontalen Tabellen-Overflow und deckenden Hintergrund.
+
 Bei neuen oder geaenderten Oberflaechen muss Codex auf folgende Mindeststandards achten:
 
 - semantische HTML-Struktur,
