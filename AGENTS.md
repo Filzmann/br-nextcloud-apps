@@ -23,6 +23,7 @@ Aktuelle eigene Apps:
 | BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` | `/var/www/html/html/custom_apps/brstunden` |
 | LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation | `/var/www/html/html/custom_apps/localbase` |
 | Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` | `/var/www/html/html/custom_apps/br_permission_matrix` |
+| AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` | `/var/www/html/html/custom_apps/adcalendar` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -62,12 +63,14 @@ Wichtige Befehle:
     ddev launch /apps/adplaner/
     ddev launch /apps/brstunden/
     ddev launch /apps/br_permission_matrix/
+    ddev launch /apps/adcalendar/
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
     ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
     ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
     ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
+    ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler.
 
@@ -136,6 +139,15 @@ Berechtigungsmatrix:
 Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
+
+AD Kalender:
+
+    ~/projects/br-nextcloud-apps/adcalendar
+    -> /var/www/html/html/custom_apps/adcalendar
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.adcalendar.yaml
 
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
