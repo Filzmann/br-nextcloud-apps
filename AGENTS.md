@@ -26,6 +26,7 @@ Aktuelle eigene Apps:
 | AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` | `/var/www/html/html/custom_apps/adcalendar` |
 | AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` | `/var/www/html/html/custom_apps/adurlaub` |
 | AD-/BR-Suite | `orgsuite` | `~/projects/br-nextcloud-apps/orgsuite` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` | `/var/www/html/html/custom_apps/orgsuite` |
+| AD Raumplaner | `adroom` | `~/projects/br-nextcloud-apps/adroom` | `https://nextcloud-dev.ddev.site/apps/adroom/` | `/var/www/html/html/custom_apps/adroom` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -47,6 +48,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `adcalendar/` ist ein eigenes Git-Repository fuer Dienst- und Terminplanung.
 - `adurlaub/` ist ein eigenes Git-Repository fuer Urlaubsplanung.
 - `orgsuite/` ist ein eigenes Git-Repository fuer die gemeinsame AD-/BR-Navigation ohne Fachdaten.
+- `adroom/` ist ein eigenes Git-Repository fuer Raumverwaltung und Raumbuchungen.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -72,6 +74,7 @@ Wichtige Befehle:
     ddev launch /apps/adurlaub/
     ddev launch /apps/orgsuite/ad
     ddev launch /apps/orgsuite/br
+    ddev launch /apps/adroom/
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
@@ -81,6 +84,7 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
     ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
     ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
+    ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler.
 
@@ -176,6 +180,15 @@ AD-/BR-Suite:
 Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.orgsuite.yaml
+
+AD Raumplaner:
+
+    ~/projects/br-nextcloud-apps/adroom
+    -> /var/www/html/html/custom_apps/adroom
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.adroom.yaml
 
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
@@ -684,6 +697,7 @@ Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem jeweils b
 - AD-Kalender-Aenderungen: `~/projects/br-nextcloud-apps/adcalendar`
 - AD-Urlaub-Aenderungen: `~/projects/br-nextcloud-apps/adurlaub`
 - OrgSuite-Aenderungen: `~/projects/br-nextcloud-apps/orgsuite`
+- AD-Raumplaner-Aenderungen: `~/projects/br-nextcloud-apps/adroom`
 
 In Codex-Sessions kann das Schreiben in `.git` je nach Sandbox-Kontext eskalierten Zugriff benoetigen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten Git-Stand.
 
