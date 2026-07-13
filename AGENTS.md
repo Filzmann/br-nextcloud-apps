@@ -310,6 +310,16 @@ Wenn eine Aufgabe Berechtigungen, Gruppenlogik, Rollen, Zugriffsschutz, Shares, 
 
 Accessibility ist fuer eigene Nextcloud-Apps eine harte Entwicklungsregel, nicht nur ein optionaler Feinschliff.
 
+### Einstellungen als eigener Tab
+
+Wiederverwendbares Learning: Fachliche und administrative Einstellungen werden in jeder navigierbaren eigenen App in einem eigenen Tab `Einstellungen` gebuendelt.
+
+- Einstellungen werden nicht in Hauptansichten, aufklappbaren `details`-Bloecken oder fachfremden Dialogen versteckt.
+- Der Tab `Einstellungen` ist Teil derselben semantischen Tabnavigation wie die Hauptansicht und verwendet `role="tablist"`, `role="tab"`, `role="tabpanel"`, eindeutige `aria-controls`-/`aria-labelledby`-Beziehungen und gepflegte `aria-selected`-Zustaende.
+- Fehlende Berechtigungen blenden den Einstellungstab nur als Komfort aus; lesende und schreibende Einstellungs-Endpunkte bleiben serverseitig geschuetzt.
+- Kontextuelle Kleinstoptionen duerfen direkt an einer Funktion liegen, wenn sie ausschliesslich diese eine Aktion konfigurieren. Dauerhafte App-, Gruppen-, Rechte- oder Standardwerte gehoeren immer in den Einstellungstab.
+- Neue Apps und groessere UI-Aenderungen bekommen einen Smoke-Test fuer Tabwechsel, Sichtbarkeit und die semantischen Tabbeziehungen.
+
 ### Nextcloud-Scrollvertrag fuer App-Seiten
 
 Wiederverwendbares Learning: Nextcloud stellt den zentralen App-Inhaltsbereich als begrenzten Layoutbereich bereit und verhindert haeufig das Scrollen des Dokument-Bodys. Jede navigierbare eigene App muss deshalb von Beginn an einen expliziten Scrollvertrag besitzen:
