@@ -333,6 +333,7 @@ Wiederverwendbares Learning: Nextcloud stellt den zentralen App-Inhaltsbereich a
 
 Bei neuen oder geaenderten Oberflaechen muss Codex auf folgende Mindeststandards achten:
 
+- Deutsche Benutzertexte verwenden echte Umlaute und `ß`; Schreibweisen wie `ae`, `oe`, `ue` oder `ss` sind kein Ersatz. Technische IDs, bestehende Gruppenkennungen, URLs, Dateinamen und andere Maschinenvertraege bleiben davon unberuehrt.
 - semantische HTML-Struktur,
 - nutzbare Tastaturbedienung,
 - sichtbare Fokuszustaende,
