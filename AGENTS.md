@@ -314,6 +314,8 @@ Accessibility ist fuer eigene Nextcloud-Apps eine harte Entwicklungsregel, nicht
 
 Wiederverwendbares Learning: Fachliche und administrative Einstellungen werden in jeder navigierbaren eigenen App in einem eigenen Tab `Einstellungen` gebuendelt.
 
+- Der Einstellungstab einer Fachapp enthält ausschließlich persönliche Einstellungen des eingeloggten Kontos. Organisationsweite Konfigurationen, Gruppen-/Hierarchieänderungen und ausschließlich für Admins sichtbare Freigaben gehören in den Nextcloud-Adminbereich der zuständigen Suite-App.
+
 - Einstellungen werden nicht in Hauptansichten, aufklappbaren `details`-Bloecken oder fachfremden Dialogen versteckt.
 - Der Tab `Einstellungen` ist Teil derselben semantischen Tabnavigation wie die Hauptansicht und verwendet `role="tablist"`, `role="tab"`, `role="tabpanel"`, eindeutige `aria-controls`-/`aria-labelledby`-Beziehungen und gepflegte `aria-selected`-Zustaende.
 - Fehlende Berechtigungen blenden den Einstellungstab nur als Komfort aus; lesende und schreibende Einstellungs-Endpunkte bleiben serverseitig geschuetzt.
@@ -327,6 +329,7 @@ Wiederverwendbares Learning: Nextcloud stellt den zentralen App-Inhaltsbereich a
 - Der direkte App-Root im Nextcloud-Contentbereich ist der vertikale Scrollcontainer und verwendet mindestens `height: 100%`, `min-height: 0`, `overflow-y: auto` und `box-sizing: border-box`.
 - Der App-Root bekommt einen deckenden Nextcloud-Hintergrund, typischerweise `background: var(--color-main-background)`, damit kein globales Theme-/Login-Wallpaper durchscheint.
 - Breite Kalender, Matrizen und Tabellen scrollen horizontal nur in einem gezielten inneren Wrapper mit `overflow-x: auto`; die gesamte App darf dadurch nicht unkontrolliert horizontal wachsen.
+- Breitenintensive Tabellen dürfen die gesamte verfügbare App-Breite nutzen. Künstliche `max-width`-Begrenzungen auf umgebenden Ansichten sind zu vermeiden; die Tabelle kombiniert je nach Inhalt `width: 100%`, `min-width: 100%` oder `width: max-content` mit dem gezielten horizontalen Wrapper.
 - In Flex- oder Grid-Eltern muessen scrollende Kinder `min-height: 0` beziehungsweise `min-width: 0` erhalten, damit der Browser den Overflow tatsaechlich innerhalb des vorgesehenen Containers berechnet.
 - `body`, globale Nextcloud-Container und Core-Selektoren werden von Apps nicht ueberschrieben. Der Scrollvertrag bleibt auf app-eigene Klassen begrenzt.
 - Jede neue navigierbare App und jede groessere Layoutaenderung bekommt einen Layout-Smoke-Test oder eine gezielte Browserpruefung fuer vertikales App-Scrolling, horizontalen Tabellen-Overflow und deckenden Hintergrund.
@@ -358,6 +361,7 @@ Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonder
 - `localbase` ist Multiplikator-Code und wird strenger behandelt als einzelne Apps: Jede Aenderung an oeffentlichen LocalBase-Vertraegen braucht passende PHP-/JavaScript-Tests in LocalBase und betroffene Contract-/Smoke-Tests in den nutzenden Apps.
 - App-Repos testen ihre eigene Fachlogik und die Integration mit LocalBase, duplizieren aber nicht die vollstaendige LocalBase-Testabdeckung.
 - Gemeinsame Test-Helper sind sinnvoll, sobald mindestens zwei Repos dieselben Assertions, Fakes, Fixtures oder Setup-Schritte semantisch gleich brauchen. Sie bleiben klein, dependency-arm, test-only und werden in LocalBase selbst getestet, bevor Apps sie nutzen.
+- Dependency-arme PHP-Smoke-Tests werden grundsätzlich in getrennten Prozessen ausgeführt; jeder Test lädt seine Abhängigkeiten selbst. Dadurch bleiben Testreihenfolge, bereits geladene Klassen und globale Zustände ohne Einfluss auf das Ergebnis.
 - In der lokalen Vor-Production-Phase duerfen Apps gemeinsame LocalBase-Test-Helper pragmatisch per relativen Repo-Pfaden nutzen. Eine stabilere Packaging-/Autoload-/Import-Struktur wird erst geklaert, wenn CI, Distribution, Production-Haertung oder die Pfade selbst spuerbar bremsen.
 - Jedes App-Repo soll schnelle, dependency-arme Einstiegspunkte fuer lokale Tests anbieten: `php tests/run.php` fuer PHP und `node tests/run-js.mjs` fuer JavaScript.
 - Vor jedem Commit laufen die schnellen Tests des betroffenen Repos. Nach LocalBase-Aenderungen laufen zusaetzlich die schnellen Tests der betroffenen Apps.
