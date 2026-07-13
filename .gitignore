@@ -25,6 +25,7 @@ localbase/
 br_permission_matrix/
 adcalendar/
 adurlaub/
+orgsuite/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

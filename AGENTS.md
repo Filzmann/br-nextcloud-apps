@@ -25,6 +25,7 @@ Aktuelle eigene Apps:
 | Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` | `/var/www/html/html/custom_apps/br_permission_matrix` |
 | AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` | `/var/www/html/html/custom_apps/adcalendar` |
 | AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` | `/var/www/html/html/custom_apps/adurlaub` |
+| AD-/BR-Suite | `orgsuite` | `~/projects/br-nextcloud-apps/orgsuite` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` | `/var/www/html/html/custom_apps/orgsuite` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -45,6 +46,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `br_permission_matrix/` ist ein eigenes Git-Repository fuer die read-only Berechtigungsmatrix.
 - `adcalendar/` ist ein eigenes Git-Repository fuer Dienst- und Terminplanung.
 - `adurlaub/` ist ein eigenes Git-Repository fuer Urlaubsplanung.
+- `orgsuite/` ist ein eigenes Git-Repository fuer die gemeinsame AD-/BR-Navigation ohne Fachdaten.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -68,6 +70,8 @@ Wichtige Befehle:
     ddev launch /apps/br_permission_matrix/
     ddev launch /apps/adcalendar/
     ddev launch /apps/adurlaub/
+    ddev launch /apps/orgsuite/ad
+    ddev launch /apps/orgsuite/br
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
@@ -76,6 +80,7 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
     ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
     ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
+    ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler.
 
@@ -163,6 +168,15 @@ Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
 
+AD-/BR-Suite:
+
+    ~/projects/br-nextcloud-apps/orgsuite
+    -> /var/www/html/html/custom_apps/orgsuite
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.orgsuite.yaml
+
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 
 Wenn eine neue App angelegt wird, wird im Parent nur die DDEV-Mount-Konfiguration und die gemeinsame Dokumentation ergaenzt. Der App-Code bleibt im neuen App-Repo.
@@ -214,6 +228,13 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Eine gemeinsame UI-Component-Library ist sinnvoll, sobald mindestens zwei Apps dieselben UI-Primitives oder Komponenten semantisch gleich brauchen, inklusive gleicher Zustaende, Events und Accessibility-Regeln. Bis dahin werden nur kleine, stabile Helfer wie Escaping, Notices, Buttons oder Formatierer nach `localbase` verschoben; keine grosse Design-System-Schicht vorsorglich bauen.
 - Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
 - Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
+
+### Gemeinsame AD-/BR-Suite-Navigation
+
+- Im Nextcloud-Appmenue werden die AD-Fachapps unter dem Einstieg `AD` und die BR-Fachapps unter `BR` gebuendelt.
+- `orgsuite` besitzt die gemeinsamen Menue-Definitionen, Icons und Einstieg-Weiterleitungen. Fachapps duplizieren keine Suite-Linklisten.
+- Die Fachapps bleiben eigenstaendige Repositories, Datenmodelle und Berechtigungsraeume. Navigation erteilt niemals fachliche Rechte; Zielcontroller und APIs pruefen weiterhin serverseitig.
+- Neue AD- oder BR-Fachapps werden sowohl in OrgSuite als auch in ihrer eigenen App-`AGENTS.md` dem passenden Suite-Menue zugeordnet und registrieren keinen zusaetzlichen Hauptnavigationseintrag.
 
 ## Gemeinsame Kommentar- und Dokumentationsstruktur im Code
 
@@ -660,6 +681,9 @@ Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem jeweils b
 - BRStunden-Aenderungen: `~/projects/br-nextcloud-apps/brstunden`
 - LocalBase-Aenderungen: `~/projects/br-nextcloud-apps/localbase`
 - Berechtigungsmatrix-Aenderungen: `~/projects/br-nextcloud-apps/br_permission_matrix`
+- AD-Kalender-Aenderungen: `~/projects/br-nextcloud-apps/adcalendar`
+- AD-Urlaub-Aenderungen: `~/projects/br-nextcloud-apps/adurlaub`
+- OrgSuite-Aenderungen: `~/projects/br-nextcloud-apps/orgsuite`
 
 In Codex-Sessions kann das Schreiben in `.git` je nach Sandbox-Kontext eskalierten Zugriff benoetigen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten Git-Stand.
 
