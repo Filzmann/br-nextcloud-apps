@@ -24,6 +24,7 @@ brstunden/
 localbase/
 br_permission_matrix/
 adcalendar/
+adurlaub/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

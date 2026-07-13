@@ -24,6 +24,7 @@ Aktuelle eigene Apps:
 | LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation | `/var/www/html/html/custom_apps/localbase` |
 | Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` | `/var/www/html/html/custom_apps/br_permission_matrix` |
 | AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` | `/var/www/html/html/custom_apps/adcalendar` |
+| AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` | `/var/www/html/html/custom_apps/adurlaub` |
 
 ## Verbindlicher Arbeitsumfang
 
@@ -42,6 +43,8 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `brstunden/` ist ein eigenes Git-Repository.
 - `localbase/` ist ein eigenes Git-Repository fuer gemeinsame, fachlich neutrale Basisbausteine.
 - `br_permission_matrix/` ist ein eigenes Git-Repository fuer die read-only Berechtigungsmatrix.
+- `adcalendar/` ist ein eigenes Git-Repository fuer Dienst- und Terminplanung.
+- `adurlaub/` ist ein eigenes Git-Repository fuer Urlaubsplanung.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -64,6 +67,7 @@ Wichtige Befehle:
     ddev launch /apps/brstunden/
     ddev launch /apps/br_permission_matrix/
     ddev launch /apps/adcalendar/
+    ddev launch /apps/adurlaub/
     ddev exec -d /var/www/html/html php occ status
     ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
     ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
@@ -71,6 +75,7 @@ Wichtige Befehle:
     ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
     ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
     ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
+    ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 
 In Codex-Sessions koennen DDEV-Befehle im normalen Sandbox-Kontext nicht zuverlaessig auf Docker zugreifen. Wenn `ddev` mit Docker-/Stream-FD-Fehlern scheitert, ist das kein App- oder DDEV-Projektfehler.
 
@@ -148,6 +153,15 @@ AD Kalender:
 Konfiguration:
 
     nextcloud-dev/.ddev/docker-compose.adcalendar.yaml
+
+AD Urlaub:
+
+    ~/projects/br-nextcloud-apps/adurlaub
+    -> /var/www/html/html/custom_apps/adurlaub
+
+Konfiguration:
+
+    nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
 
 Mounts muessen den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
 

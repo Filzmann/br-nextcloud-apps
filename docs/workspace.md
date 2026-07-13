@@ -22,12 +22,16 @@ br-nextcloud-apps/
 |       |-- docker-compose.adplaner.yaml
 |       |-- docker-compose.brstunden.yaml
 |       |-- docker-compose.localbase.yaml
-|       `-- docker-compose.br_permission_matrix.yaml
+|       |-- docker-compose.br_permission_matrix.yaml
+|       |-- docker-compose.adcalendar.yaml
+|       `-- docker-compose.adurlaub.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
-`-- br_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
+|-- br_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
+|-- adcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
+`-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
 ```
 
 ## Aktuelle App-Repos
@@ -39,13 +43,15 @@ br-nextcloud-apps/
 | BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
 | LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation |
 | Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
+| AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
+| AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
 
 App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`.
 
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/` und `br_permission_matrix/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/` und `adurlaub/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -72,6 +78,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
+ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -156,6 +163,32 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
 ```
 
+AD Kalender:
+
+```text
+~/projects/br-nextcloud-apps/adcalendar
+-> /var/www/html/html/custom_apps/adcalendar
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.adcalendar.yaml
+```
+
+AD Urlaub:
+
+```text
+~/projects/br-nextcloud-apps/adurlaub
+-> /var/www/html/html/custom_apps/adurlaub
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
+```
+
 Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`.
 
 ## Neue App anlegen
@@ -171,7 +204,7 @@ Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`
 
 ## VS-Code Workspace
 
-`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/`, `brstunden/`, `localbase/` und `br_permission_matrix/` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
+`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/`, `brstunden/`, `localbase`, `br_permission_matrix`, `adcalendar` und `adurlaub` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
 
 Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen.
 

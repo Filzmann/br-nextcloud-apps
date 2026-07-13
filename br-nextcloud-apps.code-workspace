@@ -23,6 +23,14 @@
     {
       "name": "br_permission_matrix",
       "path": "br_permission_matrix"
+    },
+    {
+      "name": "adcalendar",
+      "path": "adcalendar"
+    },
+    {
+      "name": "adurlaub",
+      "path": "adurlaub"
     }
   ],
   "settings": {
