@@ -115,6 +115,8 @@ for app in "${apps[@]}"; do
 done
 
 cp "$workspace/docs/ad-suite-staging-release.md" "$release_dir/INSTALLATION.md"
+cp "$workspace/docs/ad-suite-operations.md" "$release_dir/BETRIEB-UND-RUECKBAU.md"
+cp "$workspace/docs/ad-suite-acceptance.md" "$release_dir/ABNAHMEPROTOKOLL.md"
 (cd "$release_dir" && sha256sum --check SHA256SUMS)
 tar -C "$dist_root" -czf "$bundle" "$(basename "$release_dir")"
 (cd "$dist_root" && sha256sum "$(basename "$bundle")" > "$(basename "$bundle").sha256")

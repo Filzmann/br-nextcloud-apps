@@ -41,12 +41,12 @@ Nach ausgeführten App-Migrationen ist ein Downgrade durch bloßes Zurückkopier
 
 ## Upload prüfen
 
-Das Suite-Bundle und die danebenliegende Prüfsumme gemeinsam übertragen:
+Das Suite-Bundle und die danebenliegende Prüfsumme gemeinsam übertragen. Im Beispiel wird `RELEASE` vorher durch die konkrete Releasebezeichnung wie `nc34-rc2` ersetzt:
 
 ```bash
-sha256sum --check ad-suite-nc34-rc1.tar.gz.sha256
-tar -xzf ad-suite-nc34-rc1.tar.gz
-cd ad-suite-nc34-rc1
+sha256sum --check ad-suite-RELEASE.tar.gz.sha256
+tar -xzf ad-suite-RELEASE.tar.gz
+cd ad-suite-RELEASE
 sha256sum --check SHA256SUMS
 ```
 
