@@ -108,6 +108,18 @@ Nach dem Aktivieren oder Aktualisieren einer App pruefen:
 
 Bei neuen Tabellen oder Background-Jobs zusaetzlich gezielt pruefen, ob die erwartete Tabelle bzw. der erwartete Eintrag in `oc_jobs` existiert.
 
+### Hosting-Panels und getrennte Auslieferungsbenutzer
+
+Wiederverwendbares Learning aus der verifizierten Plesk-Staging-Installation: Bei Hosting-Panels können PHP-FPM, der statische Webserver und die interaktive CLI unter verschiedenen Benutzer- und Gruppenkontexten laufen. Eine erfolgreich aktivierte App ist deshalb noch kein Nachweis, dass ihre CSS- und JavaScript-Assets ausgeliefert werden.
+
+- Nextcloud-Root, Domain-Systembenutzer und PHP-Version werden aus der tatsächlichen Hosting-Konfiguration ermittelt; Pfade wie `/var/www/nextcloud`, der Benutzer `www-data` oder das System-`php` dürfen nicht ungeprüft angenommen werden.
+- Unter Plesk wird für `occ` das zur Domain konfigurierte CLI-PHP wie `/opt/plesk/php/<Version>/bin/php` verwendet. Das CLI-Memory-Limit kann vom PHP-FPM-Limit der Domain abweichen und wird getrennt geprüft.
+- Ein zusätzlicher App-Pfad muss in `apps_paths` registriert sein. Der Core-Pfad bleibt dabei schreibgeschützt und der vorgesehene `custom_apps`-Pfad wird bewusst als schreibbar markiert; bestehende App-Pfade werden nicht versehentlich überschrieben.
+- Der PHP-FPM-/Domainbenutzer benötigt Schreibzugriff auf den installierbaren App-Pfad. Der Benutzer beziehungsweise die Gruppe des statischen Webservers benötigt zusätzlich Lese- und Verzeichniszugriff auf App-Assets. Unter Plesk kann dafür beispielsweise die Gruppe `psaserv` relevant sein, obwohl Dateien dem Domainbenutzer und `psacln` gehören.
+- Berechtigungsprobleme werden mit dem kleinsten passenden Besitzer-/Gruppen- und Moduswechsel gelöst. Kein pauschales `chmod 777` und keine unnötige rekursive Freigabe von App- oder Nextcloud-Code.
+- Nach jeder Installation auf einer solchen Umgebung wird mindestens eine CSS- und eine JavaScript-Datei einer eigenen App erst im Static-Webserver-Kontext lesend und anschließend über die öffentliche HTTPS-URL geprüft. Erwartet werden HTTP 200 und der richtige Content-Type; HTTP 403 mit `Server unable to read htaccess file` weist typischerweise auf fehlenden Verzeichniszugriff des statischen Webservers hin.
+- Installer und Abnahme dürfen Erfolg daher nicht allein aus `occ app:enable`, `occ status` oder grünen Migrationen ableiten. Ein Browser-/HTTP-Smoke für App-Assets und die sichtbare Oberfläche gehört verbindlich zur Lieferprüfung.
+
 ## DDEV-Mounts
 
 Die App-Repos werden per DDEV-Bind-Mount eingebunden.
