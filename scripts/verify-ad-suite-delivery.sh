@@ -24,6 +24,9 @@ for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIO
     fi
 done
 
+echo '== Suite: Coverage-Baseline-Vertrag =='
+bash "$workspace/tests/check-ad-suite-coverage-baseline.sh"
+
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
     info="$repo/appinfo/info.xml"

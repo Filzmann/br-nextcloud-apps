@@ -10,6 +10,8 @@ merger="$container_root/localbase/tests/coverage/merge-clover.php"
 container_output='/tmp/ad-suite-coverage'
 host_output="$workspace/build/coverage"
 summary="$host_output/php-summary.tsv"
+baseline="${COVERAGE_BASELINE_FILE:-$workspace/scripts/ad-suite-php-coverage-baseline.tsv}"
+baseline_checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
 
 if ! command -v ddev >/dev/null 2>&1; then
     echo 'DDEV fehlt.' >&2
@@ -59,6 +61,8 @@ if ! awk -v actual="$total_percent" -v minimum="$minimum" 'BEGIN { exit(actual +
     echo "PHP-Line-Coverage ${total_percent} % liegt unter dem Mindestwert ${minimum} %." >&2
     exit 1
 fi
+
+bash "$baseline_checker" "$baseline" "$summary"
 
 echo "Coverage-Bericht: $summary"
 column -t -s $'\t' "$summary" 2>/dev/null || cat "$summary"

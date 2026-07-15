@@ -360,6 +360,38 @@ Wenn eine UI-Aenderung diese Punkte nicht erfuellt, darf Codex sie nicht als fer
 
 Tests werden als Sicherheitsgurt vor groesseren Refactorings behandelt, besonders bei gemeinsamen Libraries.
 
+### TDD als Standardvorgehen
+
+Neue Entwicklung erfolgt grundsätzlich testgetrieben nach dem Zyklus Rot – Grün – Refactor:
+
+1. Zuerst beschreibt ein kleiner, fachlich eindeutiger Test das gewünschte Verhalten und schlägt aus dem erwarteten Grund fehl.
+2. Danach wird nur so viel Produktionscode umgesetzt, wie für einen grünen Testlauf notwendig ist.
+3. Anschließend wird bei weiterhin grünen Tests auf Lesbarkeit, Duplizierung und klare Verantwortlichkeiten refaktoriert.
+
+Verbindliche Anwendungsfälle:
+
+- Fachlogik, Berechtigungen, Hierarchien, Konfliktregeln und Validierungen werden test-first entwickelt.
+- Jeder Bugfix beginnt mit einem Regressionstest, der den Fehler vor der Korrektur reproduziert.
+- Vor Refactorings sichern Charakterisierungstests das beizubehaltende Verhalten.
+- Neue oder geänderte API-Endpunkte prüfen mindestens Erfolgsfall, Validierungsfehler sowie typische Allow-/Deny-Fälle.
+- App-übergreifende Verträge werden durch Contract-Tests auf beiden beteiligten Seiten abgesichert.
+- Migrationen und Repository-Logik erhalten passende Integrations- oder DDEV-Tests, sobald reine Unit-Tests den Vertrag nicht belastbar prüfen können.
+- UI-Logik wird test-first entwickelt; Layout, Accessibility und Nextcloud-Integration werden zusätzlich durch Smoke- oder Browsertests abgesichert.
+
+Begrenzte Ausnahmen:
+
+- Zeitlich begrenzte technische Spikes und reine UI-Erkundungen dürfen vor einem Test entstehen. Ihr Code wird verworfen oder vor der Übernahme in Produktivcode durch Tests charakterisiert und anschließend regulär weiterentwickelt.
+- Rein deklarative Texte, Metadaten oder triviale Darstellungsanpassungen benötigen keinen künstlichen Unit-Test, aber weiterhin passende Syntax-, Contract-, Layout- oder Sichtprüfungen.
+- Schwer isolierbare Nextcloud-Integration darf mit einem gröberen Integrationstest beginnen, wenn ein kleiner Unit-Test den realen Vertrag nicht sinnvoll abbilden würde.
+
+Coverage ist ein Warn- und Lieferindikator, kein Ersatz für gute Assertions. Für die AD-Suite gelten deshalb zusätzlich:
+
+- Die bekannte Gesamt- und App-Coverage darf nicht unbemerkt sinken.
+- Für neu oder wesentlich geänderten ausführbaren Code werden mindestens 85 Prozent Line-Coverage angestrebt; begründete Abweichungen werden im Abschlussbericht benannt.
+- Sicherheitskritische Berechtigungs- und Fachinvarianten werden unabhängig von der Prozentzahl vollständig mit relevanten Allow-, Deny- und Grenzfällen abgedeckt.
+- Kein Bugfix ohne Regressionstest, kein Commit mit roten schnellen Tests und kein Release mit rotem Delivery-Gate.
+- Prozentwerte für PHP und JavaScript werden nur getrennt ausgewiesen und nur dann als Gate verwendet, wenn die jeweilige Messung tatsächlich ausgeführte Produktionslogik belastbar erfasst.
+
 - Tests sind Teil der Architekturarbeit und kein optionaler Nachtrag. Neue oder refaktorierte Fachlogik bekommt passende Charakterisierungs-, Unit-, Contract- oder Smoke-Tests, bevor darauf weiter aufgebaut wird.
 - Vor groesseren Refactorings zuerst kleine Charakterisierungstests schreiben oder aktualisieren, die das gewuenschte bestehende Verhalten festhalten.
 - Danach refaktorieren und dieselben Tests erneut laufen lassen.
