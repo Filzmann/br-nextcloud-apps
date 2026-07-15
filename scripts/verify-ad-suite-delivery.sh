@@ -28,6 +28,10 @@ echo '== Suite: Coverage-Baseline-Vertrag =='
 bash "$workspace/tests/check-ad-suite-coverage-baseline.sh"
 echo '== Suite: GitHub-CI-Vertrag =='
 bash "$workspace/tests/check-ad-suite-ci-contract.sh"
+echo '== Suite: Standalone- und Integrationsvertrag =='
+bash "$workspace/tests/check-ad-suite-standalone-contract.sh"
+echo '== Suite: Produktinstaller =='
+bash "$workspace/tests/check-ad-product-installer.sh"
 
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
@@ -133,5 +137,35 @@ DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
     "$workspace/scripts/build-ad-suite-release.sh"
 (cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
 (cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)
+for product in adcalendar adplaner adurlaub adroom; do
+    product_bundle="$temporary_dist/ad-product-$product-delivery-check.tar.gz"
+    product_hash="$product_bundle.sha256"
+    if [[ ! -f "$product_bundle" || ! -f "$product_hash" ]]; then
+        echo "Produktpaket fehlt: $product" >&2
+        exit 1
+    fi
+    (cd "$temporary_dist" && sha256sum --check "$(basename "$product_hash")")
+    product_members="$(tar -tzf "$product_bundle")"
+    for contract in \
+        "ad-product-$product-delivery-check/install.sh" \
+        "ad-product-$product-delivery-check/INSTALLATION.md" \
+        "ad-product-$product-delivery-check/BETRIEB-UND-RUECKBAU.md" \
+        "ad-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
+        "ad-product-$product-delivery-check/localbase-" \
+        "ad-product-$product-delivery-check/orgsuite-" \
+        "ad-product-$product-delivery-check/$product-"; do
+        if ! grep -Fq "$contract" <<< "$product_members"; then
+            echo "Produktpaketvertrag fehlt für $product: $contract" >&2
+            exit 1
+        fi
+    done
+    for other_product in adcalendar adplaner adurlaub adroom; do
+        [[ "$other_product" == "$product" ]] && continue
+        if grep -Eq "ad-product-$product-delivery-check/$other_product-[^/]+\\.tar\\.gz$" <<< "$product_members"; then
+            echo "Fremdes Fachprodukt im Produktpaket $product: $other_product" >&2
+            exit 1
+        fi
+    done
+done
 
 echo 'AD-Suite Delivery-Gate: OK'

@@ -1,8 +1,8 @@
 app	minimum_line_coverage_percent
-localbase	92.62
-orgsuite	85.07
-adcalendar	33.33
-adplaner	44.24
-adurlaub	27.92
-adroom	42.07
-TOTAL	44.29
+localbase	93.73
+orgsuite	100.00
+adcalendar	33.86
+adplaner	44.43
+adurlaub	29.34
+adroom	42.86
+TOTAL	46.25

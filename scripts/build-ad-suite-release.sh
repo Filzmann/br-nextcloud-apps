@@ -7,6 +7,8 @@ dist_root="${DIST_ROOT:-$workspace/dist}"
 release_dir="$dist_root/ad-suite-$release_label"
 bundle="$dist_root/ad-suite-$release_label.tar.gz"
 apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
+products=(adcalendar adplaner adurlaub adroom)
+declare -A archives=()
 stage="$(mktemp -d)"
 
 cleanup() {
@@ -25,6 +27,12 @@ if [[ -e "$release_dir" || -e "$bundle" ]]; then
     echo "Releaseziel existiert bereits: $release_dir oder $bundle" >&2
     exit 1
 fi
+for product in "${products[@]}"; do
+    if [[ -e "$dist_root/ad-product-$product-$release_label" || -e "$dist_root/ad-product-$product-$release_label.tar.gz" ]]; then
+        echo "Produkt-Releaseziel existiert bereits: ad-product-$product-$release_label" >&2
+        exit 1
+    fi
+done
 mkdir -p "$release_dir"
 
 printf 'app\tversion\tgit_commit\tsha256\tsigned\n' > "$release_dir/manifest.tsv"
@@ -110,6 +118,7 @@ for app in "${apps[@]}"; do
         exit 1
     fi
     hash="$(sha256sum "$archive" | cut -d' ' -f1)"
+    archives[$app]="$archive"
     printf '%s  %s\n' "$hash" "$(basename "$archive")" >> "$release_dir/SHA256SUMS"
     printf '%s\t%s\t%s\t%s\t%s\n' "$app" "$version" "$commit" "$hash" "$signed" >> "$release_dir/manifest.tsv"
 done
@@ -119,6 +128,32 @@ cp "$workspace/ad-suite/docs/OPERATIONS.md" "$release_dir/BETRIEB-UND-RUECKBAU.m
 cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$release_dir/ABNAHMEPROTOKOLL.md"
 cp "$workspace/ad-suite/docs/DELIVERY-GATE.md" "$release_dir/DELIVERY-GATE.md"
 (cd "$release_dir" && sha256sum --check SHA256SUMS)
+
+for product in "${products[@]}"; do
+    product_name="ad-product-$product-$release_label"
+    product_dir="$dist_root/$product_name"
+    product_bundle="$dist_root/$product_name.tar.gz"
+    mkdir -p "$product_dir"
+
+    for app in localbase orgsuite "$product"; do
+        cp "${archives[$app]}" "$product_dir/"
+    done
+    cp "$workspace/scripts/install-ad-product-bundle.sh" "$product_dir/install.sh"
+    chmod +x "$product_dir/install.sh"
+    cp "$workspace/ad-suite/docs/INSTALLATION.md" "$product_dir/INSTALLATION.md"
+    cp "$workspace/ad-suite/docs/OPERATIONS.md" "$product_dir/BETRIEB-UND-RUECKBAU.md"
+    cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$product_dir/ABNAHMEPROTOKOLL.md"
+    cp "$workspace/ad-suite/docs/DELIVERY-GATE.md" "$product_dir/DELIVERY-GATE.md"
+
+    printf 'app\tversion\tgit_commit\tsha256\tsigned\n' > "$product_dir/manifest.tsv"
+    for app in localbase orgsuite "$product"; do
+        awk -F '\t' -v app="$app" '$1 == app { print }' "$release_dir/manifest.tsv" >> "$product_dir/manifest.tsv"
+    done
+    (cd "$product_dir" && sha256sum ./*.tar.gz > SHA256SUMS && sha256sum --check SHA256SUMS)
+    tar -C "$dist_root" -czf "$product_bundle" "$product_name"
+    (cd "$dist_root" && sha256sum "$product_name.tar.gz" > "$product_name.tar.gz.sha256")
+done
+
 tar -C "$dist_root" -czf "$bundle" "$(basename "$release_dir")"
 (cd "$dist_root" && sha256sum "$(basename "$bundle")" > "$(basename "$bundle").sha256")
 
@@ -126,3 +161,6 @@ echo "AD-Suite-Release erstellt:"
 echo "  $release_dir"
 echo "  $bundle"
 echo "  $bundle.sha256"
+for product in "${products[@]}"; do
+    echo "  $dist_root/ad-product-$product-$release_label.tar.gz"
+done

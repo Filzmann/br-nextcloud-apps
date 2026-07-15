@@ -252,6 +252,19 @@ Fuer eigene Nextcloud-Apps gelten diese angepassten Prinzipien:
 - Die Fachapps bleiben eigenstaendige Repositories, Datenmodelle und Berechtigungsraeume. Navigation erteilt niemals fachliche Rechte; Zielcontroller und APIs pruefen weiterhin serverseitig.
 - Neue AD- oder BR-Fachapps werden sowohl in OrgSuite als auch in ihrer eigenen App-`AGENTS.md` dem passenden Suite-Menue zugeordnet und registrieren keinen zusaetzlichen Hauptnavigationseintrag.
 
+### Eigenständige AD-Produkte und optionale Integrationen
+
+Wiederverwendbares Learning: Die produktiven AD-Fachapps `adcalendar`, `adplaner`, `adurlaub` und `adroom` bleiben einzeln installier- und nutzbar. `localbase` und `orgsuite` sind mitgelieferte Infrastruktur und keine separat zu verkaufenden Fachprodukte.
+
+- Jedes AD-Fachprodukt wird zusammen mit einer kompatiblen LocalBase-Version ausgeliefert. Da Nextcloud 34 keine App-Abhängigkeiten aus `info.xml` installiert, übernimmt dies der geprüfte Produktinstaller; erfundene `<app>`-Elemente in `<dependencies>` sind unzulässig.
+- Bei genau einem aktivierten AD-Fachprodukt bleibt OrgSuite deaktiviert. Das Produkt registriert einen eigenen Nextcloud-Einstieg, und organisationsweite Einstellungen erscheinen unter seinem Adminabschnitt.
+- Ab zwei aktivierten AD-Fachprodukten aktiviert der Produktinstaller OrgSuite. Die Fachprodukte unterdrücken dann ihre Einzel-Einstiege; OrgSuite stellt Quermenü und gemeinsamen Adminabschnitt bereit.
+- App-spezifische Administration bleibt auch mit OrgSuite im Adminabschnitt der jeweiligen Fachapp. Persönliche Einstellungen bleiben im Einstellungstab der Fachapp.
+- Fachapps greifen nie direkt auf Tabellen, Controller oder JavaScript-Assets anderer Fachapps zu. Optionale Integrationen laufen über kleine LocalBase-Events beziehungsweise Capability-Verträge.
+- Ein fehlender Integrationsprovider ist ein regulärer Standalone-Zustand: Die konsumierende App blendet die direkte Integration aus, erklärt die fehlende automatische Prüfung oder bietet einen vorhandenen manuellen Fachweg an.
+- Capability-Verfügbarkeit erteilt keine Rechte. Lese- und Schreibzugriffe werden weiterhin serverseitig durch die anbietende Fachapp geprüft.
+- Produktarchive enthalten nur das gewählte Fachprodukt plus kompatible Infrastruktur. Der vollständige Suite-Build darf daneben alle Produkte gemeinsam bündeln.
+
 ## Gemeinsame Kommentar- und Dokumentationsstruktur im Code
 
 Kommentare und PHPDoc/JSDoc sollen den Code erklaeren, nicht seine Syntax nacherzaehlen. Klassen, Attribute und Methoden werden kommentiert, wenn Zweck, fachliche Bedeutung, Seiteneffekte, Sicherheitsgrenzen oder das Zusammenspiel mit anderen Bausteinen nicht unmittelbar aus Namen, Typen und wenigen Codezeilen hervorgehen.
