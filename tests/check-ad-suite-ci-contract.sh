@@ -4,6 +4,7 @@ set -euo pipefail
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
 consumers=(orgsuite adcalendar adplaner adurlaub adroom)
+products=(adcalendar adplaner adurlaub adroom)
 
 require_text() {
     local file="$1"
@@ -40,6 +41,15 @@ for app in "${consumers[@]}"; do
     workflow="$workspace/$app/.github/workflows/tests.yml"
     require_text "$workflow" 'repository: Filzmann/nextcloud-localbase' 'LocalBase-Checkout'
     require_text "$workflow" 'path: localbase' 'LocalBase-Nachbarpfad'
+done
+
+for app in "${products[@]}"; do
+    workflow="$workspace/$app/.github/workflows/tests.yml"
+    require_text "$workflow" 'name: LocalBase-Referenz bestimmen' 'Dynamische LocalBase-Referenz'
+    require_text "$workflow" 'CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}' 'LocalBase-Branchkandidat'
+    require_text "$workflow" 'git ls-remote --exit-code --heads https://github.com/Filzmann/nextcloud-localbase.git' 'Sichere LocalBase-Branchprüfung'
+    require_text "$workflow" 'echo "ref=main" >> "$GITHUB_OUTPUT"' 'LocalBase-main-Fallback'
+    require_text "$workflow" 'ref: ${{ steps.localbase-ref.outputs.ref }}' 'Aufgelöste LocalBase-Referenz'
 done
 
 localbase_workflow="$workspace/localbase/.github/workflows/tests.yml"
