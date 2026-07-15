@@ -137,10 +137,11 @@ DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
     "$workspace/scripts/build-ad-suite-release.sh"
 (cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
 (cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)
+full_bundle_members="$(tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz")"
 for contract in \
     'ad-suite-delivery-check/install.sh' \
     'ad-suite-delivery-check/LDAP-UNIVENTION.md'; do
-    if ! tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz" | grep -Fq "$contract"; then
+    if ! grep -Fq "$contract" <<< "$full_bundle_members"; then
         echo "Vollständiger Suite-Bundle-Vertrag fehlt: $contract" >&2
         exit 1
     fi
