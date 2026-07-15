@@ -26,6 +26,8 @@ done
 
 echo '== Suite: Coverage-Baseline-Vertrag =='
 bash "$workspace/tests/check-ad-suite-coverage-baseline.sh"
+echo '== Suite: GitHub-CI-Vertrag =='
+bash "$workspace/tests/check-ad-suite-ci-contract.sh"
 
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
