@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: install-ad-product-bundle.sh --nextcloud-root <Pfad> --bundle-dir <Pfad> --product <App-ID>' >&2
+    echo 'Aufruf: install-ad-product-bundle.sh --nextcloud-root <Pfad> --bundle-dir <Pfad> --product <App-ID|suite>' >&2
 }
 
 nextcloud_root=''
@@ -19,8 +19,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+products=(adcalendar adplaner adurlaub adroom)
 case "$product" in
-    adcalendar|adplaner|adurlaub|adroom) ;;
+    adcalendar|adplaner|adurlaub|adroom) selected_products=("$product") ;;
+    suite) selected_products=("${products[@]}") ;;
     *) echo "Unbekanntes AD-Produkt: $product" >&2; exit 2 ;;
 esac
 
@@ -172,12 +174,16 @@ install_archive() {
 
 install_archive localbase
 install_archive orgsuite
-install_archive "$product"
+for selected_product in "${selected_products[@]}"; do
+    install_archive "$selected_product"
+done
 
 "$php_bin" "$nextcloud_root/occ" app:enable localbase
 [[ -n "${originally_enabled[localbase]:-}" ]] || enabled_by_installer+=(localbase)
-"$php_bin" "$nextcloud_root/occ" app:enable "$product"
-[[ -n "${originally_enabled[$product]:-}" ]] || enabled_by_installer+=("$product")
+for selected_product in "${selected_products[@]}"; do
+    "$php_bin" "$nextcloud_root/occ" app:enable "$selected_product"
+    [[ -n "${originally_enabled[$selected_product]:-}" ]] || enabled_by_installer+=("$selected_product")
+done
 
 enabled_json="$($php_bin "$nextcloud_root/occ" app:list --output=json)"
 product_count="$(printf '%s' "$enabled_json" | "$php_bin" -r '

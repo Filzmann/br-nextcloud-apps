@@ -17,7 +17,7 @@ for command in bash git php node tar sha256sum; do
     fi
 done
 
-for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIONS.md docs/ACCEPTANCE.md docs/DELIVERY-GATE.md; do
+for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIONS.md docs/ACCEPTANCE.md docs/DELIVERY-GATE.md docs/LDAP-UNIVENTION.md; do
     if [[ ! -f "$workspace/ad-suite/$document" ]]; then
         echo "Öffentliche Suite-Dokumentation fehlt: $document" >&2
         exit 1
@@ -137,6 +137,14 @@ DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
     "$workspace/scripts/build-ad-suite-release.sh"
 (cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
 (cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)
+for contract in \
+    'ad-suite-delivery-check/install.sh' \
+    'ad-suite-delivery-check/LDAP-UNIVENTION.md'; do
+    if ! tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz" | grep -Fq "$contract"; then
+        echo "Vollständiger Suite-Bundle-Vertrag fehlt: $contract" >&2
+        exit 1
+    fi
+done
 for product in adcalendar adplaner adurlaub adroom; do
     product_bundle="$temporary_dist/ad-product-$product-delivery-check.tar.gz"
     product_hash="$product_bundle.sha256"

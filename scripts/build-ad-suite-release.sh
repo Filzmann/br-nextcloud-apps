@@ -127,6 +127,9 @@ cp "$workspace/ad-suite/docs/INSTALLATION.md" "$release_dir/INSTALLATION.md"
 cp "$workspace/ad-suite/docs/OPERATIONS.md" "$release_dir/BETRIEB-UND-RUECKBAU.md"
 cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$release_dir/ABNAHMEPROTOKOLL.md"
 cp "$workspace/ad-suite/docs/DELIVERY-GATE.md" "$release_dir/DELIVERY-GATE.md"
+cp "$workspace/ad-suite/docs/LDAP-UNIVENTION.md" "$release_dir/LDAP-UNIVENTION.md"
+cp "$workspace/scripts/install-ad-product-bundle.sh" "$release_dir/install.sh"
+chmod +x "$release_dir/install.sh"
 (cd "$release_dir" && sha256sum --check SHA256SUMS)
 
 for product in "${products[@]}"; do
@@ -144,6 +147,7 @@ for product in "${products[@]}"; do
     cp "$workspace/ad-suite/docs/OPERATIONS.md" "$product_dir/BETRIEB-UND-RUECKBAU.md"
     cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$product_dir/ABNAHMEPROTOKOLL.md"
     cp "$workspace/ad-suite/docs/DELIVERY-GATE.md" "$product_dir/DELIVERY-GATE.md"
+    cp "$workspace/ad-suite/docs/LDAP-UNIVENTION.md" "$product_dir/LDAP-UNIVENTION.md"
 
     printf 'app\tversion\tgit_commit\tsha256\tsigned\n' > "$product_dir/manifest.tsv"
     for app in localbase orgsuite "$product"; do

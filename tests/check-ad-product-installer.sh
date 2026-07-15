@@ -61,6 +61,26 @@ XML
     (cd "$directory/bundle" && sha256sum ./*.tar.gz > SHA256SUMS)
 }
 
+make_suite_bundle() {
+    local directory="$1"
+    mkdir -p "$directory/source" "$directory/bundle"
+    for app in localbase orgsuite adcalendar adplaner adurlaub adroom; do
+        mkdir -p "$directory/source/$app/appinfo"
+        cat > "$directory/source/$app/appinfo/info.xml" <<XML
+<?xml version="1.0"?>
+<info><id>$app</id><name>$app</name><summary>$app</summary><description>$app</description><version>1.0.0</version><licence>agpl</licence><author>Test</author><category>organization</category><bugs>https://example.test</bugs><dependencies><nextcloud min-version="34" max-version="34"/></dependencies></info>
+XML
+        tar -C "$directory/source" -czf "$directory/bundle/$app-1.0.0.tar.gz" "$app"
+    done
+    (cd "$directory/bundle" && sha256sum ./*.tar.gz > SHA256SUMS)
+}
+
+make_cloud() {
+    local target="$1"
+    mkdir -p "$target/custom_apps"
+    cp "$cloud/occ" "$target/occ"
+}
+
 make_bundle "$temporary/calendar" adcalendar
 "$installer" --nextcloud-root "$cloud" --bundle-dir "$temporary/calendar/bundle" --product adcalendar
 
@@ -76,6 +96,27 @@ if [[ "$(grep -c '^upgrade$' "$cloud/occ.log")" -ne 2 ]]; then
     echo 'Nextcloud-App-Upgrades wurden nicht nach jedem Produktlauf ausgeführt.' >&2
     exit 1
 fi
+
+products=(adcalendar adplaner adurlaub adroom)
+for ((left=0; left<${#products[@]}; left++)); do
+    for ((right=left+1; right<${#products[@]}; right++)); do
+        first="${products[$left]}"
+        second="${products[$right]}"
+        pair_cloud="$temporary/pair-$first-$second-cloud"
+        make_cloud "$pair_cloud"
+        make_bundle "$temporary/pair-$first-$second-first" "$first"
+        make_bundle "$temporary/pair-$first-$second-second" "$second"
+        "$installer" --nextcloud-root "$pair_cloud" --bundle-dir "$temporary/pair-$first-$second-first/bundle" --product "$first" >/dev/null
+        "$installer" --nextcloud-root "$pair_cloud" --bundle-dir "$temporary/pair-$first-$second-second/bundle" --product "$second" >/dev/null
+        php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","orgsuite",$argv[2],$argv[3]] as $app) if (!isset($s[$app])) exit(1);' "$pair_cloud/enabled.json" "$first" "$second"
+    done
+done
+
+suite_cloud="$temporary/suite-cloud"
+make_cloud "$suite_cloud"
+make_suite_bundle "$temporary/suite"
+"$installer" --nextcloud-root "$suite_cloud" --bundle-dir "$temporary/suite/bundle" --product suite >/dev/null
+php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","orgsuite","adcalendar","adplaner","adurlaub","adroom"] as $app) if (!isset($s[$app])) exit(1);' "$suite_cloud/enabled.json"
 
 cp -R "$temporary/calendar/bundle" "$temporary/broken"
 printf '0%.0s' {1..64} > "$temporary/broken/SHA256SUMS"
