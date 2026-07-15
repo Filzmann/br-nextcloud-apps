@@ -28,6 +28,8 @@ Aktuelle eigene Apps:
 | AD-/BR-Suite | `orgsuite` | `~/projects/br-nextcloud-apps/orgsuite` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` | `/var/www/html/html/custom_apps/orgsuite` |
 | AD Raumplaner | `adroom` | `~/projects/br-nextcloud-apps/adroom` | `https://nextcloud-dev.ddev.site/apps/adroom/` | `/var/www/html/html/custom_apps/adroom` |
 
+Öffentliche Produktübersicht und Release-Unterlagen der AD-Suite liegen im eigenständigen Dokumentations-Repository `~/projects/br-nextcloud-apps/ad-suite`. Es enthält keinen deploybaren App-Code und wird nicht in Nextcloud gemountet.
+
 ## Verbindlicher Arbeitsumfang
 
 - In diesem Parent-Repo werden nur Meta-Dokumentation, DDEV-Konfiguration, Workspace-Konfiguration und app-uebergreifende Regeln gepflegt.
@@ -49,6 +51,7 @@ Jede deploybare eigene Nextcloud-App wird als eigenes Git-Repository gefuehrt.
 - `adurlaub/` ist ein eigenes Git-Repository fuer Urlaubsplanung.
 - `orgsuite/` ist ein eigenes Git-Repository fuer die gemeinsame AD-/BR-Navigation ohne Fachdaten.
 - `adroom/` ist ein eigenes Git-Repository fuer Raumverwaltung und Raumbuchungen.
+- `ad-suite/` ist ein eigenes Git-Repository für die öffentliche Produktübersicht, Installations-, Betriebs-, Abnahme- und Release-Unterlagen der AD-Suite.
 - Neue deploybare Apps bekommen eigene Git-Repos, eigene `AGENTS.md` und eigene `.gitignore`.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`; App-Code darf im Parent nicht auftauchen.
 - Keine Submodule fuer diese lokalen App-Repos, solange Simon das nicht ausdruecklich entscheidet.
@@ -312,13 +315,15 @@ Accessibility ist fuer eigene Nextcloud-Apps eine harte Entwicklungsregel, nicht
 
 ### Einstellungen als eigener Tab
 
-Wiederverwendbares Learning: Fachliche und administrative Einstellungen werden in jeder navigierbaren eigenen App in einem eigenen Tab `Einstellungen` gebuendelt.
+Wiederverwendbares Learning: Persönliche Einstellungen werden in jeder navigierbaren eigenen App in einem eigenen Tab `Einstellungen` gebündelt. Administrative Einstellungen erscheinen im Nextcloud-Adminbereich und werden fachlich der App zugeordnet, deren Verhalten sie steuern.
 
-- Der Einstellungstab einer Fachapp enthält ausschließlich persönliche Einstellungen des eingeloggten Kontos. Organisationsweite Konfigurationen, Gruppen-/Hierarchieänderungen und ausschließlich für Admins sichtbare Freigaben gehören in den Nextcloud-Adminbereich der zuständigen Suite-App.
+- Der Einstellungstab einer Fachapp enthält ausschließlich persönliche Einstellungen des eingeloggten Kontos.
+- Administrative Einstellungen, die nur eine Fachapp betreffen, gehören in einen eigenen Adminabschnitt dieser Fachapp. Die Suite-App dient nicht als Sammelstelle für app-spezifische Konfiguration.
+- App-übergreifende Organisationskonfigurationen wie gemeinsam verwendete Gruppen, Hierarchien oder Freigaben gehören in den Nextcloud-Adminbereich der zuständigen Suite-App.
 
 - Einstellungen werden nicht in Hauptansichten, aufklappbaren `details`-Bloecken oder fachfremden Dialogen versteckt.
 - Der Tab `Einstellungen` ist Teil derselben semantischen Tabnavigation wie die Hauptansicht und verwendet `role="tablist"`, `role="tab"`, `role="tabpanel"`, eindeutige `aria-controls`-/`aria-labelledby`-Beziehungen und gepflegte `aria-selected`-Zustaende.
-- Fehlende Berechtigungen blenden den Einstellungstab nur als Komfort aus; lesende und schreibende Einstellungs-Endpunkte bleiben serverseitig geschuetzt.
+- Fehlende Berechtigungen blenden den Einstellungstab oder Adminabschnitt nur als Komfort aus; lesende und schreibende Einstellungs-Endpunkte bleiben serverseitig geschützt.
 - Kontextuelle Kleinstoptionen duerfen direkt an einer Funktion liegen, wenn sie ausschliesslich diese eine Aktion konfigurieren. Dauerhafte App-, Gruppen-, Rechte- oder Standardwerte gehoeren immer in den Einstellungstab.
 - Neue Apps und groessere UI-Aenderungen bekommen einen Smoke-Test fuer Tabwechsel, Sichtbarkeit und die semantischen Tabbeziehungen.
 

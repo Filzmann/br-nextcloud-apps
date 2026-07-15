@@ -114,9 +114,10 @@ for app in "${apps[@]}"; do
     printf '%s\t%s\t%s\t%s\t%s\n' "$app" "$version" "$commit" "$hash" "$signed" >> "$release_dir/manifest.tsv"
 done
 
-cp "$workspace/docs/ad-suite-staging-release.md" "$release_dir/INSTALLATION.md"
-cp "$workspace/docs/ad-suite-operations.md" "$release_dir/BETRIEB-UND-RUECKBAU.md"
-cp "$workspace/docs/ad-suite-acceptance.md" "$release_dir/ABNAHMEPROTOKOLL.md"
+cp "$workspace/ad-suite/docs/INSTALLATION.md" "$release_dir/INSTALLATION.md"
+cp "$workspace/ad-suite/docs/OPERATIONS.md" "$release_dir/BETRIEB-UND-RUECKBAU.md"
+cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$release_dir/ABNAHMEPROTOKOLL.md"
+cp "$workspace/ad-suite/docs/DELIVERY-GATE.md" "$release_dir/DELIVERY-GATE.md"
 (cd "$release_dir" && sha256sum --check SHA256SUMS)
 tar -C "$dist_root" -czf "$bundle" "$(basename "$release_dir")"
 (cd "$dist_root" && sha256sum "$(basename "$bundle")" > "$(basename "$bundle").sha256")

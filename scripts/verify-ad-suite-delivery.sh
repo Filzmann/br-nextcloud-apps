@@ -17,6 +17,13 @@ for command in bash git php node tar sha256sum; do
     fi
 done
 
+for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIONS.md docs/ACCEPTANCE.md docs/DELIVERY-GATE.md; do
+    if [[ ! -f "$workspace/ad-suite/$document" ]]; then
+        echo "Öffentliche Suite-Dokumentation fehlt: $document" >&2
+        exit 1
+    fi
+done
+
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
     info="$repo/appinfo/info.xml"
@@ -35,7 +42,7 @@ for app in "${apps[@]}"; do
         $xml = simplexml_load_file($argv[1]);
         if ($xml === false) throw new RuntimeException("info.xml ist ungültig");
         $expectedId = $argv[2];
-        $required = ["id", "name", "summary", "description", "version", "licence", "author", "namespace"];
+        $required = ["id", "name", "summary", "description", "version", "licence", "author", "website", "bugs", "repository", "namespace"];
         foreach ($required as $field) {
             if (trim((string)$xml->{$field}) === "") throw new RuntimeException("Pflichtfeld fehlt: {$field}");
         }
@@ -44,6 +51,9 @@ for app in "${apps[@]}"; do
         if ((string)$xml->dependencies->nextcloud["min-version"] !== "34") throw new RuntimeException("Nextcloud-Minimum ist nicht 34");
         if ((string)$xml->dependencies->nextcloud["max-version"] !== "34") throw new RuntimeException("Nextcloud-Maximum ist nicht 34");
         if (version_compare((string)$xml->dependencies->php["min-version"], "8.3", "<")) throw new RuntimeException("PHP-Minimum liegt unter 8.3");
+        if ((string)$xml->website !== "https://github.com/Filzmann/ad-suite") throw new RuntimeException("Zentrale Projektseite fehlt");
+        if (!str_starts_with((string)$xml->bugs, "https://github.com/Filzmann/nextcloud-") || !str_ends_with((string)$xml->bugs, "/issues")) throw new RuntimeException("Öffentlicher Fehlerkanal ist ungültig");
+        if (!str_starts_with((string)$xml->repository, "https://github.com/Filzmann/nextcloud-")) throw new RuntimeException("Öffentliches Quellrepository ist ungültig");
     ' "$info" "$app"
 
     for required in LICENSE README.md CHANGELOG.md AGENTS.md tests/run.php tests/run-js.mjs; do
