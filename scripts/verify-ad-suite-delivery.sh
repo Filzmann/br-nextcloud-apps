@@ -32,6 +32,8 @@ echo '== Suite: Standalone- und Integrationsvertrag =='
 bash "$workspace/tests/check-ad-suite-standalone-contract.sh"
 echo '== Suite: Produktinstaller =='
 bash "$workspace/tests/check-ad-product-installer.sh"
+echo '== Suite: Release-Candidate-Bereinigung =='
+bash "$workspace/tests/check-ad-release-pruning.sh"
 
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
