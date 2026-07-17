@@ -31,6 +31,18 @@
     {
       "name": "adurlaub",
       "path": "adurlaub"
+    },
+    {
+      "name": "orgsuite",
+      "path": "orgsuite"
+    },
+    {
+      "name": "adroom",
+      "path": "adroom"
+    },
+    {
+      "name": "ad-suite",
+      "path": "ad-suite"
     }
   ],
   "settings": {

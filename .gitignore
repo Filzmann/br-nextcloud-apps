@@ -12,6 +12,22 @@ build/
 *.bak
 *.bak-*
 *.tmp
+*.orig
+*.rej
+
+# Generated archives, dumps and coverage/cache output
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+coverage/
+.coverage
+.cache/
+.phpunit.cache/
 
 # Logs
 *.log

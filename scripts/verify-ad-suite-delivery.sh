@@ -3,6 +3,23 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
+
+if [[ "${AD_SUITE_GATE_WRAPPER:-0}" != '1' ]]; then
+    echo 'Direkter Aufruf ist nicht freigabefähig; scripts/check-ad-suite-delivery verwenden.' >&2
+    exit 2
+fi
+if [[ "${PARENT_FAST_CHECK_VERIFIED:-0}" != '1' ]]; then
+    echo 'Der interne Delivery-Verify braucht einen zuvor erfolgreichen Parent-Fast-Check.' >&2
+    exit 2
+fi
+if [[ "${ALLOW_DIRTY:-0}" == '1' && "${DIAGNOSTIC_MODE:-0}" != '1' ]]; then
+    echo 'ALLOW_DIRTY ist ausschließlich im expliziten Diagnosemodus zulässig.' >&2
+    exit 2
+fi
+if [[ "${DIAGNOSTIC_MODE:-0}" == '1' && "${ALLOW_DIRTY:-0}" != '1' ]]; then
+    echo 'DIAGNOSTIC_MODE braucht den kontrollierten Dirty-Diagnosepfad.' >&2
+    exit 2
+fi
 temporary_dist="$(mktemp -d)"
 
 cleanup() {
@@ -23,17 +40,6 @@ for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIO
         exit 1
     fi
 done
-
-echo '== Suite: Coverage-Baseline-Vertrag =='
-bash "$workspace/tests/check-ad-suite-coverage-baseline.sh"
-echo '== Suite: GitHub-CI-Vertrag =='
-bash "$workspace/tests/check-ad-suite-ci-contract.sh"
-echo '== Suite: Standalone- und Integrationsvertrag =='
-bash "$workspace/tests/check-ad-suite-standalone-contract.sh"
-echo '== Suite: Produktinstaller =='
-bash "$workspace/tests/check-ad-product-installer.sh"
-echo '== Suite: Release-Candidate-Bereinigung =='
-bash "$workspace/tests/check-ad-release-pruning.sh"
 
 for app in "${apps[@]}"; do
     repo="$workspace/$app"
@@ -179,4 +185,8 @@ for product in adcalendar adplaner adurlaub adroom; do
     done
 done
 
-echo 'AD-Suite Delivery-Gate: OK'
+if [[ "${DIAGNOSTIC_MODE:-0}" == '1' ]]; then
+    echo 'DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL'
+else
+    echo 'AD-Suite Delivery-Gate: OK'
+fi

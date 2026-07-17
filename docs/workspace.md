@@ -11,6 +11,10 @@ Der Parent enthaelt keine deploybare App. Deploybare Apps liegen als eigene Git-
 ```text
 br-nextcloud-apps/
 |-- AGENTS.md
+|-- .agents/skills/
+|-- .codex/
+|   |-- config.toml
+|   `-- agents/
 |-- 00_ki_projektkonfiguration_br_nextcloud_apps.md
 |-- br-nextcloud-apps.code-workspace
 |-- docs/
@@ -24,17 +28,24 @@ br-nextcloud-apps/
 |       |-- docker-compose.localbase.yaml
 |       |-- docker-compose.br_permission_matrix.yaml
 |       |-- docker-compose.adcalendar.yaml
-|       `-- docker-compose.adurlaub.yaml
+|       |-- docker-compose.adurlaub.yaml
+|       |-- docker-compose.orgsuite.yaml
+|       `-- docker-compose.adroom.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
 |-- br_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- adcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
-`-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
+|-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
+|-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
+|-- adroom/     # eigenes Git-Repo, Raumplanung
+`-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
 ## Aktuelle App-Repos
+
+Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vollständige technische Repository-Liste wird ausschließlich aus `config/workspace-repositories.tsv` abgeleitet.
 
 | App | App-ID | App-Repo | Lokale URL |
 | --- | --- | --- | --- |
@@ -45,13 +56,17 @@ br-nextcloud-apps/
 | Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
 | AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
 | AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
+| AD-/BR-Suite | `orgsuite` | `~/projects/br-nextcloud-apps/orgsuite` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
+| AD Raumplaner | `adroom` | `~/projects/br-nextcloud-apps/adroom` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
 
-App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`.
+Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
+
+App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App führt außerdem den gemeinsamen Skill `work-in-nextcloud-app` als normale lokale Datei unter `.agents/skills/` mit. Dadurch sind Regeln und Skill beim direkten Öffnen eines einzelnen App-Repositories vollständig auflösbar; die Parent-Dateien sind keine Laufzeitabhängigkeit.
 
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/` und `adurlaub/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -78,10 +93,15 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
+ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
+ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
+ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
+
+DDEV und Produktion sind getrennte Umgebungen. DDEV-Pfade, DDEV-Benutzer, Containerpfade, PHP-Binaries, Datenbankzugänge und andere lokale Annahmen dürfen nie auf Hosting oder Produktion übertragen werden. In der Zielumgebung müssen Produktionspfade, Benutzer, reale `apps_paths`, PHP-Binary und CLI-Memory-Limit separat ermittelt werden. Jeder Wechsel zwischen DDEV und Produktion wird ausdrücklich als Umgebungsgrenze benannt; bei unklarer Zielumgebung wird gestoppt.
 
 ## App-Installation und Migrationen
 
@@ -189,6 +209,32 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
 ```
 
+OrgSuite:
+
+```text
+~/projects/br-nextcloud-apps/orgsuite
+-> /var/www/html/html/custom_apps/orgsuite
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.orgsuite.yaml
+```
+
+AD Raumplaner:
+
+```text
+~/projects/br-nextcloud-apps/adroom
+-> /var/www/html/html/custom_apps/adroom
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.adroom.yaml
+```
+
 Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`.
 
 ## Neue App anlegen
@@ -196,17 +242,38 @@ Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`
 1. Fachbereich und App-ID festlegen.
 2. App-Verzeichnis neben `brtop/` und `adplaner/` anlegen.
 3. Eigenes Git-Repo im App-Verzeichnis initialisieren.
-4. Eigene `AGENTS.md` und eigene `.gitignore` im App-Repo anlegen.
-5. Parent-`.gitignore` um das neue App-Verzeichnis ergaenzen.
-6. DDEV-Mount unter `nextcloud-dev/.ddev/docker-compose.<app-id>.yaml` anlegen.
-7. App in Nextcloud aktivieren und pruefen.
-8. Parent-Dokumentation nur um Meta-/DDEV-/Mount-Informationen ergaenzen.
+4. Eigene `AGENTS.md`, eigene `.gitignore` und eine reguläre lokale Kopie von `.agents/skills/work-in-nextcloud-app/SKILL.md` im App-Repo anlegen; keine Symlinks verwenden.
+5. App mit App-ID und Pflicht-Skill `work-in-nextcloud-app` in `config/workspace-repositories.tsv` registrieren.
+6. App als eigenen Ordner in `br-nextcloud-apps.code-workspace` aufnehmen.
+7. Parent-`.gitignore` um das neue App-Verzeichnis ergaenzen.
+8. DDEV-Mount unter `nextcloud-dev/.ddev/docker-compose.<app-id>.yaml` anlegen.
+9. Parent-Dokumentation nur um Meta-/DDEV-/Mount-Informationen ergaenzen.
+10. Aus der neuen Git-Wurzel die lokale Auffindbarkeit von `AGENTS.md` und Skill sowie die deklarierten schnellen PHP-/JavaScript-Tests prüfen.
+11. Im Parent die Bytegleichheit der lokalen Skill-Kopie mit der kanonischen Fassung und danach `REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure` prüfen.
+12. Eine App erst als fertig melden, wenn Manifest, Workspace-Registrierung, lokale Steuerungsdateien und Parent-Steuerungsdateien im jeweils zuständigen Repository getrackt sind. Fehlt die Commit-Freigabe, bleibt dieser Punkt ausdrücklich offen.
+13. App nur nach gesonderter Freigabe in Nextcloud aktivieren und prüfen.
 
 ## VS-Code Workspace
 
-`br-nextcloud-apps.code-workspace` oeffnet den Parent-Meta-Workspace und die App-Repos als eigene Workspace-Folder. So bleiben `brtop/`, `adplaner/`, `brstunden/`, `localbase`, `br_permission_matrix`, `adcalendar` und `adurlaub` in VS Code sichtbar, waehrend der Parent sie weiterhin per `.gitignore` ignoriert.
+`br-nextcloud-apps.code-workspace` öffnet den Parent-Meta-Workspace und die getrennten App-/Produkt-Repos als eigene Workspace-Folder. Sie bleiben damit in VS Code sichtbar, während der Parent sie per `.gitignore` ignoriert.
 
-Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen.
+## Codex-Steuerung und Verifikation
+
+- Dauerhafte Regeln und Abbruchbedingungen: `AGENTS.md`
+- Wiederkehrende Workflows: `.agents/skills/`
+- Vollständige technische Repository-Liste: `config/workspace-repositories.tsv`
+- Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml`
+- Strukturprüfung aller Repository-Roots und lokalen Skill-Ketten: `scripts/check-workspace-structure`
+- Schneller Parent-Check: `scripts/check-fast`
+- Schnelle Tests aller neun App-Repositories: `scripts/check-apps`
+- Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
+- Echtes sauberes AD-Suite-Delivery-Gate: `scripts/check-ad-suite-delivery`
+
+`check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
+
+DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+
+Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln und die lokale `AGENTS.md` samt lokalem Skill lesen. Der Parent-Standardzugriff ist read-only und dient Analyse, Koordination sowie Workspace-/Release-Prüfung. Prüfpfade mit temporärem Paket- oder Fixture-Bau benötigen einen ausdrücklich benannten Verifikationslauf mit eng begrenztem Schreibzugriff auf `/tmp`; das erteilt keine Schreibrechte an App-Repositories. `sandbox_mode = "read-only"` begrenzt lokale Datei- und Kommandozugriffe, sperrt aber externe Connector-/MCP-Systeme nicht technisch; deren Nutzung bleibt separat durch Auftrag und Rollenregeln begrenzt. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen. Schreibende Cross-App-Arbeit ist ein ausdrücklich beauftragter Sonderlauf; `.gitignore` ersetzt diese Grenze nicht.
 
 ## Git-Regeln
 

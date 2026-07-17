@@ -1,0 +1,13 @@
+sandbox_mode = "read-only"
+
+[agents]
+max_threads = 3
+max_depth = 1
+
+[agents.explorer]
+description = "Read-only mapping of files, contracts, and evidence in one explicitly scoped repository."
+config_file = "agents/explorer.toml"
+
+[agents.reviewer]
+description = "Read-only independent review of an existing plan or diff for correctness, security, tests, and rule compliance."
+config_file = "agents/reviewer.toml"

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+delivery_repositories=(. ad-suite localbase orgsuite adcalendar adplaner adurlaub adroom)
+diagnostic=0
+
+if [[ "${1:-}" == '--diagnostic' ]]; then
+    diagnostic=1
+    shift
+fi
+if (( $# != 0 )); then
+    echo 'Verwendung: scripts/check-ad-suite-delivery [--diagnostic]' >&2
+    exit 2
+fi
+
+if (( diagnostic )); then
+    echo '== AD-Suite-Diagnose; schmutzige Repositories sind sichtbar, aber kein Release-Urteil ist möglich =='
+    for repository in "${delivery_repositories[@]}"; do
+        echo "-- Status: $repository --"
+        git -C "$workspace/$repository" status --short
+    done
+    "$workspace/scripts/check-fast"
+    AD_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 ALLOW_DIRTY=1 DIAGNOSTIC_MODE=1 "$workspace/scripts/verify-ad-suite-delivery.sh"
+    exit 0
+fi
+
+echo '== AD-Suite-Delivery-Gate; alle Delivery-Repositories müssen sauber sein =='
+for repository in "${delivery_repositories[@]}"; do
+    if [[ -n "$(git -C "$workspace/$repository" status --porcelain --untracked-files=all)" ]]; then
+        echo "Delivery-Repository ist nicht sauber: $repository" >&2
+        git -C "$workspace/$repository" status --short >&2
+        exit 1
+    fi
+done
+
+REQUIRE_TRACKED_STRUCTURE=1 "$workspace/scripts/check-fast"
+AD_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 "$workspace/scripts/verify-ad-suite-delivery.sh"
