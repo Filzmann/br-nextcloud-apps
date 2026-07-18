@@ -114,7 +114,9 @@ ddev exec -d /var/www/html/html php occ status
 ddev exec -d /var/www/html/html php occ app:list | grep -i <app-id>
 ```
 
-Bei neuen Tabellen oder Background-Jobs zusaetzlich direkt kontrollieren, ob die erwartete Tabelle bzw. der erwartete Eintrag in `oc_jobs` existiert.
+Bei neuen Tabellen oder Background-Jobs zusätzlich direkt kontrollieren, ob die erwartete Tabelle bzw. der erwartete Eintrag in `oc_jobs` existiert.
+
+Ein neu in `info.xml` deklarierter Background-Job wird bei einer bereits installierten App nicht allein durch Deaktivieren und erneutes Aktivieren zuverlässig als Upgrade-Schritt registriert. Deshalb die App-Version anheben, den realen Upgrade-Pfad mit `occ upgrade` ausführen und anschließend die Registrierung sowohl über `occ background-job:list` als auch direkt in `oc_jobs` verifizieren.
 
 ## Mounts
 
