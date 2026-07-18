@@ -304,10 +304,12 @@ def require_string(value: object, label: str) -> str:
 config_path = workspace / '.codex/config.toml'
 with config_path.open('rb') as handle:
     config = tomllib.load(handle)
-if config.get('sandbox_mode') != 'read-only':
-    fail('.codex/config.toml muss Parent-Standardzugriff read-only setzen')
+if config.get('sandbox_mode') != 'workspace-write':
+    fail('.codex/config.toml muss Parent-Standardzugriff workspace-write setzen')
+if config.get('approval_policy') != 'on-request':
+    fail('.codex/config.toml muss approval_policy on-request setzen')
 if 'sandbox_workspace_write' in config:
-    fail('sandbox_workspace_write widerspricht dem read-only Parent-Standard')
+    fail('.codex/config.toml darf keine zusätzlichen Workspace-Schreibpfade konfigurieren')
 agents_config = config.get('agents')
 if not isinstance(agents_config, dict):
     fail('.codex/config.toml: agents muss eine Tabelle sein')

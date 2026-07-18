@@ -1,4 +1,5 @@
-sandbox_mode = "read-only"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
 
 [agents]
 max_threads = 3

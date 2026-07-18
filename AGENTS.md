@@ -9,7 +9,7 @@ Dieses Repository ist der Parent-/Meta-Workspace für die lokale Nextcloud-Entwi
 - Human-lesbare Workspace-, App-, URL- und Mount-Dokumentation: `docs/workspace.md`
 - Wiederkehrende Abläufe: `.agents/skills/`
 
-Diese Regeln gelten im Parent. Jedes App-Verzeichnis ist ein eigenes Git-Repository mit eigener vollständiger `AGENTS.md` und lokal auflösbaren Skills. Bei einem direkten Start im App-Root wird diese Parent-Datei nicht als geladen vorausgesetzt. Normale Implementierungsarbeit beginnt deshalb im Root des konkret beauftragten App-Repositories; der Parent dient standardmäßig read-only der Analyse, Koordination und Release-/Workspace-Prüfung. Schreibende Cross-App-Arbeit ist ein ausdrücklich benannter Sonderlauf mit einzeln genannten Repositories, Regeln, Statusprüfungen und Tests.
+Diese Regeln gelten im Parent. Jedes App-Verzeichnis ist ein eigenes Git-Repository mit eigener vollständiger `AGENTS.md` und lokal auflösbaren Skills. Bei einem direkten Start im App-Root wird diese Parent-Datei nicht als geladen vorausgesetzt. Normale Implementierungsarbeit beginnt deshalb im Root des konkret beauftragten App-Repositories; der Parent dient der Analyse, Koordination und Release-/Workspace-Prüfung. Der technische `workspace-write`-Zugriff erteilt keine fachliche Schreibfreigabe. Schreibende Cross-App-Arbeit ist ein ausdrücklich benannter Sonderlauf mit einzeln genannten Repositories, Regeln, Statusprüfungen und Tests.
 
 ## Repository-Grenzen
 
@@ -119,7 +119,7 @@ Sofort stoppen, wenn Produktionssysteme, unerwartet erforderliche externe Dienst
 ## Codex-Konfiguration und Delegation
 
 - `.codex/config.toml` enthält ausschließlich Codex-Einstellungen. Fachliche Regeln stehen hier, Abläufe in Skills.
-- Der Parent startet technisch read-only. Ein ausdrücklich beauftragter Implementierungs- oder Cross-App-Sonderlauf muss die konkret beschreibbaren Schreibrechte außerhalb dieser Standardkonfiguration erhalten. Prüfungen, die nur temporäre Artefakte unter `/tmp` erzeugen, dürfen in einem ausdrücklich als Verifikationslauf benannten, eng begrenzten Schreibkontext laufen; daraus folgt kein Recht, Repository-Dateien zu ändern.
+- Der Parent startet technisch mit `sandbox_mode = "workspace-write"` und `approval_policy = "on-request"`, damit ausdrücklich beauftragte Änderungen sowie gezieltes Staging und Committen innerhalb des Workspaces möglich sind. Der technische Schreibzugriff ersetzt weder Auftrag noch Repository-Grenzen oder Git-Freigabe. Schreibende Cross-App-Arbeit bleibt ein ausdrücklich benannter Sonderlauf.
 - Allgemeine Arbeit in einem getrennten App-Repository folgt ausschließlich dessen lokal mitgeführtem Skill `work-in-nextcloud-app`; app-spezifische Fach-, Rechte-, Test- und Integrationsregeln bleiben in dessen lokaler `AGENTS.md`. Der Parent-Skill ist nur die kanonische Synchronisationsquelle und keine Laufzeitabhängigkeit.
 - Subagents sind optional und nur für unabhängige, klar begrenzte Analysearbeit zulässig. Standard ist kein Subagent.
 - Es dürfen höchstens zwei direkte Subagents parallel arbeiten; rekursive Erzeugung ist verboten. Explorer und Reviewer sind durch `sandbox_mode = "read-only"` für lokale Datei- und Kommandozugriffe technisch read-only. Externe Connector-/MCP-Systeme werden durch diesen Sandboxwert nicht technisch gesperrt; deren Nutzung oder Änderung verbieten die Rollenregeln ausdrücklich. Die Sprachregeln ergänzen die lokale technische Sperre und begrenzen externe Werkzeuge separat.
