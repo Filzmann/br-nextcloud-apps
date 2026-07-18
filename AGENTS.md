@@ -69,6 +69,7 @@ Bei jeder neuen Funktion müssen Sichtbarkeit, Ausführung, Lese-/Schreibscope, 
 
 ## Test- und Qualitätsregeln
 
+- Vor der Umsetzung eines Roadmap-Features werden offene Organisationsfragen zu fachlichem Vertrag, Zuständigkeiten, Rollen, Hierarchie, Sichtbarkeit, Datenwirkung und Bedienablauf ausdrücklich mit Simon geklärt. Codex trifft solche Organisationsentscheidungen nicht stillschweigend.
 - Neue Entwicklung und Bugfixes folgen grundsätzlich Rot – Grün – Refactor. Bugfixes beginnen mit einem Regressionstest; Refactorings mit Charakterisierungstests.
 - Ausnahmen vom Test-first-Einstieg sind zeitlich begrenzte explorative Spikes, rein deklarative Texte/Metadaten/triviale Darstellungsänderungen und schwer isolierbare Nextcloud-Integration, bei der ein gröberer Integrationstest den realen Vertrag zuverlässiger abbildet. Spike-Code wird verworfen oder vor der Übernahme charakterisiert; deklarative Änderungen erhalten passende Syntax-, Contract-, Layout- oder Sichtprüfungen.
 - Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden test-first entwickelt. API-Änderungen prüfen Erfolg, Validierungsfehler und typische Allow-/Deny-Fälle.
