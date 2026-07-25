@@ -155,3 +155,14 @@ Eine Änderung ist nur fertig, wenn:
 7. der Abschlussbericht Anforderungen, geänderte Dateien, Checks mit Ergebnissen, ausgelassene Checks mit Grund, Risiken, Learning Candidates und die Commit-Frage enthält.
 
 Die alte Datei `00_ki_projektkonfiguration_br_nextcloud_apps.md` ist nur ein Kompatibilitätshinweis und keine zweite Regelquelle.
+
+Bei Funktionen, die persistente Fachobjekte verändern, muss vor der
+Implementierung das Zustandsmodell bestimmt werden. Codex muss erlaubte und
+verbotene Ausgangszustände, Vorbedingungen, Zielzustand, Nebenwirkungen,
+Fehlerzustände, Wiederholungsverhalten und relevante
+Nebenläufigkeitskonflikte benennen.
+
+Statusänderungen dürfen nicht über frei verwendbare allgemeine Setter
+erfolgen, wenn fachliche Übergangsregeln bestehen. Erlaubte Übergänge sind
+im Fachmodell oder einem eindeutig zuständigen Anwendungsservice zu
+kapseln und durch positive, negative und Fehlerfalltests abzusichern.
