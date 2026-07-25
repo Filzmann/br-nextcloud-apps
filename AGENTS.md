@@ -166,3 +166,21 @@ Statusänderungen dürfen nicht über frei verwendbare allgemeine Setter
 erfolgen, wenn fachliche Übergangsregeln bestehen. Erlaubte Übergänge sind
 im Fachmodell oder einem eindeutig zuständigen Anwendungsservice zu
 kapseln und durch positive, negative und Fehlerfalltests abzusichern.
+
+
+Bei Datenbankänderungen mit möglichen Bestandsdaten muss Codex vor der
+Implementierung altes und neues Schema, Transformationsregeln,
+Bestandsvarianten, Integritätsbedingungen, Transaktionsgrenze,
+Fortsetzbarkeit und Rollbackgrenzen dokumentieren.
+
+Jede solche Änderung benötigt mindestens:
+
+- einen Test der frischen Installation,
+- einen Upgrade-Test aus der relevanten Vorversion mit synthetischen
+  Bestandsdaten,
+- Prüfungen der fachlichen Daten- und Beziehungsintegrität,
+- eine Behandlung ungültiger oder widersprüchlicher Altdaten,
+- einen Anwendungstest auf dem migrierten Schema.
+
+Veröffentlichte Migrationen dürfen nicht nachträglich verändert werden.
+Korrekturen erfolgen durch eine neue Migration.
