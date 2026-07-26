@@ -6,6 +6,7 @@ cd "$workspace"
 
 manifest='config/workspace-repositories.tsv'
 canonical_skill='.agents/skills/work-in-nextcloud-app/SKILL.md'
+canonical_tdd_skill='.agents/skills/test-driven-change/SKILL.md'
 required_parent_files=(
     AGENTS.md
     00_ki_projektkonfiguration_br_nextcloud_apps.md
@@ -16,9 +17,12 @@ required_parent_files=(
     .codex/agents/reviewer.toml
     .agents/skills/create-nextcloud-app/SKILL.md
     "$canonical_skill"
+    "$canonical_tdd_skill"
     .agents/skills/verify-workspace/SKILL.md
     .agents/skills/build-ad-suite-release/SKILL.md
     .agents/skills/evaluate-learning-candidate/SKILL.md
+    README.md
+    docs/architecture.md
     docs/plans/codex-structure-correction.md
     docs/plans/codex-structure-migration.md
     docs/workspace.md
@@ -62,8 +66,10 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 import tomllib
+from urllib.parse import unquote, urlsplit
 
 workspace = Path.cwd().resolve()
 manifest = workspace / 'config/workspace-repositories.tsv'
@@ -75,7 +81,7 @@ def fail(message: str) -> None:
 
 def parse_manifest() -> list[dict[str, str]]:
     lines = manifest.read_text(encoding='utf-8').splitlines()
-    if not lines or lines[0] != 'path\tkind\tapp_id\trequired_skill':
+    if not lines or lines[0] != 'path\tkind\tapp_id\trequired_skills':
         fail('Repository-Manifest hat keinen gültigen Header')
     rows: list[dict[str, str]] = []
     seen: set[str] = set()
@@ -83,21 +89,32 @@ def parse_manifest() -> list[dict[str, str]]:
         columns = line.split('\t')
         if len(columns) != 4:
             fail(f'Repository-Manifest Zeile {number} braucht vier Spalten')
-        path, kind, app_id, required_skill = columns
+        path, kind, app_id, required_skills_value = columns
         if path in seen:
             fail(f'Repository-Pfad ist doppelt: {path}')
         if path != '.' and (Path(path).is_absolute() or len(Path(path).parts) != 1):
             fail(f'Repository muss direkt unter dem Parent liegen: {path}')
         if kind not in {'parent', 'app', 'product-docs'}:
             fail(f'Unbekannter Repository-Typ für {path}: {kind}')
-        if kind == 'app' and (app_id == '-' or required_skill == '-'):
-            fail(f'App braucht App-ID und lokalen Pflicht-Skill: {path}')
+        required_skills = required_skills_value.split(',')
+        if kind == 'app' and (app_id == '-' or required_skills_value == '-'):
+            fail(f'App braucht App-ID und lokale Pflicht-Skills: {path}')
+        if kind == 'app':
+            if any(not re.fullmatch(r'[a-z0-9-]+', skill) for skill in required_skills):
+                fail(f'App hat ungültige Pflicht-Skills: {path}')
+            if len(required_skills) != len(set(required_skills)):
+                fail(f'App hat doppelte Pflicht-Skills: {path}')
+            expected = {'work-in-nextcloud-app', 'test-driven-change'}
+            if set(required_skills) != expected:
+                fail(f'App braucht genau die gemeinsamen Pflicht-Skills: {path}')
+        elif required_skills_value != '-':
+            fail(f'Nur Apps dürfen lokale Pflicht-Skills deklarieren: {path}')
         seen.add(path)
         rows.append({
             'path': path,
             'kind': kind,
             'app_id': app_id,
-            'required_skill': required_skill,
+            'required_skills': required_skills,
         })
     if not rows or rows[0]['path'] != '.' or rows[0]['kind'] != 'parent':
         fail('Parent muss der erste Manifest-Eintrag sein')
@@ -135,6 +152,47 @@ def parse_skill(skill_path: Path) -> tuple[str, str]:
 
 rows = parse_manifest()
 manifest_paths = {row['path'] for row in rows}
+
+
+def markdown_files() -> list[tuple[Path, Path]]:
+    commands = (
+        ('git', 'ls-files', '*.md'),
+        ('git', 'ls-files', '--others', '--exclude-standard', '*.md'),
+    )
+    files: set[tuple[Path, Path]] = set()
+    for row in rows:
+        repository = workspace if row['path'] == '.' else workspace / str(row['path'])
+        for command in commands:
+            result = subprocess.run(
+                ('git', '-C', str(repository), *command[1:]),
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            for line in result.stdout.splitlines():
+                if line:
+                    files.add((repository / line, repository))
+    return sorted(files)
+
+
+for markdown, repository in markdown_files():
+    text = markdown.read_text(encoding='utf-8')
+    for match in re.finditer(r'!?\[[^\]]*\]\(([^)]+)\)', text):
+        raw_target = match.group(1).strip()
+        if raw_target.startswith('<') and raw_target.endswith('>'):
+            raw_target = raw_target[1:-1]
+        target = raw_target.split(maxsplit=1)[0]
+        parsed = urlsplit(target)
+        if parsed.scheme or parsed.netloc or target.startswith('#'):
+            continue
+        decoded_path = unquote(parsed.path)
+        if not decoded_path:
+            continue
+        if decoded_path.startswith('/'):
+            fail(f'Interner Markdown-Link muss relativ sein: {markdown.relative_to(workspace)} -> {target}')
+        resolved = (markdown.parent / decoded_path).resolve()
+        if not resolved.is_relative_to(repository) or not resolved.exists():
+            fail(f'Interner Markdown-Link ist ungültig: {markdown.relative_to(workspace)} -> {target}')
 
 workspace_catalog = workspace / 'br-nextcloud-apps.code-workspace'
 try:
@@ -193,13 +251,13 @@ for row in rows:
         fail(f'AGENTS.md referenziert nicht lokale Skills in {row["path"]}: {sorted(missing_references)}')
 
     if row['kind'] == 'app':
-        required = row['required_skill']
-        local_skill = skill_root / required / 'SKILL.md'
-        if required not in skill_names or not local_skill.is_file():
-            fail(f'Lokaler Pflicht-Skill fehlt in {row["path"]}: {required}')
-        canonical = workspace / '.agents' / 'skills' / required / 'SKILL.md'
-        if local_skill.read_bytes() != canonical.read_bytes():
-            fail(f'Lokale Skill-Kopie weicht von der kanonischen Fassung ab: {row["path"]}/{required}')
+        for required in row['required_skills']:
+            local_skill = skill_root / required / 'SKILL.md'
+            if required not in skill_names or not local_skill.is_file():
+                fail(f'Lokaler Pflicht-Skill fehlt in {row["path"]}: {required}')
+            canonical = workspace / '.agents' / 'skills' / required / 'SKILL.md'
+            if local_skill.read_bytes() != canonical.read_bytes():
+                fail(f'Lokale Skill-Kopie weicht von der kanonischen Fassung ab: {row["path"]}/{required}')
         if 'vollständige Repository-Steuerung' not in agents_text:
             fail(f'Direkte Standalone-Steuerung ist nicht erklärt: {row["path"]}/AGENTS.md')
         forbidden = ('Parent-Skill', 'Parent-`AGENTS.md` gilt ergaenzend', 'Parent-`AGENTS.md` gilt ergänzend')
@@ -213,6 +271,7 @@ required_contracts = (
     'Nextcloud-native group, user, session, AppConfig, share, file, capability, configuration, and request mechanisms must be used',
     'Never construct SQL fragments from request data.',
     'Develop executable UI logic test-first',
+    'time-boxed exploratory spike',
     'real employee, works-council, customer, mail, health, conflict, decision, or internal-document data',
     'semantically identically',
     'role="tablist"',
@@ -238,6 +297,30 @@ for contract in required_contracts:
     if contract not in canonical_text:
         fail(f'Verbindlicher App-Skill-Vertrag fehlt: {contract}')
 
+tdd_skill_text = (workspace / '.agents/skills/test-driven-change/SKILL.md').read_text(encoding='utf-8')
+required_tdd_contracts = (
+    'domain invariant',
+    'observable target behavior',
+    'expected domain reason',
+    'characterization test',
+    'infrastructure, syntax, fixture, or configuration',
+    'unauthorized access is rejected',
+    'fresh installation on an empty schema',
+    'provider and consumer contract tests',
+    'persisted state',
+    'remaining untested risks',
+)
+for contract in required_tdd_contracts:
+    if contract not in tdd_skill_text:
+        fail(f'Verbindlicher TDD-Skill-Vertrag fehlt: {contract}')
+for heading in ('## Red', '## Green', '## Refactor'):
+    if tdd_skill_text.count(heading) != 1:
+        fail(f'TDD-Skill braucht genau einen Ablaufabschnitt {heading}')
+    for duplicate_path in ('AGENTS.md', 'docs/architecture.md', '.agents/skills/work-in-nextcloud-app/SKILL.md'):
+        duplicate_text = (workspace / duplicate_path).read_text(encoding='utf-8')
+        if heading in duplicate_text:
+            fail(f'Konkurrierender TDD-Ablauf in {duplicate_path}: {heading}')
+
 parent_text = (workspace / 'AGENTS.md').read_text(encoding='utf-8')
 required_parent_contracts = (
     'nachweislich nicht ausreicht',
@@ -248,6 +331,10 @@ required_parent_contracts = (
     'niemals auf eine Produktiv- oder Hostingumgebung übertragen',
     'Ein Wechsel zwischen DDEV und Produktion ist eine Umgebungsgrenze',
     'Bei unklarer Zielumgebung muss Codex stoppen.',
+    '### Testgetriebene Verhaltensänderungen',
+    'Ein sofort grüner Test ist kein TDD-Nachweis',
+    'vollständige Ablauf steht ausschließlich im Skill',
+    '`test-driven-change`',
 )
 for contract in required_parent_contracts:
     if contract not in parent_text:
@@ -257,6 +344,8 @@ create_skill_text = (workspace / '.agents/skills/create-nextcloud-app/SKILL.md')
 for contract in (
     'config/workspace-repositories.tsv',
     '.agents/skills/work-in-nextcloud-app/SKILL.md',
+    '.agents/skills/test-driven-change/SKILL.md',
+    'work-in-nextcloud-app,test-driven-change',
     'byte-for-byte',
     'REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure',
     'Do not report a new app as complete',
@@ -267,7 +356,11 @@ for contract in (
 workspace_docs_text = (workspace / 'docs/workspace.md').read_text(encoding='utf-8')
 for contract in (
     'nicht-kanonische, human-lesbare Übersicht',
-    'reguläre lokale Kopie von `.agents/skills/work-in-nextcloud-app/SKILL.md`',
+    'gemeinsamen Skills `work-in-nextcloud-app` und',
+    '`test-driven-change` als normale lokale Dateien',
+    'erzwingt bytegleiche lokale Kopien',
+    'Kopien von `.agents/skills/work-in-nextcloud-app/SKILL.md` sowie',
+    '`.agents/skills/test-driven-change/SKILL.md`',
     'REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure',
     'Fehlt die Commit-Freigabe, bleibt dieser Punkt ausdrücklich offen.',
 ):
@@ -359,7 +452,7 @@ for control_file in "${required_parent_files[@]}"; do
     fi
 done
 
-while IFS=$'\t' read -r path kind app_id required_skill; do
+while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$path" == 'path' ]] && continue
     [[ "$path" == '.' ]] && continue
     repo="$workspace"
@@ -367,7 +460,10 @@ while IFS=$'\t' read -r path kind app_id required_skill; do
 
     control_files=(AGENTS.md)
     if [[ "$kind" == 'app' ]]; then
-        control_files+=(".agents/skills/$required_skill/SKILL.md")
+        IFS=',' read -r -a skills <<< "$required_skills"
+        for required_skill in "${skills[@]}"; do
+            control_files+=(".agents/skills/$required_skill/SKILL.md")
+        done
     elif [[ "$kind" == 'product-docs' ]]; then
         control_files+=("docs/DELIVERY-GATE.md")
     fi
@@ -388,7 +484,7 @@ done < "$manifest"
 if find .codex .agents -type l -print -quit | grep -q .; then
     fail 'Symlink in Parent-Steuerungsstruktur gefunden'
 fi
-while IFS=$'\t' read -r path kind app_id required_skill; do
+while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$kind" == 'app' ]] || continue
     if find "$path/.agents" -type l -print -quit | grep -q .; then
         fail "Symlink in lokaler App-Steuerungsstruktur gefunden: $path"

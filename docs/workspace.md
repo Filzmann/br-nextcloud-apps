@@ -2,7 +2,10 @@
 
 ## Zweck
 
-`~/projects/br-nextcloud-apps` ist der Parent-/Meta-Workspace fuer die gemeinsame lokale Nextcloud-DDEV-Umgebung und app-uebergreifende Dokumentation.
+Der Root dieses Repositorys ist der Parent-/Meta-Workspace fuer die gemeinsame
+lokale Nextcloud-DDEV-Umgebung und app-uebergreifende Dokumentation. In
+Befehlsbeispielen bezeichnet `${WORKSPACE_ROOT}` den lokal ermittelten
+absoluten Pfad dieses Roots; der Pfad ist keine Projektinvariante.
 
 Der Parent enthaelt keine deploybare App. Deploybare Apps liegen als eigene Git-Repositories neben dem DDEV-Projekt.
 
@@ -49,19 +52,26 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 
 | App | App-ID | App-Repo | Lokale URL |
 | --- | --- | --- | --- |
-| BRTop | `brtop` | `~/projects/br-nextcloud-apps/brtop` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
-| AdPlaner | `adplaner` | `~/projects/br-nextcloud-apps/adplaner` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
-| BRStunden | `brstunden` | `~/projects/br-nextcloud-apps/brstunden` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
-| LocalBase | `localbase` | `~/projects/br-nextcloud-apps/localbase` | keine Navigation |
-| Berechtigungsmatrix | `br_permission_matrix` | `~/projects/br-nextcloud-apps/br_permission_matrix` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
-| AD Kalender | `adcalendar` | `~/projects/br-nextcloud-apps/adcalendar` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
-| AD Urlaub | `adurlaub` | `~/projects/br-nextcloud-apps/adurlaub` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
-| AD-/BR-Suite | `orgsuite` | `~/projects/br-nextcloud-apps/orgsuite` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
-| AD Raumplaner | `adroom` | `~/projects/br-nextcloud-apps/adroom` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
+| BRTop | `brtop` | `brtop/` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
+| AdPlaner | `adplaner` | `adplaner/` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
+| BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
+| LocalBase | `localbase` | `localbase/` | keine Navigation |
+| Berechtigungsmatrix | `br_permission_matrix` | `br_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
+| AD Kalender | `adcalendar` | `adcalendar/` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
+| AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
+| AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
+| AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
-App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App führt außerdem den gemeinsamen Skill `work-in-nextcloud-app` als normale lokale Datei unter `.agents/skills/` mit. Dadurch sind Regeln und Skill beim direkten Öffnen eines einzelnen App-Repositories vollständig auflösbar; die Parent-Dateien sind keine Laufzeitabhängigkeit.
+App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App
+führt außerdem die gemeinsamen Skills `work-in-nextcloud-app` und
+`test-driven-change` als normale lokale Dateien unter `.agents/skills/` mit.
+Dadurch sind Regeln und Skills beim direkten Öffnen eines einzelnen
+App-Repositories vollständig auflösbar; die Parent-Dateien sind keine
+Laufzeitabhängigkeit. Die Parent-Fassungen sind kanonisch, das
+Repositorymanifest benennt beide Pflicht-Skills und die Strukturprüfung
+erzwingt bytegleiche lokale Kopien.
 
 ## Repo-Trennung
 
@@ -77,7 +87,7 @@ App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App führt
 DDEV-Projekt:
 
 ```bash
-cd ~/projects/br-nextcloud-apps/nextcloud-dev
+cd "${WORKSPACE_ROOT}/nextcloud-dev"
 ```
 
 Haeufige Befehle:
@@ -123,7 +133,7 @@ Ein neu in `info.xml` deklarierter Background-Job wird bei einer bereits install
 BRTop:
 
 ```text
-~/projects/br-nextcloud-apps/brtop
+${WORKSPACE_ROOT}/brtop
 -> /var/www/html/html/custom_apps/brtop
 ```
 
@@ -136,7 +146,7 @@ nextcloud-dev/.ddev/docker-compose.brtop.yaml
 AdPlaner:
 
 ```text
-~/projects/br-nextcloud-apps/adplaner
+${WORKSPACE_ROOT}/adplaner
 -> /var/www/html/html/custom_apps/adplaner
 ```
 
@@ -149,7 +159,7 @@ nextcloud-dev/.ddev/docker-compose.adplaner.yaml
 BRStunden:
 
 ```text
-~/projects/br-nextcloud-apps/brstunden
+${WORKSPACE_ROOT}/brstunden
 -> /var/www/html/html/custom_apps/brstunden
 ```
 
@@ -162,7 +172,7 @@ nextcloud-dev/.ddev/docker-compose.brstunden.yaml
 LocalBase:
 
 ```text
-~/projects/br-nextcloud-apps/localbase
+${WORKSPACE_ROOT}/localbase
 -> /var/www/html/html/custom_apps/localbase
 ```
 
@@ -175,7 +185,7 @@ nextcloud-dev/.ddev/docker-compose.localbase.yaml
 Berechtigungsmatrix:
 
 ```text
-~/projects/br-nextcloud-apps/br_permission_matrix
+${WORKSPACE_ROOT}/br_permission_matrix
 -> /var/www/html/html/custom_apps/br_permission_matrix
 ```
 
@@ -188,7 +198,7 @@ nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
 AD Kalender:
 
 ```text
-~/projects/br-nextcloud-apps/adcalendar
+${WORKSPACE_ROOT}/adcalendar
 -> /var/www/html/html/custom_apps/adcalendar
 ```
 
@@ -201,7 +211,7 @@ nextcloud-dev/.ddev/docker-compose.adcalendar.yaml
 AD Urlaub:
 
 ```text
-~/projects/br-nextcloud-apps/adurlaub
+${WORKSPACE_ROOT}/adurlaub
 -> /var/www/html/html/custom_apps/adurlaub
 ```
 
@@ -214,7 +224,7 @@ nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
 OrgSuite:
 
 ```text
-~/projects/br-nextcloud-apps/orgsuite
+${WORKSPACE_ROOT}/orgsuite
 -> /var/www/html/html/custom_apps/orgsuite
 ```
 
@@ -227,7 +237,7 @@ nextcloud-dev/.ddev/docker-compose.orgsuite.yaml
 AD Raumplaner:
 
 ```text
-~/projects/br-nextcloud-apps/adroom
+${WORKSPACE_ROOT}/adroom
 -> /var/www/html/html/custom_apps/adroom
 ```
 
@@ -237,23 +247,30 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.adroom.yaml
 ```
 
-Mount-Pfade muessen lowercase `~/projects/...` verwenden, nicht `~/Projects/...`.
+Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
+Workspace-Roots verwenden. Eine persönliche Home-Verzeichnisstruktur ist kein
+Projektvertrag.
 
 ## Neue App anlegen
 
-1. Fachbereich und App-ID festlegen.
-2. App-Verzeichnis neben `brtop/` und `adplaner/` anlegen.
-3. Eigenes Git-Repo im App-Verzeichnis initialisieren.
-4. Eigene `AGENTS.md`, eigene `.gitignore` und eine reguläre lokale Kopie von `.agents/skills/work-in-nextcloud-app/SKILL.md` im App-Repo anlegen; keine Symlinks verwenden.
-5. App mit App-ID und Pflicht-Skill `work-in-nextcloud-app` in `config/workspace-repositories.tsv` registrieren.
-6. App als eigenen Ordner in `br-nextcloud-apps.code-workspace` aufnehmen.
-7. Parent-`.gitignore` um das neue App-Verzeichnis ergaenzen.
-8. DDEV-Mount unter `nextcloud-dev/.ddev/docker-compose.<app-id>.yaml` anlegen.
-9. Parent-Dokumentation nur um Meta-/DDEV-/Mount-Informationen ergaenzen.
-10. Aus der neuen Git-Wurzel die lokale Auffindbarkeit von `AGENTS.md` und Skill sowie die deklarierten schnellen PHP-/JavaScript-Tests prüfen.
-11. Im Parent die Bytegleichheit der lokalen Skill-Kopie mit der kanonischen Fassung und danach `REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure` prüfen.
-12. Eine App erst als fertig melden, wenn Manifest, Workspace-Registrierung, lokale Steuerungsdateien und Parent-Steuerungsdateien im jeweils zuständigen Repository getrackt sind. Fehlt die Commit-Freigabe, bleibt dieser Punkt ausdrücklich offen.
-13. App nur nach gesonderter Freigabe in Nextcloud aktivieren und prüfen.
+Der kanonische Ablauf ist der Skill
+`.agents/skills/create-nextcloud-app/SKILL.md`. Die Dokumentation ist keine
+zweite Schrittquelle.
+
+Unverzichtbare Ergebnisse des Skills sind:
+
+- eigenes Repository, lokale `AGENTS.md`, `.gitignore` und reguläre lokale
+  Kopien von `.agents/skills/work-in-nextcloud-app/SKILL.md` sowie
+  `.agents/skills/test-driven-change/SKILL.md`;
+- genau ein neuer Eintrag in `config/workspace-repositories.tsv` sowie daraus
+  abgeleitete oder dagegen geprüfte Parent-Inventare;
+- lokaler DDEV-Mount und app-lokale Fast-Tests;
+- Bytegleichheit der Skillkopie und
+  `REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure`.
+
+Eine App wird erst als fertig gemeldet, wenn die Pflichtdateien in ihren
+jeweiligen Repositories getrackt sind. Fehlt die Commit-Freigabe, bleibt dieser Punkt ausdrücklich offen.
+Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 
 ## VS-Code Workspace
 

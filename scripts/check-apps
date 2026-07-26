@@ -27,7 +27,7 @@ if (( ! skip_structure )); then
     fi
 fi
 
-while IFS=$'\t' read -r path kind app_id required_skill; do
+while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$path" == 'path' ]] && continue
     [[ "$kind" == 'app' ]] || continue
 
@@ -36,13 +36,17 @@ while IFS=$'\t' read -r path kind app_id required_skill; do
     (
         cd "$repo"
         [[ -f AGENTS.md && ! -L AGENTS.md ]]
-        [[ -f ".agents/skills/$required_skill/SKILL.md" && ! -L ".agents/skills/$required_skill/SKILL.md" ]]
         grep -Fq 'vollständige Repository-Steuerung' AGENTS.md
-        grep -Fq "name: $required_skill" ".agents/skills/$required_skill/SKILL.md"
-        if git check-ignore -q ".agents/skills/$required_skill/SKILL.md"; then
-            echo "Lokaler Skill wird ignoriert: $path/$required_skill" >&2
-            exit 1
-        fi
+        IFS=',' read -r -a skills <<< "$required_skills"
+        for required_skill in "${skills[@]}"; do
+            local_skill=".agents/skills/$required_skill/SKILL.md"
+            [[ -f "$local_skill" && ! -L "$local_skill" ]]
+            grep -Fq "name: $required_skill" "$local_skill"
+            if git check-ignore -q "$local_skill"; then
+                echo "Lokaler Skill wird ignoriert: $path/$required_skill" >&2
+                exit 1
+            fi
+        done
     )
     echo "== $path: lokale PHP-Tests =="
     (cd "$repo" && php tests/run.php)
