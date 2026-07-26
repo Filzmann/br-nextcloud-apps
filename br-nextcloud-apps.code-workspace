@@ -41,6 +41,10 @@
       "path": "adroom"
     },
     {
+      "name": "recruitment",
+      "path": "recruitment"
+    },
+    {
       "name": "ad-suite",
       "path": "ad-suite"
     }

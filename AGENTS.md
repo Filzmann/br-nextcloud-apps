@@ -84,36 +84,36 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 ## Test-, UI- und Datenqualität
 
-### Testgetriebene Verhaltensänderungen
+### Testgetriebene Funktionserweiterungen und Verhaltensänderungen
 
-Neue Funktionen, Fehlerkorrekturen und sonstige Änderungen beobachtbaren
-Verhaltens folgen grundsätzlich Red–Green–Refactor:
+Bei jeder neuen Funktion, Fehlerkorrektur oder sonstigen Änderung des
+beobachtbaren Verhaltens muss der Skill `test-driven-change` verwendet werden.
+Vor der Produktivcodeänderung werden fachliche Invariante, beobachtbares
+Zielverhalten, geeignete Testebene, was der geplante Test beweist und
+ausdrücklich nicht beweist sowie relevante negative Fälle und Grenzfälle
+bestimmt.
 
-1. Vor der Implementierung fachliche Invariante, beobachtbares Zielverhalten
-   und geeignete Testebene benennen.
-2. Zuerst einen kleinen aussagekräftigen Test schreiben.
-3. Ihn vor der Produktivcodeänderung ausführen und bestätigen, dass er aus dem
-   erwarteten fachlichen Grund fehlschlägt.
-4. Nur die kleinste zur Erfüllung notwendige Implementierung vornehmen.
-5. Den neuen Test und die relevante Regressionstestsuite ausführen.
-6. Erst danach ohne Verhaltensänderung refaktorieren.
-7. Nach dem Refactoring die relevanten Tests erneut ausführen.
-8. Jede Abweichung ausdrücklich und sachlich begründen.
+Der Skill erzwingt Red–Green–Refactor mit einem aus dem erwarteten fachlichen
+Grund zunächst roten Test, der kleinsten notwendigen Implementierung,
+Regressionstests und Refactoring erst bei grünem Stand. Der Abschlussbericht
+weist Invariante, Testebene, Red-Nachweis samt Fehlergrund, minimale
+Implementierung, ausgeführte Tests und Ergebnisse, verbleibende ungetestete
+Risiken sowie begründete Abweichungen aus.
 
-Ein sofort grüner Test ist kein TDD-Nachweis; ausdrücklich als solcher
-benannt darf er ein Charakterisierungstest sein. Reine Dokumentations-,
+Ein sofort grüner Test ist kein TDD-Nachweis; er darf nur als ausdrücklich
+begründeter Charakterisierungstest dienen. Reine Dokumentations-,
 Formatierungs-, generierte oder mechanische Änderungen ohne sinnvoll
 testbares Verhalten erhalten statt eines künstlichen TDD-Zyklus die passende
-maschinelle Prüfung. Der vollständige Ablauf steht ausschließlich im Skill
-`test-driven-change`.
+maschinelle Prüfung; Zweifelsfälle werden kurz begründet.
+Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 
 - Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden
   test-first entwickelt. Cross-App-Verträge erhalten Provider- und
   Consumer-Contract-Tests.
-- Zulässige Einstiegsausnahmen sind zeitlich begrenzte Spikes, rein
-  deklarative Änderungen und schwer isolierbare Nextcloud-Integration.
-  Übernommener Spike-Code wird zuvor charakterisiert; deklarative Änderungen
-  erhalten passende Syntax-, Contract-, Layout- oder Sichtprüfungen.
+- Zeitlich begrenzte Spikes und schwer isolierbare Nextcloud-Integration sind
+  im Skill ausdrücklich zu begründende Abweichungen. Übernommener Spike-Code
+  wird zuvor charakterisiert; deklarative Änderungen erhalten passende
+  Syntax-, Contract-, Layout- oder Sichtprüfungen.
 - Für neuen oder wesentlich geänderten ausführbaren Code werden mindestens
   85 Prozent Line-Coverage angestrebt. PHP und JavaScript werden getrennt
   ausgewiesen; Sicherheitsinvarianten sind vollständig abzudecken.

@@ -43,6 +43,7 @@ br-nextcloud-apps/
 |-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
 |-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
 |-- adroom/     # eigenes Git-Repo, Raumplanung
+|-- recruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
 `-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -61,6 +62,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
 | AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
 | AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
+| Recruitment | `recruitment` | `recruitment/` | `https://nextcloud-dev.ddev.site/apps/recruitment/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -76,7 +78,7 @@ erzwingt bytegleiche lokale Kopien.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `recruitment/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -107,6 +109,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
 ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
+ddev exec -d /var/www/html/html php occ app:list | grep -i recruitment
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -247,6 +250,19 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.adroom.yaml
 ```
 
+Recruitment:
+
+```text
+${WORKSPACE_ROOT}/recruitment
+-> /var/www/html/html/custom_apps/recruitment
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.recruitment.yaml
+```
+
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
 Workspace-Roots verwenden. Eine persönliche Home-Verzeichnisstruktur ist kein
 Projektvertrag.
@@ -284,7 +300,7 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml`
 - Strukturprüfung aller Repository-Roots und lokalen Skill-Ketten: `scripts/check-workspace-structure`
 - Schneller Parent-Check: `scripts/check-fast`
-- Schnelle Tests aller neun App-Repositories: `scripts/check-apps`
+- Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`
 - Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
 - Echtes sauberes AD-Suite-Delivery-Gate: `scripts/check-ad-suite-delivery`
 

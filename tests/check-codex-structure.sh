@@ -266,6 +266,7 @@ for row in rows:
 
 canonical_text = (workspace / '.agents/skills/work-in-nextcloud-app/SKILL.md').read_text(encoding='utf-8')
 required_contracts = (
+    'Use the locally available sibling skill `test-driven-change` for every new feature',
     'file storage, **file paths**, uploads, downloads, or document generation',
     'The rollback path being unclear is a separate stop reason.',
     'Nextcloud-native group, user, session, AppConfig, share, file, capability, configuration, and request mechanisms must be used',
@@ -305,7 +306,11 @@ required_tdd_contracts = (
     'characterization test',
     'infrastructure, syntax, fixture, or configuration',
     'unauthorized access is rejected',
+    'foreign or manipulated object ID grants no access',
+    'a rejected request changes no data',
+    'UI visibility is never used as a substitute for server-side access control',
     'fresh installation on an empty schema',
+    'required constraints and indexes',
     'provider and consumer contract tests',
     'persisted state',
     'remaining untested risks',
@@ -322,6 +327,26 @@ for heading in ('## Red', '## Green', '## Refactor'):
             fail(f'Konkurrierender TDD-Ablauf in {duplicate_path}: {heading}')
 
 parent_text = (workspace / 'AGENTS.md').read_text(encoding='utf-8')
+canonical_tdd_heading = '### Testgetriebene Funktionserweiterungen und Verhaltensänderungen'
+if parent_text.count(canonical_tdd_heading) != 1:
+    fail('Root-AGENTS.md braucht genau eine kanonische TDD-Überschrift')
+activation_pattern = re.compile(
+    r'Bei jeder neuen Funktion, Fehlerkorrektur oder sonstigen Änderung des\s+'
+    r'beobachtbaren Verhaltens muss der Skill `test-driven-change` verwendet werden\.'
+)
+if len(activation_pattern.findall(parent_text)) != 1:
+    fail('Root-AGENTS.md braucht genau eine zwingende allgemeine TDD-Aktivierungsregel')
+if not re.search(
+    r'was der geplante Test beweist und\s+ausdrücklich nicht beweist',
+    parent_text,
+):
+    fail('Root-AGENTS.md benennt Beweiswert und blinde Flecken des Tests nicht')
+for row in rows:
+    if row['kind'] != 'app':
+        continue
+    app_agents_text = (workspace / row['path'] / 'AGENTS.md').read_text(encoding='utf-8')
+    if canonical_tdd_heading in app_agents_text or activation_pattern.search(app_agents_text):
+        fail(f'App-AGENTS.md dupliziert die kanonische TDD-Regel: {row["path"]}')
 required_parent_contracts = (
     'nachweislich nicht ausreicht',
     'Berechtigungen, Migration, Wartung und Interoperabilität',
@@ -331,7 +356,8 @@ required_parent_contracts = (
     'niemals auf eine Produktiv- oder Hostingumgebung übertragen',
     'Ein Wechsel zwischen DDEV und Produktion ist eine Umgebungsgrenze',
     'Bei unklarer Zielumgebung muss Codex stoppen.',
-    '### Testgetriebene Verhaltensänderungen',
+    canonical_tdd_heading,
+    'relevante negative Fälle und Grenzfälle',
     'Ein sofort grüner Test ist kein TDD-Nachweis',
     'vollständige Ablauf steht ausschließlich im Skill',
     '`test-driven-change`',

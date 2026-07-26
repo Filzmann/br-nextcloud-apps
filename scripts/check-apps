@@ -55,7 +55,7 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
 done < "$manifest"
 
 if (( structure_tracking_warning )); then
-    echo 'App-Prüfung aller neun App-Repositories: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
+    echo 'App-Prüfung aller registrierten App-Repositories: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
 else
-    echo 'App-Prüfung aller neun App-Repositories: OK'
+    echo 'App-Prüfung aller registrierten App-Repositories: OK'
 fi
