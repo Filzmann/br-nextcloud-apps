@@ -3,7 +3,12 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 ddev_project="$workspace/nextcloud-dev"
-apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
+manifest="$workspace/config/workspace-repositories.tsv"
+apps=()
+while IFS=$'\t' read -r path kind app_id required_skills; do
+    [[ "$kind" == 'app' ]] || continue
+    apps+=("$path")
+done < "$manifest"
 container_root='/var/www/html/html/custom_apps'
 tool="$container_root/localbase/tests/coverage/vendor/bin/phpcov"
 merger="$container_root/localbase/tests/coverage/merge-clover.php"

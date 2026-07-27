@@ -64,6 +64,7 @@ fi
 
 echo '== Parent-Contract-Tests =='
 bash tests/check-ad-suite-coverage-baseline.sh
+bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh
 bash tests/check-ad-suite-standalone-contract.sh
 bash tests/check-ad-product-installer.sh

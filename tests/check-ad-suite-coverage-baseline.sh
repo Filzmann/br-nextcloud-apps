@@ -3,12 +3,42 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
+manifest="$workspace/config/workspace-repositories.tsv"
+workspace_baseline="$workspace/scripts/ad-suite-php-coverage-baseline.tsv"
+measurement="$workspace/scripts/measure-ad-suite-php-coverage.sh"
 temporary="$(mktemp -d)"
 
 cleanup() {
     rm -rf "$temporary"
 }
 trap cleanup EXIT
+
+mapfile -t registered_apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
+for app in "${registered_apps[@]}"; do
+    if [[ "$(awk -F '\t' -v app="$app" '$1 == app { count++ } END { print count + 0 }' "$workspace_baseline")" -ne 1 ]]; then
+        echo "Coverage-Baseline muss genau eine Zeile für $app enthalten." >&2
+        exit 1
+    fi
+done
+
+while IFS=$'\t' read -r app minimum; do
+    [[ "$app" == 'app' || "$app" == 'TOTAL' ]] && continue
+    if ! printf '%s\n' "${registered_apps[@]}" | grep -Fqx "$app"; then
+        echo "Coverage-Baseline enthält nicht registrierte App: $app" >&2
+        exit 1
+    fi
+done < "$workspace_baseline"
+
+for contract in \
+    'manifest="$workspace/config/workspace-repositories.tsv"' \
+    "while IFS=\$'\\t' read -r path kind app_id required_skills" \
+    "[[ \"\$kind\" == 'app' ]] || continue" \
+    'apps+=("$path")'; do
+    if ! grep -Fq "$contract" "$measurement"; then
+        echo "Dynamischer Workspace-Coverage-Vertrag fehlt: $contract" >&2
+        exit 1
+    fi
+done
 
 baseline="$temporary/baseline.tsv"
 summary="$temporary/summary.tsv"
