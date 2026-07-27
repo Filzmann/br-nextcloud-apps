@@ -20,27 +20,51 @@
       "problemMatcher": []
     },
     {
+      "label": "DDEV: describe",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev describe",
+      "problemMatcher": []
+    },
+    {
       "label": "Nextcloud: occ status",
       "type": "shell",
       "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ status",
       "problemMatcher": []
     },
     {
-      "label": "BRTop: PHP syntax check",
+      "label": "Nextcloud: app list brtop",
       "type": "shell",
-      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Controller/ApiController.php && ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Service/OdtTemplateRenderer.php && ddev exec php -l /var/www/html/html/custom_apps/brtop/templates/index.php",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ app:list | grep -i brtop",
       "problemMatcher": []
     },
     {
-      "label": "BRTop: logs",
+      "label": "Nextcloud: app list adplaner",
       "type": "shell",
-      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html tail -n 160 data/nextcloud.log",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner",
       "problemMatcher": []
     },
     {
-      "label": "BRTop: launch app",
+      "label": "Nextcloud: app list brstunden",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV: launch brtop",
       "type": "shell",
       "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/brtop/",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV: launch adplaner",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/adplaner/",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV: launch brstunden",
+      "type": "shell",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/brstunden/",
       "problemMatcher": []
     }
   ]

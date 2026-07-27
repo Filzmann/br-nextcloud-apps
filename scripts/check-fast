@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$workspace"
+
+echo '== Shell-Syntax =='
+while IFS= read -r script; do
+    bash -n "$script"
+done < <(find scripts tests -type f \( -name '*.sh' -o -name 'check-*' \) | sort)
+
+echo '== Git-Diff =='
+git diff --check
+
+echo '== Getrackte Artefakte und eindeutige Secret-Dateien =='
+# Nur explizit geprüfte, unvermeidbare Fixtures hier mit exaktem Repository-Pfad
+# aufnehmen. Die Allowlist bleibt bewusst klein und ersetzt keine Inhaltsprüfung.
+tracked_artifact_allowlist=()
+tracked_secret_allowlist=(
+    '.env.example'
+)
+
+is_allowlisted() {
+    local candidate="$1"
+    shift
+    local allowed
+    for allowed in "$@"; do
+        [[ "$candidate" == "$allowed" ]] && return 0
+    done
+    return 1
+}
+
+while IFS= read -r path; do
+    case "$path" in
+        dist/*|*/dist/*|build/*|*/build/*|coverage/*|*/coverage/*|.cache/*|*/.cache/*|*/__pycache__/*|*/.pytest_cache/*|node_modules/*|*/node_modules/*|vendor/*|*/vendor/*|*.bak|*.bak-*|*.tmp|*.dump|*.sql|*.sqlite|*.sqlite3|*.tar|*.tar.gz|*.tgz|*.zip|*.log|*.orig|*.rej|*.coverage|*/.phpunit.cache/*|*/.phpunit.result.cache|*/lcov.info|*/clover.xml|*/coverage.xml)
+            if ! is_allowlisted "$path" "${tracked_artifact_allowlist[@]}"; then
+                echo "Unbeabsichtigt getracktes Backup-/Dump-/Coverage-/Cache-/Build-Artefakt: $path" >&2
+                exit 1
+            fi
+            ;;
+    esac
+
+    case "$path" in
+        .env|*/.env|.env.*|*/.env.*|secrets.json|*/secrets.json|secrets.yaml|*/secrets.yaml|secrets.yml|*/secrets.yml|credentials.json|*/credentials.json|*.key|*.p12|*.pfx|id_rsa|*/id_rsa|id_ed25519|*/id_ed25519|*private*.pem)
+            if ! is_allowlisted "$path" "${tracked_secret_allowlist[@]}"; then
+                echo "Eindeutig verbotene Secret- oder Private-Key-Datei ist getrackt: $path" >&2
+                exit 1
+            fi
+            ;;
+    esac
+done < <(git ls-files)
+echo 'Hinweis: Die Dateinamenprüfung ist kein Secret-Scanner; eine manuelle Inhaltsprüfung bleibt erforderlich.'
+
+set +e
+structure_output="$("$workspace/scripts/check-workspace-structure" 2>&1)"
+structure_status=$?
+set -e
+printf '%s\n' "$structure_output"
+(( structure_status == 0 )) || exit "$structure_status"
+structure_tracking_warning=0
+if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETRACKT' <<< "$structure_output"; then
+    structure_tracking_warning=1
+fi
+
+echo '== Parent-Contract-Tests =='
+bash tests/check-ad-suite-coverage-baseline.sh
+bash tests/check-ad-suite-js-coverage-baseline.sh
+bash tests/check-ad-suite-ci-contract.sh
+bash tests/check-ad-suite-standalone-contract.sh
+bash tests/check-ad-product-installer.sh
+bash tests/check-ad-release-pruning.sh
+
+if (( structure_tracking_warning )); then
+    echo 'Schnelle Workspace-Prüfung: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
+else
+    echo 'Schnelle Workspace-Prüfung: OK'
+fi

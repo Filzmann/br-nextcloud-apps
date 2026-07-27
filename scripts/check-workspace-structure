@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+
+echo '== Workspace-Struktur aller Repositories =='
+set +e
+structure_output="$(bash "$workspace/tests/check-codex-structure.sh" 2>&1)"
+structure_status=$?
+set -e
+printf '%s\n' "$structure_output"
+(( structure_status == 0 )) || exit "$structure_status"
+
+if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETRACKT' <<< "$structure_output"; then
+    exit 0
+fi
+
+echo 'Workspace-Strukturprüfung: OK'

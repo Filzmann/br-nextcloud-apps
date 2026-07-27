@@ -1,467 +1,218 @@
 # AGENTS.md – BR Nextcloud Apps
 
-## Projekt
-
-Lokale Nextcloud-Entwicklungsumgebung für die Betriebsrats-App `brtop`.
-
-Projektwurzel:
-
-    ~/projects/br-nextcloud-apps
-
-DDEV-/Nextcloud-Projekt:
-
-    ~/projects/br-nextcloud-apps/nextcloud-dev
-
-App-Quellcode:
-
-    ~/projects/br-nextcloud-apps/brtop
-
-Lokale App-URL:
-
-    https://nextcloud-dev.ddev.site/apps/brtop/
-
-Nextcloud-App-ID:
-
-    brtop
-
-## Grundregeln
-
-Terminal/CLI vor GUI.
-
-Änderungen klein, prüfbar und rückbaubar halten.
-
-Keine Commits, kein Push und kein Deployment ohne ausdrückliche Freigabe durch Simon.
-
-DDEV wird immer aus diesem Ordner gesteuert:
-
-    cd ~/projects/br-nextcloud-apps/nextcloud-dev
-
-Wichtige Befehle:
-
-    ddev start
-    ddev stop
-    ddev restart
-    ddev describe
-    ddev launch /apps/brtop/
-    ddev exec -d /var/www/html/html php occ status
-    ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
-
-## Architektur- und Codequalitätsregeln für BRTop
-
-Diese Regeln sind eigenständige Projektregeln für die Nextcloud-App `brtop`. Sie bleiben gültig, auch wenn sich Regeln in anderen Projekten ändern. Externe Projektkonfigurationen dürfen nur als Denkanstoß dienen, aber nicht als automatisch geltende Quelle.
-
-### Nicht anwendbare Regeln
-
-Für BRTop gelten nicht:
-
-- WordPress-spezifische APIs, Konzepte und Prüfungen wie Shortcodes, Gutenberg-Blöcke, `$wpdb`, WordPress-Nonces, `current_user_can()`, `esc_html()` oder WordPress-Capabilities.
-- Namenskonventionen anderer Projekte wie `flz_`.
-- Symlink-Regeln, Staging-Workflows oder Plugin-Verzeichnisregeln aus WordPress-Projekten.
-- Gemeinsame WordPress-Hilfsplugins oder deren APIs.
-- Harte Demo-Daten aus externen Produktivseiten, wenn die Daten lokal aus der App oder der Entwicklungsumgebung ableitbar sind.
-
-### Übertragene Grundprinzipien
-
-Für BRTop gelten diese angepassten Prinzipien verbindlich:
-
-- Controller bleiben dünn.
-- Fachlogik, Datenzugriff, Darstellung, Dokumenterzeugung und Dateiablage werden getrennt.
-- Wiederkehrende Logik wird nicht mehrfach in Controllern oder `main.js` dupliziert.
-- Datenzugriffe laufen mittelfristig über Repository-, Mapper- oder Store-Klassen.
-- Wiederkehrende Datenstrukturen werden als Modelle, DTOs oder Value Objects beschrieben, sobald rohe Arrays unübersichtlich werden.
-- Größere HTML-Blöcke werden aus `templates/index.php` in Partials ausgelagert.
-- Wiederkehrende Frontend-Logik wird app-intern in JavaScript-Module unter `js/components/` oder `js/modules/` ausgelagert.
-- Fehler werden zentral protokolliert; Nutzer*innen erhalten sichere, knappe Meldungen ohne interne Details.
-- Keine Architekturabstraktion wird vorsorglich gebaut. Auslagerung erfolgt, wenn sie konkrete Duplizierung, Testbarkeit oder Wartbarkeit verbessert.
-
-### Zielstruktur
-
-Die App soll schrittweise in diese Richtung wachsen:
-
-```text
-brtop/
-├── appinfo/
-├── css/
-├── js/
-│   ├── main.js
-│   ├── modules/
-│   └── components/
-├── lib/
-│   ├── AppInfo/
-│   ├── Controller/
-│   ├── Db/
-│   ├── Model/
-│   ├── Repository/
-│   ├── Service/
-│   └── Exception/
-└── templates/
-    ├── index.php
-    ├── partials/
-    └── odt/
-```
-
-Leere Ordner werden nicht vorsorglich angelegt. Neue Struktur entsteht erst, wenn tatsächlich Code dorthin ausgelagert wird.
-
-### Controller-Regel
-
-Controller dürfen:
-
-- Requests entgegennehmen.
-- Eingaben typisieren und validieren.
-- Berechtigungsprüfungen anstoßen.
-- Services aufrufen.
-- `DataResponse`, `JSONResponse`, `TemplateResponse` oder passende Nextcloud-Antworten zurückgeben.
-
-Controller sollen nicht dauerhaft enthalten:
-
-- SQL- oder QueryBuilder-Details.
-- ODT-XML-Erzeugung.
-- Dokumentgenerator-Logik.
-- Dateiablage- und Exportpfade.
-- komplexe TOP-Gruppierung oder TOP-Nummerierung.
-- Default-Beschlussfragen und §99-/§100-/§102-Fachlogik.
-- große Textbausteine für Einladung, Protokoll oder Beschlüsse.
-
-### Service-Regel
-
-Fachlogik gehört in Services. Für BRTop sind insbesondere diese Services sinnvoll:
-
-- `MeetingService`: Sitzungen anlegen, laden, prüfen.
-- `AgendaService`: Standard-TOPs, Sortierung, Gruppierung, Nummerierung.
-- `PersonnelCaseService`: §99-, §100- und §102-Vorgänge fachlich einordnen.
-- `ResolutionService`: Beschlussfragen, Beschlusslogik und Abstimmung.
-- `InvitationService`: Einladungsstruktur und Einladungstext erzeugen.
-- `ProtocolService`: Protokollstruktur aus Sitzung und TOPs erzeugen.
-- `DocumentGenerationService`: Einladungen, Protokolle und Beschlussdokumente koordinieren.
-- `OdtTemplateRenderer`: ODT-Vorlagen befüllen, ohne das Vorlagenlayout unnötig zu zerstören.
-- `FileExportService`: Dateien im Nextcloud-Dateisystem ablegen.
-- `ErrorReporter` oder `BrtopLogger`: Fehler zentral protokollieren.
-
-Services sollen möglichst wenig Framework-Code enthalten. Nextcloud-spezifische Datei-, User- und Response-Details gehören an die Ränder der App.
-
-### Modelle, DTOs und Repositories
-
-Bei wiederkehrenden Datenstrukturen sind Modelle oder DTOs zu prüfen. Sinnvolle Kandidaten:
-
-- `Meeting`
-- `AgendaItem`
-- `PersonnelCase`
-- `Resolution`
-- `VoteGroup`
-- `GeneratedDocument`
-- `DocumentRequest`
-- `DocumentResult`
-
-Datenbankzugriffe sollen mittelfristig aus dem `ApiController` herausgezogen werden. Sinnvolle Kandidaten:
-
-- `MeetingRepository`
-- `AgendaItemRepository`
-- `ResolutionRepository`
-- `VoteGroupRepository`
-
-Eine gemeinsame Bibliothek analog zu einem Datenbank-Hilfsplugin ist erst sinnvoll, wenn mindestens eine zweite eigene Nextcloud-App dieselben Repository-, DTO- oder Exportmuster verwendet. Bis dahin bleibt Wiederverwendung app-intern.
-
-### Frontend- und UI-Regeln
-
-`js/main.js` darf Einstiegspunkt bleiben, soll aber nicht dauerhaft alle UI-Logik enthalten.
-
-Auslagerung ist zu prüfen für:
-
-- API-Fetch-Wrapper.
-- Sitzungsformular.
-- TOP-/Vorgangsformular.
-- Beschlussformular.
-- Sitzungsübersicht.
-- Dokumentaktionen.
-- Status- und Fehlermeldungen.
-- Chips, Badges, Listen und wiederkehrende UI-Zustände.
-
-Mögliche Struktur:
-
-```text
-brtop/js/modules/api.js
-brtop/js/modules/notices.js
-brtop/js/components/meeting-form.js
-brtop/js/components/agenda-form.js
-brtop/js/components/resolution-form.js
-brtop/js/components/meeting-list.js
-brtop/js/components/document-actions.js
-```
-
-Eine gemeinsame UI-App oder gemeinsame UI-Bibliothek ist erst sinnvoll, wenn mehrere eigene Nextcloud-Apps dieselben UI-Komponenten verwenden. Bis dahin bleiben Komponenten app-intern.
-
-### Template-Regel
-
-`templates/index.php` soll nur die Seitenstruktur enthalten. Wiederkehrende oder größere Blöcke gehören in Partials, zum Beispiel:
-
-- `templates/partials/meeting-form.php`
-- `templates/partials/agenda-form.php`
-- `templates/partials/document-actions.php`
-- `templates/partials/notices.php`
-
-Ausgaben in Templates müssen escaped werden. Interne Fehlerdetails, Stacktraces, absolute Pfade oder Datenbankdetails werden nicht in Templates ausgegeben.
-
-### Error-Reporting
-
-Interne Fehler sollen zentral protokolliert werden, vorzugsweise über die Logging-Infrastruktur der Nextcloud-App und einen dünnen Wrapper-Service.
-
-Regeln:
-
-- Interne Exception-Details stehen im Log, nicht in der UI.
-- API-Antworten enthalten höchstens kurze Fehlercodes oder sichere Meldungen.
-- Fehlerkontext soll nachvollziehbar sein: Aktion, Sitzungs-ID, TOP-ID, Dokumenttyp, User-ID, Exception-Klasse und Message.
-- ODT- oder Exportfehler sollen so gemeldet werden, dass Teilerfolge erkennbar bleiben.
-- Keine Secrets, Tokens, unnötigen personenbezogenen Zusatzdaten oder vollständigen Stacktraces in sichtbaren Antworten ausgeben.
-
-Beispiel für eine sichtbare Meldung:
-
-```text
-Das Protokoll konnte nicht als ODT erzeugt werden. Details stehen im Nextcloud-Log.
-```
-
-### Sicherheitsregeln für Nextcloud-Code
-
-Bei jeder Änderung ist zu prüfen:
-
-- Request-Parameter validieren und typisieren.
-- Ausgaben in Templates escapen.
-- API-Aktionen gegen CSRF absichern; `NoCSRFRequired` nur verwenden, wenn es bewusst begründet ist.
-- Berechtigungen prüfen: Nutzer*innen dürfen nur eigene oder freigegebene Sitzungen sehen und ändern.
-- Keine SQL-Fragmente aus Request-Daten bauen.
-- QueryBuilder-Parameter gebunden übergeben.
-- Dateipfade normalisieren und nicht ungeprüft aus Eingaben zusammensetzen.
-- Keine Secrets in Repository, Logs oder erzeugte Dokumente schreiben.
-- Personenbezogene Daten in Logs minimieren.
-
-### Demo- und Seed-Daten
-
-Demo- und Seed-Daten sollen bevorzugt aus lokal vorhandenen App-Daten oder bewusst gepflegten lokalen Seed-Dateien stammen.
-
-Nicht verwenden:
-
-- Live-Daten aus fremden Produktivsystemen.
-- frei erfundene fachliche Scheindaten, wenn dadurch falsche Annahmen über BR-Abläufe entstehen.
-- externe URLs als harte Datenquelle.
-
-Wenn Demo-Daten fehlen, bleiben Felder leer oder werden als nicht verfügbar markiert.
-
-### Refactoring-Regel
-
-Wenn ein Stück Logik zum zweiten Mal benötigt wird, ist Auslagerung zu prüfen.
-
-Wenn ein Stück Logik zum dritten Mal benötigt wird, soll es ausgelagert werden, außer es gibt einen klaren Grund dagegen.
-
-Typische Auslagerungskandidaten im aktuellen BRTop-Stand:
-
-- TOP-Gruppierung.
-- TOP-Nummerierung.
-- Default-Beschlussfragen.
-- §99-/§100-/§102-Fachlogik.
-- Dokumentstruktur für Einladung, Protokoll und Beschlüsse.
-- ODT-XML-Fragmente.
-- Dateinamen und Exportpfade.
-- API-Fehlerantworten.
-- UI-Notice-Rendering.
-- API-Fetch-Wrapper im JavaScript.
-
-### Prüfpflicht vor größeren Änderungen
-
-Vor größeren Änderungen an Architektur oder Datenmodell:
-
-1. Aktuellen Stand mit `git status --short` prüfen.
-2. Relevante Dateien lesen.
-3. Kurz benennen, was ausgelagert wird und warum.
-4. Prüfen, ob bestehende Funktionen betroffen sind.
-5. Migrationsbedarf nennen, falls Tabellen, Dateistrukturen oder API-Antworten geändert werden.
-6. Nach der Änderung Syntax- und Funktionstests ausführen.
-7. Keine Commits ohne ausdrückliche Freigabe.
-
-### Branch-Regel für größere Änderungen
-
-Für größere Refactorings, neue Datenmodelle oder neue Services soll ein eigener Branch verwendet werden.
-
-Beispiele:
-
-```bash
-git checkout -b refactor/extract-agenda-service
-git checkout -b refactor/repository-layer
-git checkout -b feat/resolution-vote-groups
-```
-
-## Mount
-
-Die App wird per DDEV-Bind-Mount eingebunden:
-
-    ~/projects/br-nextcloud-apps/brtop
-    -> /var/www/html/html/custom_apps/brtop
-
-Konfiguration:
-
-    nextcloud-dev/.ddev/docker-compose.brtop.yaml
-
-Der Mount muss den lowercase-Pfad `~/projects/...` verwenden. Nicht `~/Projects/...`.
-
-## Relevante App-Dateien
-
-    brtop/appinfo/info.xml
-    brtop/appinfo/routes.php
-    brtop/lib/Controller/PageController.php
-    brtop/lib/Controller/ApiController.php
-    brtop/lib/Service/OdtTemplateRenderer.php
-    brtop/templates/index.php
-    brtop/templates/odt/protokoll-template.odt
-    brtop/js/main.js
-    brtop/css/style.css
-
-## Zielprozess BRTop
-
-BRTop soll den wiederkehrenden Sitzungs- und Dokumentprozess des Betriebsrats abbilden, nicht nur einzelne Dokumente erzeugen.
-
-Grundmodell:
-
-- Es gibt einen Betriebsrat mit `n` Mitgliedern; die Mitgliederzahl ist eine Setup- bzw. Konfigurationsvariable.
-- Ein BR-Mitglied ist ein Nextcloud-User in der Gruppe `Betriebsrat`.
-- Listen, Ersatzmitglieder und Nachladungen bleiben zu Beginn bewusst außen vor, müssen aber später wieder aufgegriffen werden.
-- Die reguläre BR-Sitzung findet in einem konfigurierbaren Rhythmus statt, zunächst typischerweise wöchentlich am Dienstag zu einer konfigurierbaren Uhrzeit.
-- Die Einladung erfolgt an einem konfigurierbaren Wochentag vor der Sitzung, zunächst typischerweise am Freitag vorher.
-- Sitzungen werden nicht automatisch vorerzeugt, sondern über „nächste Sitzung planen“ angelegt.
-- Beim Erzeugen einer Einladung wird die Ladungsliste als rechtssicherer Snapshot gespeichert; spätere Gruppenänderungen dürfen alte Einladungen nicht verändern.
-- Standard-TOPs und Sitzungstypen sollen konfigurierbar werden.
-- TOPs und Sub-TOPs werden mit Überschrift, Reihenfolge und späterem Protokollinhalt in der Datenbank gespeichert.
-- Aus denselben gespeicherten Sitzungs- und TOP-Daten werden TOP-Liste für die Einladung, Mailtext und Protokollvorlage erzeugt.
-- Alte Einladungen, Protokolle und Beschlussdokumente sollen über eine eigene Dokumentübersicht mit DB-Metadaten auffindbar sein, nicht nur über Dateipfade.
-- E-Mail-Versand soll mittelfristig direkt aus der App möglich sein; die Absenderadresse muss konfigurierbar sein.
-- Neben regulären BR-Sitzungen können andere Sitzungstypen mit eigener Struktur existieren, z. B. Monatsgespräche, Betriebsausschuss, AGs und Ausschüsse.
-
-Architekturfolge: Refactorings sollen zuerst dieses Prozessmodell, Sitzungstypen, Konfiguration, Agenda-Templates, Ladungssnapshots und Dokumentmetadaten berücksichtigen, bevor Renderer- oder Controller-Details großflächig umgebaut werden.
-
-## Fachliche BR-Logik
-
-Standardstruktur einer BR-Sitzung:
-
-    1. Protokolle
-    2. Personelle Angelegenheiten
-    3. Arbeitsorganisatorisches
-    4. Bericht aus den Sprechstunden seit der letzten Sitzung
-    5. Weitere Tagesordnungspunkte
-
-Unter TOP 2 derzeit berücksichtigt:
-
-    2.1 Personelle Einzelmaßnahmen nach § 99 BetrVG
-    2.2 Vorläufige personelle Maßnahmen nach § 100 BetrVG
-    2.3 Anhörungen zu Kündigungen nach § 102 BetrVG
-
-§ 101 BetrVG wird aktuell ignoriert.
-
-Einladung:
-
-- §99-, §100- und §102-Fälle dürfen kompakt unter „Personelle Angelegenheiten“ zusammengefasst werden.
-
-Protokoll:
-
-- §99-, §100- und §102-Fälle müssen getrennt aufgeführt werden.
-
-Beschlüsse:
-
-- Jeder beschlussrelevante Fall erhält ein eigenes Beschlussdokument.
-- Das gilt auch dann, wenn mehrere Fälle gemeinsam abgestimmt wurden.
-
-## Default-Beschlussfragen
-
-Bei Zustimmungsverweigerung:
-
-    Wer verweigert die Zustimmung zu <<Maßnahme>> und widerspricht ihr damit?
-
-Bei allgemeinen Beschlüssen:
-
-    Wer stimmt <<Maßnahme>> zu?
-
-Allgemeine Beschlusstypen:
-
-- Entsendung / Schulung
-- Betriebsvereinbarung
-- Ausschuss- oder Arbeitsauftrag
-- Beauftragung / Verfahren
-- Protokollgenehmigung
-- organisatorischer Beschluss
-
-Sonderfall §100 BetrVG:
-
-    Wer bestreitet, dass die vorläufige Durchführung der personellen Maßnahme <<Maßnahme>> aus sachlichen Gründen dringend erforderlich ist?
-
-Sonderfall §102 BetrVG:
-
-    Wer widerspricht der beabsichtigten Kündigung <<Maßnahme>> gemäß § 102 BetrVG?
-
-## ODT-Vorlage
-
-Aktuelle Protokollvorlage:
-
-    brtop/templates/odt/protokoll-template.odt
-
-Anforderungen:
-
-- Kopfzeile mit `{{GREMIENNAME}}` und `{{GREMIUM_ADRESSE}}`
-- keine Seitenrahmen
-- Rahmen nur um bestimmte Elemente
-- Inhaltsverzeichnis als echtes ODT-Verzeichnisobjekt
-- Formatvorlagen möglichst: Standard, Textkörper, Überschrift 1, Überschrift 2, Überschrift 3
-- Beschlusskasten als wiederverwendbares Element
-- Protokoll und Beschlussdokumente sollen denselben Beschlusskasten verwenden
-
-## Prüfungen nach Änderungen
-
-PHP-Syntax:
-
-    cd ~/projects/br-nextcloud-apps/nextcloud-dev
-    ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Controller/ApiController.php
-    ddev exec php -l /var/www/html/html/custom_apps/brtop/lib/Service/OdtTemplateRenderer.php
-    ddev exec php -l /var/www/html/html/custom_apps/brtop/templates/index.php
-
-Logs:
-
-    cd ~/projects/br-nextcloud-apps/nextcloud-dev
-    ddev exec -d /var/www/html/html tail -n 160 data/nextcloud.log
-    ddev logs -s web | tail -n 120
-
-Bei JS-/CSS-/Template-Cacheproblemen App-Version in `brtop/appinfo/info.xml` erhöhen und App neu aktivieren:
-
-    cd ~/projects/br-nextcloud-apps/nextcloud-dev
-    ddev exec -d /var/www/html/html php occ app:disable brtop
-    ddev exec -d /var/www/html/html php occ app:enable brtop
-
-## Git-Regeln
-
-Vor Commit immer zeigen:
-
-    git status --short
-    git diff --stat
-    git diff --name-only
-
-Nicht ohne ausdrückliche Freigabe:
-
-    git add .
-    git commit
-    git push
-
-Statt `git add .` gezielt Dateien hinzufügen.
-
-Git-Befehle, die den Index, Commits oder Refs schreiben, immer aus dem Repo-Root `~/projects/br-nextcloud-apps` ausführen. Das `.git`-Verzeichnis liegt dort und nicht in `brtop/`; bei einer Codex-Session mit Workspace-Root `brtop/` muss dafür eskalierter Schreibzugriff auf die Git-Metadaten genutzt werden.
-
-## Arbeitsweise für Codex
-
-Vor Änderungen:
-
-1. Relevante Dateien lesen.
-2. Problem knapp benennen.
-3. Minimalen Patch vorschlagen oder anwenden.
-4. Keine Architekturänderung ohne Begründung.
-
-Nach Änderungen:
-
-1. Syntax prüfen.
-2. Relevante grep-Prüfung ausführen.
-3. DDEV/Nextcloud nur neu starten, wenn nötig.
-4. Ergebnis knapp melden.
-
-Wenn bei der Arbeit ein echtes, wiederverwendbares Projekt-Learning entsteht, soll Codex vorschlagen, es in `AGENTS.md` zu ergänzen. Die Ergänzung erfolgt erst nach ausdrücklicher Freigabe.
+## Zweck und Routing
+
+Dieses Repository ist der Parent-/Meta-Workspace für DDEV, gemeinsame
+Dokumentation, app-übergreifende Verträge und Workspace-/Delivery-Prüfungen.
+Es enthält keinen deploybaren App-Code.
+
+- Menschlicher Einstieg: `README.md`
+- Workspace und DDEV: `docs/workspace.md`
+- App-übergreifende Architektur: `docs/architecture.md`
+- Wiederholbare Abläufe: `.agents/skills/`
+- Repositoryinventar: `config/workspace-repositories.tsv`
+- Unverbindliche Beobachtungen: `docs/learning-candidates.md`
+
+Jede App und `ad-suite` sind getrennte Git-Repositories mit eigener
+`AGENTS.md`. Normale App-Arbeit beginnt im Root des konkret beauftragten
+Repositories und folgt dem dort lokal mitgeführten Skill
+`work-in-nextcloud-app`. Der technische `workspace-write`-Zugriff erteilt
+keine fachliche Schreibfreigabe.
+
+## Harte Repositorygrenzen
+
+- Im Parent werden nur Meta-Dokumentation, DDEV-/Workspace-Konfiguration,
+  app-übergreifende Regeln, Delivery-Skripte und zugehörige Tests gepflegt.
+- App-Code und Produktdokumentation werden im Parent weder geändert noch
+  getrackt, gestaged oder committed. Änderungen an getrennten Repositories
+  brauchen einen ausdrücklichen Auftrag für jedes betroffene Repository.
+- Schreibende Cross-App-Arbeit ist ein ausdrücklich benannter Sonderlauf mit
+  einzeln genannten Repositories, lokalen Regeln, Statusprüfungen und Tests.
+- Vor Arbeit in einem App-Repository werden dessen vollständige `AGENTS.md`,
+  lokal referenzierte Skills und `git status --short` gelesen.
+- Jede deploybare App besitzt ein eigenes Git-Repository, eine eigene
+  `AGENTS.md`, `.gitignore` und lokal auflösbare Steuerung. Neue Apps werden
+  ausschließlich mit dem Skill `create-nextcloud-app` registriert.
+- `config/workspace-repositories.tsv` ist die einzige manuell gepflegte
+  Repositoryliste. Andere Inventare werden daraus erzeugt oder dagegen
+  geprüft.
+- Keine Submodule, solange Simon sie nicht ausdrücklich entscheidet.
+
+## Unverzichtbare Architektur- und Sicherheitsgrenzen
+
+Die vollständigen Verträge stehen in `docs/architecture.md` und für direkte
+App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
+
+- Controller bleiben dünn; Fachlogik, Datenzugriff, Darstellung,
+  Dokumenterzeugung und Dateiablage bleiben getrennt.
+- Gemeinsamer Code wird erst extrahiert, wenn mindestens zwei Apps ihn
+  semantisch gleich benötigen und der Vertrag app-übergreifend testbar ist.
+  LocalBase bleibt klein und dependency-arm.
+- Deny by default, Least privilege und server-side first sind harte
+  Anforderungen. Navigation oder UI-Sichtbarkeit erteilen niemals Rechte.
+- Nextcloud-native Gruppen-, Benutzer-, Session-, AppConfig-, Share-, Datei-,
+  Capability-, Konfigurations- und Request-Mechanismen sind verbindlich zu
+  verwenden. Ein paralleler eigener Mechanismus ist nur zulässig, wenn die
+  native Möglichkeit nachweislich nicht ausreicht, die Abweichung als
+  begründete Architekturentscheidung dokumentiert ist, Auswirkungen auf
+  Berechtigungen, Migration, Wartung und Interoperabilität geprüft sind und
+  die Entscheidung vor der Implementierung freigegeben wurde. Fehlt eine
+  Voraussetzung, muss Codex vor der Implementierung stoppen.
+- Jeder relevante Controller, API-Endpunkt, Servicepfad sowie jede Datei- und
+  Datenoperation prüft Akteur, Scope und konkrete Berechtigung serverseitig.
+- Requests werden validiert und typisiert, QueryBuilder-Werte gebunden,
+  Ausgaben escaped und schreibende API-Aktionen per CSRF geschützt. Aus
+  Requestdaten werden keine SQL-Fragmente zusammengesetzt.
+- Dateipfade werden normalisiert und nie ungeprüft aus Eingaben
+  zusammengesetzt. Secrets und unnötige personenbezogene Daten bleiben aus
+  Repository, Logs, Tests und Dokumentation.
+
+## Suite- und Produktverträge
+
+- OrgSuite besitzt die gemeinsamen AD-/BR-Einstiege; Fachapps duplizieren
+  keine Suite-Linklisten.
+- `adcalendar`, `adplaner`, `adurlaub` und `adroom` bleiben einzeln
+  installierbar. LocalBase und OrgSuite sind Infrastruktur.
+- Bei genau einem aktiven AD-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
+  Fachprodukten aktiviert der geprüfte Installer OrgSuite.
+- Fachapps greifen nicht direkt auf Tabellen, Controller oder
+  JavaScript-Assets anderer Fachapps zu. Optionale Integrationen verwenden
+  kleine LocalBase-Events oder Capability-Verträge; ein fehlender Provider ist
+  ein gültiger Standalone-Zustand.
+- Produktarchive enthalten nur das gewählte Fachprodukt und kompatible
+  Infrastruktur; der vollständige Suite-Build darf alle Produkte bündeln.
+
+## Test-, UI- und Datenqualität
+
+### Testgetriebene Funktionserweiterungen und Verhaltensänderungen
+
+Bei jeder neuen Funktion, Fehlerkorrektur oder sonstigen Änderung des
+beobachtbaren Verhaltens muss der Skill `test-driven-change` verwendet werden.
+Vor der Produktivcodeänderung werden fachliche Invariante, beobachtbares
+Zielverhalten, geeignete Testebene, was der geplante Test beweist und
+ausdrücklich nicht beweist sowie relevante negative Fälle und Grenzfälle
+bestimmt.
+
+Der Skill erzwingt Red–Green–Refactor mit einem aus dem erwarteten fachlichen
+Grund zunächst roten Test, der kleinsten notwendigen Implementierung,
+Regressionstests und Refactoring erst bei grünem Stand. Der Abschlussbericht
+weist Invariante, Testebene, Red-Nachweis samt Fehlergrund, minimale
+Implementierung, ausgeführte Tests und Ergebnisse, verbleibende ungetestete
+Risiken sowie begründete Abweichungen aus.
+
+Ein sofort grüner Test ist kein TDD-Nachweis; er darf nur als ausdrücklich
+begründeter Charakterisierungstest dienen. Reine Dokumentations-,
+Formatierungs-, generierte oder mechanische Änderungen ohne sinnvoll
+testbares Verhalten erhalten statt eines künstlichen TDD-Zyklus die passende
+maschinelle Prüfung; Zweifelsfälle werden kurz begründet.
+Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
+
+- Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden
+  test-first entwickelt. Cross-App-Verträge erhalten Provider- und
+  Consumer-Contract-Tests.
+- Zeitlich begrenzte Spikes und schwer isolierbare Nextcloud-Integration sind
+  im Skill ausdrücklich zu begründende Abweichungen. Übernommener Spike-Code
+  wird zuvor charakterisiert; deklarative Änderungen erhalten passende
+  Syntax-, Contract-, Layout- oder Sichtprüfungen.
+- Für neuen oder wesentlich geänderten ausführbaren Code werden mindestens
+  85 Prozent Line-Coverage angestrebt. PHP und JavaScript werden getrennt
+  ausgewiesen; Sicherheitsinvarianten sind vollständig abzudecken.
+- Testdaten, Fixtures, Screenshots, Logs, Beispiele und Dokumentation sind
+  synthetisch, neutral und datenschutzarm.
+- Oberflächen bleiben semantisch, per Tastatur bedienbar und besitzen
+  sichtbare Fokuszustände. Bedeutung wird nicht ausschließlich farblich,
+  per Hover oder per Zeigerinteraktion vermittelt.
+- App-Roots, Tabs, Einstellungen, Adminbereiche und Tabellen erfüllen die in
+  `docs/architecture.md` beschriebenen Accessibility- und Scrollverträge.
+
+## Zustandsmodelle und Migrationen
+
+- Vor Funktionen, die persistente Fachobjekte verändern, werden erlaubte und
+  verbotene Ausgangszustände, Vorbedingungen, Zielzustand, Nebenwirkungen,
+  Fehlerzustände, Wiederholungsverhalten und Nebenläufigkeitskonflikte
+  bestimmt.
+- Fachlich eingeschränkte Statusübergänge dürfen nicht über frei verwendbare
+  allgemeine Setter erfolgen. Sie werden im Fachmodell oder einem eindeutig
+  zuständigen Anwendungsservice gekapselt und positiv, negativ sowie im
+  Fehlerfall getestet.
+- Bei Datenbankänderungen mit möglichen Bestandsdaten werden altes und neues
+  Schema, Transformationsregeln, Bestandsvarianten, Integritätsbedingungen,
+  Transaktionsgrenze, Fortsetzbarkeit und Rollbackgrenzen dokumentiert.
+- Erforderlich sind Tests der frischen Installation, des Upgrades aus der
+  relevanten Vorversion mit synthetischen Bestandsdaten, der fachlichen Daten-
+  und Beziehungsintegrität, ungültiger beziehungsweise widersprüchlicher
+  Altdaten und der Anwendung auf dem migrierten Schema.
+- Veröffentlichte Migrationen werden nicht nachträglich verändert.
+  Korrekturen erfolgen durch eine neue Migration.
+
+## DDEV, Hosting und Delivery
+
+- DDEV wird ausschließlich aus dem dokumentierten `nextcloud-dev`-Root
+  gesteuert. Zustandsändernde DDEV-, Docker-, Nextcloud-, `occ`-, Migrations-,
+  Installations- oder Bereinigungsbefehle brauchen einen konkreten Auftrag
+  oder ausdrückliche Freigabe.
+- DDEV-Pfade, DDEV-Benutzer, Containerpfade, PHP-Binaries, Datenbankzugänge
+  und sonstige lokale Annahmen dürfen niemals auf eine Produktiv- oder Hostingumgebung übertragen
+  werden. Produktionspfade, Benutzer,
+  `apps_paths`, PHP-Binary und CLI-Memory-Limit werden separat ermittelt.
+  Ein Wechsel zwischen DDEV und Produktion ist eine Umgebungsgrenze. Bei unklarer Zielumgebung muss Codex stoppen.
+- Nextcloud 34 besitzt lokal keinen `occ migrations:migrate`-Befehl.
+  App-Migrationen laufen über `occ app:enable <app-id>` beziehungsweise
+  `occ upgrade`, wenn `needsDbUpgrade: true` gemeldet wird.
+- Core-App-Pfade bleiben read-only. Der vorgesehene `custom_apps`-Pfad ist
+  nur für den erforderlichen Runtime-/CLI-Kontext writable. Rechte werden
+  minimal korrigiert; niemals pauschal mit `chmod 777`.
+- Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
+  je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
+  richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
+- Kein Release erfolgt mit rotem Delivery-Gate. AD-Suite-Bau und -Abnahme
+  folgen ausschließlich dem Skill `build-ad-suite-release`.
+
+## Stop-Regeln
+
+Wenn der konkrete Auftrag den Risikobereich nicht bereits ausdrücklich
+umfasst, vor der Umsetzung Risiko, Dateien, Tests und Rückbau nennen und
+Freigabe einholen bei:
+
+- Datenbankschema, Migrationen oder bestehenden produktiven Daten;
+- Berechtigungen, Gruppenlogik, Rollen, CSRF, Authentifizierung oder
+  Zugriffsschutz;
+- öffentlichen LocalBase-Verträgen oder mehreren App-Repositories;
+- Dateiablage, Dateipfaden, Uploads, Downloads oder Dokumenterzeugung;
+- Löschung, Umbenennung oder Verschiebung größerer Codebereiche;
+- DDEV-, Docker-, Nextcloud- oder `occ`-Konfiguration;
+- breiten Refactorings zur Reparatur roter Tests;
+- unklarem Rückbauweg.
+
+Ohne Freigabe sind dort nur Lesen, Analyse und ein minimaler Änderungsplan
+zulässig. Sofort stoppen, wenn Produktionssysteme, unerwartete externe
+Dienste, Git-Historienumschreibung, neue Produktionsdependencies, Änderungen
+außerhalb des Auftrags oder der Verlust fachlicher Regeln erforderlich werden.
+
+## Learning Candidates
+
+Beobachtungen werden nicht automatisch verbindlich. Candidates müssen
+reproduzierbar oder belegt, wiederverwendbar und der richtigen Ebene
+zugeordnet sein. Sie bleiben bis zur ausdrücklichen Freigabe unverbindlich.
+Bewertung und Vorschlagsformat folgen dem Skill
+`evaluate-learning-candidate`; die aktuelle Prüfliste steht ausschließlich in
+`docs/learning-candidates.md`.
+
+## Git und Definition of Done
+
+- Keine Commits, Pushes, Releases oder Deployments ohne ausdrückliche
+  Freigabe durch Simon; niemals `git add .`.
+- Bestehende fremde Änderungen bleiben unangetastet. Keine versionierten
+  Backupkopien, kein `git reset --hard`, `git clean`, Force-Push oder
+  History-Rewrite.
+- Vor einem Commit werden aus dem tatsächlich betroffenen Repository
+  `git status --short`, `git diff --stat` und `git diff --name-only` gezeigt.
+- Relevante lokale Tests und der passende Pfad aus `verify-workspace` sind
+  grün. Ein Diagnosemodus ist niemals ein Releaseurteil.
+- Der Abschlussbericht nennt Scope, geänderte Dateien, Checks und Ergebnisse,
+  ausgelassene Checks mit Grund, Risiken, verbleibende Candidates und die
+  Commit-Frage. Nicht ausführbare Prüfungen werden als `teilweise geprüft`
+  oder `nicht vollständig verifiziert` benannt.
+
+Die Datei `00_ki_projektkonfiguration_br_nextcloud_apps.md` ist nur ein
+Kompatibilitätshinweis und keine zweite Regelquelle.

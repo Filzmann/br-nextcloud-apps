@@ -1,16 +1,52 @@
 {
   "folders": [
     {
+      "name": "br-nextcloud-apps-meta",
+      "path": "."
+    },
+    {
       "name": "brtop",
       "path": "brtop"
     },
     {
-      "name": "nextcloud-dev",
-      "path": "nextcloud-dev"
+      "name": "adplaner",
+      "path": "adplaner"
     },
     {
-      "name": "docs",
-      "path": "docs"
+      "name": "brstunden",
+      "path": "brstunden"
+    },
+    {
+      "name": "localbase",
+      "path": "localbase"
+    },
+    {
+      "name": "br_permission_matrix",
+      "path": "br_permission_matrix"
+    },
+    {
+      "name": "adcalendar",
+      "path": "adcalendar"
+    },
+    {
+      "name": "adurlaub",
+      "path": "adurlaub"
+    },
+    {
+      "name": "orgsuite",
+      "path": "orgsuite"
+    },
+    {
+      "name": "adroom",
+      "path": "adroom"
+    },
+    {
+      "name": "adrecruitment",
+      "path": "adrecruitment"
+    },
+    {
+      "name": "ad-suite",
+      "path": "ad-suite"
     }
   ],
   "settings": {
@@ -23,25 +59,18 @@
       "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
       "nextcloud-dev/.ddev/.webimageBuild": true,
-      "html": true,
-      ".ddev/.ddev-docker-compose-full.yaml": true,
-      ".ddev/.dbimageBuild": true,
-      ".ddev/.webimageBuild": true,
-      ".ddev/.homeadditions": true,
-      ".ddev/db_snapshots": true
+      "nextcloud-dev/.ddev/.homeadditions": true,
+      "nextcloud-dev/.ddev/db_snapshots": true
     },
     "search.exclude": {
       "nextcloud-dev/html": true,
-      "nextcloud-dev/.ddev/db_snapshots": true,
+      "nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml": true,
       "nextcloud-dev/.ddev/.dbimageBuild": true,
       "nextcloud-dev/.ddev/.webimageBuild": true,
+      "nextcloud-dev/.ddev/.homeadditions": true,
+      "nextcloud-dev/.ddev/db_snapshots": true,
       "**/node_modules": true,
-      "**/vendor": true,
-      "html": true,
-      ".ddev/db_snapshots": true,
-      ".ddev/.dbimageBuild": true,
-      ".ddev/.webimageBuild": true,
-      ".ddev/.homeadditions": true
+      "**/vendor": true
     }
   }
 }

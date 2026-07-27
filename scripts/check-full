@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+
+set +e
+fast_output="$("$workspace/scripts/check-fast" 2>&1)"
+fast_status=$?
+set -e
+printf '%s\n' "$fast_output"
+(( fast_status == 0 )) || exit "$fast_status"
+
+structure_tracking_warning=0
+if grep -Fq 'STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN' <<< "$fast_output"; then
+    structure_tracking_warning=1
+fi
+
+STRUCTURE_TRACKING_WARNING="$structure_tracking_warning" "$workspace/scripts/check-apps" --skip-structure
+
+if (( structure_tracking_warning )); then
+    echo 'Vollständige Workspace-Prüfung: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
+else
+    echo 'Vollständige Workspace-Prüfung aller App-Repositories: OK'
+fi

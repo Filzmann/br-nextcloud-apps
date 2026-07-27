@@ -7,15 +7,46 @@ Thumbs.db
 
 # Local backups
 _brtop_backups/
+dist/
+build/
 *.bak
 *.bak-*
 *.tmp
+*.orig
+*.rej
+
+# Generated archives, dumps and coverage/cache output
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+coverage/
+.coverage
+.cache/
+.phpunit.cache/
 
 # Logs
 *.log
 
 # Runtime Nextcloud core and data
 nextcloud-dev/html/
+
+# Split app repositories
+brtop/
+adplaner/
+brstunden/
+localbase/
+br_permission_matrix/
+adcalendar/
+adurlaub/
+orgsuite/
+adroom/
+adrecruitment/
+ad-suite/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

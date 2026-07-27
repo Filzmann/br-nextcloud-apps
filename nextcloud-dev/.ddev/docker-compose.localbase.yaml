@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - /home/filzmann/projects/br-nextcloud-apps/localbase:/var/www/html/html/custom_apps/localbase:cached

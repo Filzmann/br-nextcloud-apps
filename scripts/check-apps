@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+manifest="$workspace/config/workspace-repositories.tsv"
+skip_structure=0
+structure_tracking_warning="${STRUCTURE_TRACKING_WARNING:-0}"
+
+if [[ "${1:-}" == '--skip-structure' ]]; then
+    skip_structure=1
+    shift
+fi
+if (( $# != 0 )); then
+    echo 'Verwendung: scripts/check-apps [--skip-structure]' >&2
+    exit 2
+fi
+
+if (( ! skip_structure )); then
+    set +e
+    structure_output="$("$workspace/scripts/check-workspace-structure" 2>&1)"
+    structure_status=$?
+    set -e
+    printf '%s\n' "$structure_output"
+    (( structure_status == 0 )) || exit "$structure_status"
+    if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETRACKT' <<< "$structure_output"; then
+        structure_tracking_warning=1
+    fi
+fi
+
+while IFS=$'\t' read -r path kind app_id required_skills; do
+    [[ "$path" == 'path' ]] && continue
+    [[ "$kind" == 'app' ]] || continue
+
+    repo="$workspace/$path"
+    echo "== $path: lokale Instruktionskette und Skill-Auflösung =="
+    (
+        cd "$repo"
+        [[ -f AGENTS.md && ! -L AGENTS.md ]]
+        grep -Fq 'vollständige Repository-Steuerung' AGENTS.md
+        IFS=',' read -r -a skills <<< "$required_skills"
+        for required_skill in "${skills[@]}"; do
+            local_skill=".agents/skills/$required_skill/SKILL.md"
+            [[ -f "$local_skill" && ! -L "$local_skill" ]]
+            grep -Fq "name: $required_skill" "$local_skill"
+            if git check-ignore -q "$local_skill"; then
+                echo "Lokaler Skill wird ignoriert: $path/$required_skill" >&2
+                exit 1
+            fi
+        done
+    )
+    echo "== $path: lokale PHP-Tests =="
+    (cd "$repo" && php tests/run.php)
+    echo "== $path: lokale JavaScript-Tests =="
+    (cd "$repo" && node tests/run-js.mjs)
+done < "$manifest"
+
+if (( structure_tracking_warning )); then
+    echo 'App-Prüfung aller registrierten App-Repositories: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
+else
+    echo 'App-Prüfung aller registrierten App-Repositories: OK'
+fi
