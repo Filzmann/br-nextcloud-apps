@@ -43,7 +43,7 @@ br-nextcloud-apps/
 |-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
 |-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
 |-- adroom/     # eigenes Git-Repo, Raumplanung
-|-- recruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
+|-- adrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
 `-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -62,7 +62,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
 | AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
 | AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
-| Recruitment | `recruitment` | `recruitment/` | `https://nextcloud-dev.ddev.site/apps/recruitment/` |
+| AD Recruitment | `adrecruitment` | `adrecruitment/` | `https://nextcloud-dev.ddev.site/apps/adrecruitment/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -78,7 +78,7 @@ erzwingt bytegleiche lokale Kopien.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `recruitment/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -109,7 +109,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
 ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
-ddev exec -d /var/www/html/html php occ app:list | grep -i recruitment
+ddev exec -d /var/www/html/html php occ app:list | grep -i adrecruitment
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -250,17 +250,17 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.adroom.yaml
 ```
 
-Recruitment:
+AD Recruitment:
 
 ```text
-${WORKSPACE_ROOT}/recruitment
--> /var/www/html/html/custom_apps/recruitment
+${WORKSPACE_ROOT}/adrecruitment
+-> /var/www/html/html/custom_apps/adrecruitment
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.recruitment.yaml
+nextcloud-dev/.ddev/docker-compose.adrecruitment.yaml
 ```
 
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten

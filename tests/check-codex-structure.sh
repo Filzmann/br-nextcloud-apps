@@ -153,6 +153,17 @@ def parse_skill(skill_path: Path) -> tuple[str, str]:
 rows = parse_manifest()
 manifest_paths = {row['path'] for row in rows}
 
+adrecruitment_rows = [
+    row for row in rows
+    if row['path'] == 'adrecruitment'
+    and row['kind'] == 'app'
+    and row['app_id'] == 'adrecruitment'
+]
+if len(adrecruitment_rows) != 1:
+    fail('AD Recruitment muss genau einmal als adrecruitment registriert sein')
+if any(row['path'] == 'recruitment' or row['app_id'] == 'recruitment' for row in rows):
+    fail('Veraltete Recruitment-Repository- oder App-ID ist noch registriert')
+
 
 def markdown_files() -> list[tuple[Path, Path]]:
     commands = (
@@ -517,22 +528,24 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
     fi
 done < "$manifest"
 
-apps=(brtop adplaner brstunden localbase br_permission_matrix adcalendar adurlaub orgsuite adroom ad-suite)
-for app in "${apps[@]}"; do
-    grep -Fxq "$app/" .gitignore || fail "Getrenntes Repository fehlt in .gitignore: $app"
-    if git ls-files --error-unmatch "$app" >/dev/null 2>&1; then
-        fail "Getrenntes Repository wird im Parent getrackt: $app"
+while IFS=$'\t' read -r path kind app_id required_skills; do
+    [[ "$path" == 'path' || "$path" == '.' ]] && continue
+    grep -Fxq "$path/" .gitignore || fail "Getrenntes Repository fehlt in .gitignore: $path"
+    if git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+        fail "Getrenntes Repository wird im Parent getrackt: $path"
     fi
-done
+done < "$manifest"
 
 if python3 -c 'import yaml' >/dev/null 2>&1; then
     while IFS= read -r yaml; do
+        [[ -f "$yaml" ]] || continue
         python3 -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' "$yaml"
-    done < <(git ls-files '*.yaml' '*.yml')
+    done < <({ git ls-files '*.yaml' '*.yml'; git ls-files --others --exclude-standard '*.yaml' '*.yml'; } | sort -u)
 elif command -v ruby >/dev/null 2>&1; then
     while IFS= read -r yaml; do
+        [[ -f "$yaml" ]] || continue
         ruby -e 'require "yaml"; YAML.safe_load_file(ARGV.fetch(0), aliases: true)' "$yaml"
-    done < <(git ls-files '*.yaml' '*.yml')
+    done < <({ git ls-files '*.yaml' '*.yml'; git ls-files --others --exclude-standard '*.yaml' '*.yml'; } | sort -u)
 else
     echo 'Hinweis: YAML-Parser nicht verfügbar; YAML wurde nicht semantisch geparst.'
 fi

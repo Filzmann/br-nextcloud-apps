@@ -1,4 +1,0 @@
-services:
-  web:
-    volumes:
-      - /home/filzmann/projects/br-nextcloud-apps/recruitment:/var/www/html/html/custom_apps/recruitment:cached
