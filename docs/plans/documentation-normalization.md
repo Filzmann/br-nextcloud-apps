@@ -1,7 +1,8 @@
 # Ausführungsplan: Dokumentations- und Steuerungsnormalisierung
 
-Stand: 26. Juli 2026
-Status: aktiv; Anwendungscode ist ausdrücklich nicht Bestandteil dieses Laufs.
+Stand: 27. Juli 2026
+Status: abgeschlossen und historisch; Anwendungscode war ausdrücklich nicht
+Bestandteil dieses Laufs.
 
 ## Ziel
 
@@ -31,8 +32,8 @@ historisch.
    auflösbar.
 5. Bestehende uncommitted Fachänderungen in LocalBase, AD Kalender, AD Urlaub
    und AD Raumplaner werden in der Dokumentationsmigration erhalten.
-6. Learning Candidates werden nur in `docs/learning-candidates.md`
-   konserviert und nicht als Regeln übernommen.
+6. Zum damaligen Stand offene Learning Candidates wurden ausschließlich in
+   `docs/learning-candidates.md` konserviert und nicht als Regeln übernommen.
 
 ## Abschlusskriterien
 
@@ -45,8 +46,12 @@ historisch.
 - Alle betroffenen Repositories bestehen `git diff --check`; vollständige
   Status- und Änderungsliste werden berichtet.
 
-## Späterer Code-Lauf
+## Nachgelagerte Entscheidung
 
-Manifestgeneratoren, Dokumentationslint, Produktkatalog, Sync-Skript und
-fachliche Candidate-Umsetzungen werden erst nach eigener Prüfung und
-Freigabe bearbeitet.
+Die acht Learning Candidates wurden am 27. Juli 2026 einzeln freigegeben und
+in konkrete repository-eigene Roadmap-Aufgaben verschoben. Der
+Verschiebungsnachweis steht im datierten Änderungsbericht
+`docs/plans/learning-candidate-decisions-2026-07-27.md`, die Parent-Aufgaben
+in `docs/implementation-tasks.md`. Diese spätere Entscheidung ändert den
+historischen Scope dieses Normalisierungslaufs nicht und erteilt weiterhin
+keine pauschale Implementierungs-, Commit- oder Releasefreigabe.

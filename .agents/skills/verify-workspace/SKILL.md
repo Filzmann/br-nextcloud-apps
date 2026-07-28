@@ -9,8 +9,11 @@ description: Select and run the established fast or full verification path for P
 
 - Use `scripts/check-workspace-structure` for the complete repository inventory, direct-start instruction chains, local skill synchronization, TOML, role sandboxing, symlinks, and tracking state.
 - Use `scripts/check-fast` for Parent documentation, Codex structure, shell scripts, ignore rules, or focused Parent contract changes.
-- Use `scripts/check-apps` for the fast PHP and JavaScript entries of all nine app repositories.
-- Use `scripts/check-full` for the complete local Workspace path: Parent fast checks plus all nine app repositories. It is not an AD-Suite release verdict.
+- Use `scripts/check-apps` for the fast PHP and JavaScript entries of all app
+  repositories registered in `config/workspace-repositories.tsv`.
+- Use `scripts/check-full` for the complete local Workspace path: Parent fast
+  checks plus all registered app repositories. It is not an AD-Suite release
+  verdict.
 - Use `scripts/check-ad-suite-delivery` only for the actual clean AD-Suite delivery/release gate. Use its explicit `--diagnostic` mode only to inspect a dirty in-progress workspace; that mode must end without a release verdict.
 - Run the affected app repository's `php tests/run.php` and/or `node tests/run-js.mjs` directly when only that app is in scope. Parent wrappers do not replace app-local requirements.
 

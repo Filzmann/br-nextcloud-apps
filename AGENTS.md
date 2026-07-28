@@ -195,8 +195,15 @@ Beobachtungen werden nicht automatisch verbindlich. Candidates müssen
 reproduzierbar oder belegt, wiederverwendbar und der richtigen Ebene
 zugeordnet sein. Sie bleiben bis zur ausdrücklichen Freigabe unverbindlich.
 Bewertung und Vorschlagsformat folgen dem Skill
-`evaluate-learning-candidate`; die aktuelle Prüfliste steht ausschließlich in
-`docs/learning-candidates.md`.
+`evaluate-learning-candidate`. `docs/learning-candidates.md` enthält
+ausschließlich offene, noch nicht entschiedene Candidates. Nach einer
+Entscheidung wird der Candidate dort entfernt: Freigegebene Umsetzungen
+werden als konkrete Aufgabe im zuständigen Repository geführt, verworfene
+oder als Duplikat eingeordnete Candidates werden nicht als Aufgabe
+übernommen. Wenn die Entscheidung für spätere Nachvollziehbarkeit relevant
+ist, wird sie knapp in einem datierten Änderungsbericht dokumentiert.
+Umgesetzte Aufgaben werden über Code, Tests, Dokumentation oder die
+verbindliche Regel und nicht über die Candidate-Liste nachgewiesen.
 
 ## Git und Definition of Done
 

@@ -12,8 +12,10 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 - Wiederholbare Arbeitsabläufe: [`.agents/skills/`](.agents/skills/)
 - Kanonisches Repositoryinventar:
   [`config/workspace-repositories.tsv`](config/workspace-repositories.tsv)
-- Unverbindliche Learning Candidates:
+- Offene, unverbindliche Learning Candidates:
   [`docs/learning-candidates.md`](docs/learning-candidates.md)
+- Freigegebene Parent-Umsetzungsaufgaben:
+  [`docs/implementation-tasks.md`](docs/implementation-tasks.md)
 
 Normale App-Arbeit beginnt im Root des betroffenen App-Repositories. Dort
 gelten die lokale `AGENTS.md` und die lokal mitgeführten Skills
