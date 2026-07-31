@@ -20,6 +20,7 @@ required_parent_files=(
     "$canonical_tdd_skill"
     .agents/skills/verify-workspace/SKILL.md
     .agents/skills/build-ad-suite-release/SKILL.md
+    .agents/skills/verify-nextcloud-future-compatibility/SKILL.md
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
     docs/architecture.md
@@ -372,6 +373,9 @@ required_parent_contracts = (
     'Ein sofort grüner Test ist kein TDD-Nachweis',
     'vollständige Ablauf steht ausschließlich im Skill',
     '`test-driven-change`',
+    '`verify-nextcloud-future-compatibility`',
+    '`min-version` wird niemals automatisch angehoben',
+    'nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung',
 )
 for contract in required_parent_contracts:
     if contract not in parent_text:
@@ -389,6 +393,25 @@ for contract in (
 ):
     if contract not in create_skill_text:
         fail(f'Verbindlicher Neue-App-Workflow fehlt: {contract}')
+
+future_compatibility_skill_text = (workspace / '.agents/skills/verify-nextcloud-future-compatibility/SKILL.md').read_text(encoding='utf-8')
+for contract in (
+    'https://github.com/nextcloud/server',
+    'highest contiguous green major',
+    'appinfo/info.xml',
+    'Do not publish the release candidate',
+    'Do not treat documentation review or static analysis alone as compatibility proof.',
+    'Never raise `min-version` automatically.',
+    'lower-bound review',
+    'outside the declared range',
+    'already declared or is an explicit release target',
+):
+    if contract not in future_compatibility_skill_text:
+        fail(f'Verbindlicher Zukunftskompatibilitäts-Workflow fehlt: {contract}')
+
+release_skill_text = (workspace / '.agents/skills/build-ad-suite-release/SKILL.md').read_text(encoding='utf-8')
+if '`verify-nextcloud-future-compatibility`' not in release_skill_text:
+    fail('AD-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
 
 workspace_docs_text = (workspace / 'docs/workspace.md').read_text(encoding='utf-8')
 for contract in (

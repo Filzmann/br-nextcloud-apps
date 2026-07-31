@@ -165,6 +165,19 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 - Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
   je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
   richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
+- Vor der Veröffentlichung jedes Release-Candidates wird mit dem Skill
+  `verify-nextcloud-future-compatibility` gegen gepinnte offizielle
+  Nextcloud-Repositories die höchste lückenlos nachgewiesene künftige
+  Hauptversion je App bestimmt und als `max-version` in deren `info.xml`
+  aufgenommen. Rote, lückenhafte, veraltete oder nur statisch geprüfte
+  Nachweise blockieren die Veröffentlichung.
+- `min-version` wird niemals automatisch angehoben. Ein belegtes Supportende,
+  eine nicht mehr sicher reproduzierbare Plattform oder eine notwendige
+  Abkehr von riskanten Kompatibilitätsschichten löst nur eine getrennte
+  Bewertung mit Folgen, Tests und ausdrücklicher Entscheidung aus. Eine noch
+  nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung nach
+  oben; eine bereits deklarierte oder ausdrücklich geforderte Zielversion
+  blockiert bei Inkompatibilität den Release-Candidate.
 - Kein Release erfolgt mit rotem Delivery-Gate. AD-Suite-Bau und -Abnahme
   folgen ausschließlich dem Skill `build-ad-suite-release`.
 
