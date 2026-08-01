@@ -7,6 +7,14 @@ usage() {
 
 dist_root=''
 keep_label=''
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t catalog_products < <(php "$catalog_reader" products)
+declare -A allowed_products=()
+for catalog_product in "${catalog_products[@]}"; do
+    allowed_products["$catalog_product"]=1
+done
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dist-root) dist_root="${2:-}"; shift 2 ;;
@@ -30,7 +38,14 @@ candidates=("$dist_root"/ad-suite-nc34-rc* "$dist_root"/ad-product-*-nc34-rc*)
 shopt -u nullglob
 for candidate in "${candidates[@]}"; do
     name="$(basename "$candidate")"
-    if [[ "$name" =~ ^(ad-suite|ad-product-(adcalendar|adplaner|adurlaub|adroom))-nc34-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
+    valid_candidate=0
+    if [[ "$name" =~ ^ad-suite-nc34-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
+        valid_candidate=1
+    elif [[ "$name" =~ ^ad-product-([a-z0-9_]+)-nc34-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]] \
+        && [[ -n "${allowed_products[${BASH_REMATCH[1]}]:-}" ]]; then
+        valid_candidate=1
+    fi
+    if [[ "$valid_candidate" -eq 1 ]]; then
         if [[ "$name" == *"-$keep_label" || "$name" == *"-$keep_label.tar.gz" || "$name" == *"-$keep_label.tar.gz.sha256" ]]; then
             continue
         fi

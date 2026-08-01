@@ -3,6 +3,11 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 installer="$workspace/scripts/install-ad-product-bundle.sh"
+catalog="$workspace/localbase/resources/ad-product-catalog.json"
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t products < <(php "$catalog_reader" products)
+mapfile -t full_suite_apps < <(php "$catalog_reader" full-suite)
 temporary="$(mktemp -d)"
 
 cleanup() {
@@ -50,7 +55,8 @@ make_bundle() {
     local directory="$1"
     local product="$2"
     mkdir -p "$directory/source" "$directory/bundle"
-    for app in localbase orgsuite "$product"; do
+    mapfile -t bundle_apps < <(php "$catalog_reader" product-bundle "$product")
+    for app in "${bundle_apps[@]}"; do
         mkdir -p "$directory/source/$app/appinfo"
         cat > "$directory/source/$app/appinfo/info.xml" <<XML
 <?xml version="1.0"?>
@@ -58,13 +64,14 @@ make_bundle() {
 XML
         tar -C "$directory/source" -czf "$directory/bundle/$app-1.0.0.tar.gz" "$app"
     done
-    (cd "$directory/bundle" && sha256sum ./*.tar.gz > SHA256SUMS)
+    cp "$catalog" "$directory/bundle/ad-product-catalog.json"
+    (cd "$directory/bundle" && sha256sum ./*.tar.gz ad-product-catalog.json > SHA256SUMS)
 }
 
 make_suite_bundle() {
     local directory="$1"
     mkdir -p "$directory/source" "$directory/bundle"
-    for app in localbase orgsuite adcalendar adplaner adurlaub adroom; do
+    for app in "${full_suite_apps[@]}"; do
         mkdir -p "$directory/source/$app/appinfo"
         cat > "$directory/source/$app/appinfo/info.xml" <<XML
 <?xml version="1.0"?>
@@ -72,7 +79,8 @@ make_suite_bundle() {
 XML
         tar -C "$directory/source" -czf "$directory/bundle/$app-1.0.0.tar.gz" "$app"
     done
-    (cd "$directory/bundle" && sha256sum ./*.tar.gz > SHA256SUMS)
+    cp "$catalog" "$directory/bundle/ad-product-catalog.json"
+    (cd "$directory/bundle" && sha256sum ./*.tar.gz ad-product-catalog.json > SHA256SUMS)
 }
 
 make_cloud() {
@@ -97,7 +105,6 @@ if [[ "$(grep -c '^upgrade$' "$cloud/occ.log")" -ne 2 ]]; then
     exit 1
 fi
 
-products=(adcalendar adplaner adurlaub adroom)
 for ((left=0; left<${#products[@]}; left++)); do
     for ((right=left+1; right<${#products[@]}; right++)); do
         first="${products[$left]}"
@@ -116,7 +123,38 @@ suite_cloud="$temporary/suite-cloud"
 make_cloud "$suite_cloud"
 make_suite_bundle "$temporary/suite"
 "$installer" --nextcloud-root "$suite_cloud" --bundle-dir "$temporary/suite/bundle" --product suite >/dev/null
-php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","orgsuite","adcalendar","adplaner","adurlaub","adroom"] as $app) if (!isset($s[$app])) exit(1);' "$suite_cloud/enabled.json"
+for app in "${full_suite_apps[@]}"; do
+    php -r '$s=json_decode(file_get_contents($argv[1]),true); if (!isset($s[$argv[2]])) exit(1);' "$suite_cloud/enabled.json" "$app"
+done
+
+malicious_cloud="$temporary/malicious-cloud"
+make_cloud "$malicious_cloud"
+cp -R "$temporary/suite/bundle" "$temporary/malicious-bundle"
+php -r '
+    $path = $argv[1];
+    $catalog = json_decode((string)file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+    $catalog["entries"][] = [
+        "id" => "../escape", "kind" => "product", "suite" => "ad", "order" => 999,
+        "route" => "../escape.page.index", "productLabel" => "Escape", "navigationLabel" => "Escape",
+        "standalone" => true, "menu" => true, "fullSuiteBundle" => true, "productBundle" => true,
+    ];
+    file_put_contents($path, json_encode($catalog, JSON_THROW_ON_ERROR));
+' "$temporary/malicious-bundle/ad-product-catalog.json"
+(cd "$temporary/malicious-bundle" && sha256sum ./*.tar.gz ad-product-catalog.json > SHA256SUMS)
+if "$installer" --nextcloud-root "$malicious_cloud" --bundle-dir "$temporary/malicious-bundle" --product suite >"$temporary/malicious.out" 2>"$temporary/malicious.err"; then
+    echo 'Unsichere Katalog-ID wurde vom Installer akzeptiert.' >&2
+    exit 1
+fi
+if ! grep -Fq 'AD-Produktkatalog im Paket ist ungültig.' "$temporary/malicious.err"; then
+    echo 'Unsichere Katalog-ID wurde nicht als Katalogfehler abgelehnt.' >&2
+    exit 1
+fi
+
+recruitment_cloud="$temporary/recruitment-cloud"
+make_cloud "$recruitment_cloud"
+make_bundle "$temporary/recruitment" adrecruitment
+"$installer" --nextcloud-root "$recruitment_cloud" --bundle-dir "$temporary/recruitment/bundle" --product adrecruitment >/dev/null
+php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","adrecruitment"] as $app) if (!isset($s[$app])) exit(1); if (isset($s["orgsuite"])) exit(2);' "$recruitment_cloud/enabled.json"
 
 cp -R "$temporary/calendar/bundle" "$temporary/broken"
 printf '0%.0s' {1..64} > "$temporary/broken/SHA256SUMS"

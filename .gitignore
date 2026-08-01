@@ -54,6 +54,10 @@ nextcloud-dev/.ddev/.dbimageBuild/
 nextcloud-dev/.ddev/.webimageBuild/
 nextcloud-dev/.ddev/.homeadditions/
 nextcloud-dev/.ddev/db_snapshots/
+nextcloud-dev/.ddev/nextcloud-update-*/
+nextcloud-dev/.ddev/nextcloud-update-current
+nextcloud-dev/.ddev/update-backups/
+nextcloud-dev/.ddev/update-quarantine/
 
 # Dependencies
 node_modules/

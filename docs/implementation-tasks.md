@@ -8,45 +8,6 @@ bleiben in den Roadmaps der getrennten App-Repositories. Jede
 Verhaltensänderung benötigt einen eigenen Auftrag und folgt in den betroffenen
 Repositories dem Skill `test-driven-change`.
 
-## PARENT-AD-CATALOG – Produktkatalog koordinieren und prüfen
-
-Status: bereit zur Umsetzung nach eigenem Cross-Repo-Auftrag
-
-Abhängige Aufgaben:
-
-- `LB-AD-CATALOG` in `localbase`
-- `ORGS-AD-CATALOG` in `orgsuite`
-- `RECR-AD-CATALOG` in `adrecruitment`
-- `ADS-AD-CATALOG-DOCS` in `ad-suite`
-
-Umfang:
-
-- Den von LocalBase bereitgestellten, versionierten Katalog als einzige
-  maschinenlesbare Quelle für stabile Produkt-ID, Produkttyp, Reihenfolge und
-  technische Einstiegsroute verwenden.
-- `adcalendar`, `adplaner`, `adurlaub`, `adroom` und `adrecruitment`
-  aufnehmen. `localbase` und `orgsuite` bleiben ausdrücklich als
-  Infrastruktur klassifiziert.
-- Standalone-Fähigkeit, Menüzugehörigkeit und Aufnahme in Suite- oder
-  Produktarchive als getrennte Eigenschaften modellieren. Die Aufnahme von
-  `adrecruitment` in den Katalog erweitert ohne eigene Releasefreigabe keine
-  bestehenden AD-Produktarchive.
-- Sichtbare Labels nicht in Parent-Skripten festschreiben; sie werden von den
-  jeweiligen Nextcloud-Apps lokalisiert.
-
-Abnahmekriterien:
-
-- Ein Parent-Contract-Test erkennt fehlende, doppelte und unbekannte
-  Produkt-IDs, ungültige Reihenfolgen, nicht vorhandene App-Routen und
-  widersprüchliche Infrastruktur-/Bundle-Eigenschaften.
-- Installer, Releasebau und Delivery-Prüfungen lesen den Katalog oder werden
-  ausdrücklich dagegen geprüft; es verbleibt keine unabhängige manuelle
-  Produktliste.
-- Bestehende Standalone- und Mehrproduktverträge bleiben durch positive und
-  negative Tests erhalten; Navigation erweitert keine Fachberechtigung.
-- Provider- und Consumer-Tests in LocalBase, OrgSuite und AD Recruitment sowie
-  `scripts/check-fast` und der vollständige Workspace-Check sind grün.
-
 ## PARENT-DOC-REFS – Technische Dokumentreferenzen prüfen
 
 Status: bereit zur Umsetzung

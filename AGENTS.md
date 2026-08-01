@@ -71,8 +71,8 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - OrgSuite besitzt die gemeinsamen AD-/BR-Einstiege; Fachapps duplizieren
   keine Suite-Linklisten.
-- `adcalendar`, `adplaner`, `adurlaub` und `adroom` bleiben einzeln
-  installierbar. LocalBase und OrgSuite sind Infrastruktur.
+- `adcalendar`, `adplaner`, `adurlaub`, `adroom` und `adrecruitment` bleiben
+  einzeln installierbar. LocalBase und OrgSuite sind Infrastruktur.
 - Bei genau einem aktiven AD-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
   Fachprodukten aktiviert der geprüfte Installer OrgSuite.
 - Fachapps greifen nicht direkt auf Tabellen, Controller oder
