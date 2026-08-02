@@ -1,0 +1,129 @@
+name: Wiederverwendbares Staging-Deployment
+
+on:
+  workflow_call:
+    inputs:
+      app-id:
+        description: Nextcloud-App-ID des aufrufenden Repositorys
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: ${{ inputs.app-id }} auf Staging installieren
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: staging
+    concurrency:
+      group: teamcloud-staging
+      cancel-in-progress: false
+    env:
+      APP_ID: ${{ inputs.app-id }}
+      STAGING_HOST: teamcloud.simonbeyer.de
+      STAGING_USER: filzmann
+      STAGING_BASE_URL: https://teamcloud.simonbeyer.de
+    steps:
+      - name: Deploymentparameter validieren
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          case "$APP_ID" in
+            brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+            *) echo "Nicht freigegebene App-ID: $APP_ID" >&2; exit 2 ;;
+          esac
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || {
+            echo 'Mindestens ein erforderliches Staging-Secret fehlt.' >&2
+            exit 2
+          }
+
+      - name: App-Commit auschecken
+        uses: actions/checkout@v7
+        with:
+          path: app
+
+      - name: Zentrale Deploymentwerkzeuge auschecken
+        uses: actions/checkout@v7
+        with:
+          repository: Filzmann/br-nextcloud-apps
+          ref: main
+          path: control
+
+      - name: Geprüftes App-Archiv bauen
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/staging-package"
+          bash control/scripts/package-staging-app.sh \
+            --app-root app \
+            --app-id "$APP_ID" \
+            --commit "$GITHUB_SHA" \
+            --archive "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz" \
+            --metadata "$RUNNER_TEMP/staging-package/metadata.env"
+
+      - name: SSH-Vertrauen einrichten
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$RUNNER_TEMP/staging-ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/staging-ssh/key" "$RUNNER_TEMP/staging-ssh/known_hosts"
+
+      - name: Archiv installieren
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/staging-package/metadata.env"
+          remote_dir="/var/tmp/teamcloud-staging-incoming/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
+          target="$STAGING_USER@$STAGING_HOST"
+          ssh_options=(
+            -i "$RUNNER_TEMP/staging-ssh/key"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts"
+          )
+          ssh "${ssh_options[@]}" "$target" "mkdir -p '$remote_dir'"
+          scp "${ssh_options[@]}" \
+            "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz" \
+            "$target:$remote_dir/"
+          printf -v install_command \
+            "sudo -n -u simonbeyer_sys /usr/local/sbin/teamcloud-staging-install %q %q %q %q" \
+            "$remote_dir/$APP_ID.tar.gz" \
+            "$APP_ID" \
+            "$GITHUB_SHA" \
+            "$SHA256"
+          ssh "${ssh_options[@]}" "$target" "$install_command"
+          ssh "${ssh_options[@]}" "$target" "rm -rf '$remote_dir'"
+
+      - name: Öffentliche Assets prüfen
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/staging-package/metadata.env"
+          css_headers="$RUNNER_TEMP/css-headers"
+          js_headers="$RUNNER_TEMP/js-headers"
+          curl -fsS -o /dev/null -D "$css_headers" "$STAGING_BASE_URL/apps/$APP_ID/$CSS_ASSET"
+          curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/apps/$APP_ID/$JS_ASSET"
+          grep -Eiq '^content-type:[[:space:]]*text/css([;[:space:]]|$)' "$css_headers"
+          grep -Eiq '^content-type:[[:space:]]*(application|text)/(javascript|x-javascript)([;[:space:]]|$)' "$js_headers"
+
+      - name: Temporäre Serverdateien entfernen
+        if: always()
+        run: |
+          set -euo pipefail
+          remote_dir="/var/tmp/teamcloud-staging-incoming/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
+          target="$STAGING_USER@$STAGING_HOST"
+          if [[ -f "$RUNNER_TEMP/staging-ssh/key" && -f "$RUNNER_TEMP/staging-ssh/known_hosts" ]]; then
+            ssh \
+              -i "$RUNNER_TEMP/staging-ssh/key" \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
+              "$target" "rm -rf '$remote_dir'" || true
+          fi

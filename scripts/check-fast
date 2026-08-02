@@ -70,6 +70,7 @@ bash tests/check-ad-product-catalog.sh
 bash tests/check-ad-suite-standalone-contract.sh
 bash tests/check-ad-product-installer.sh
 bash tests/check-ad-release-pruning.sh
+bash tests/check-staging-deployment.sh
 
 if (( structure_tracking_warning )); then
     echo 'Schnelle Workspace-Prüfung: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'

@@ -303,6 +303,7 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`
 - Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
 - Echtes sauberes AD-Suite-Delivery-Gate: `scripts/check-ad-suite-delivery`
+- Automatisches RC-Deployment auf Teamcloud: `docs/staging-deployment.md`
 
 `check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
 
