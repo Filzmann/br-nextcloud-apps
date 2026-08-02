@@ -2,7 +2,9 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-products=(adcalendar adplaner adurlaub adroom)
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t products < <(php "$catalog_reader" products)
 
 for app in localbase orgsuite "${products[@]}"; do
     info="$workspace/$app/appinfo/info.xml"

@@ -6,8 +6,11 @@ release_label="${RELEASE_LABEL:-nc34-rc1}"
 dist_root="${DIST_ROOT:-$workspace/dist}"
 release_dir="$dist_root/ad-suite-$release_label"
 bundle="$dist_root/ad-suite-$release_label.tar.gz"
-apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
-products=(adcalendar adplaner adurlaub adroom)
+catalog="$workspace/localbase/resources/ad-product-catalog.json"
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t apps < <(php "$catalog_reader" full-suite)
+mapfile -t products < <(php "$catalog_reader" products)
 declare -A archives=()
 stage="$(mktemp -d)"
 
@@ -34,6 +37,7 @@ for product in "${products[@]}"; do
     fi
 done
 mkdir -p "$release_dir"
+cp "$catalog" "$release_dir/ad-product-catalog.json"
 
 printf 'app\tversion\tgit_commit\tsha256\tsigned\n' > "$release_dir/manifest.tsv"
 
@@ -123,6 +127,9 @@ for app in "${apps[@]}"; do
     printf '%s\t%s\t%s\t%s\t%s\n' "$app" "$version" "$commit" "$hash" "$signed" >> "$release_dir/manifest.tsv"
 done
 
+catalog_hash="$(sha256sum "$release_dir/ad-product-catalog.json" | cut -d' ' -f1)"
+printf '%s  %s\n' "$catalog_hash" 'ad-product-catalog.json' >> "$release_dir/SHA256SUMS"
+
 cp "$workspace/ad-suite/docs/INSTALLATION.md" "$release_dir/INSTALLATION.md"
 cp "$workspace/ad-suite/docs/OPERATIONS.md" "$release_dir/BETRIEB-UND-RUECKBAU.md"
 cp "$workspace/ad-suite/docs/ACCEPTANCE.md" "$release_dir/ABNAHMEPROTOKOLL.md"
@@ -138,9 +145,11 @@ for product in "${products[@]}"; do
     product_bundle="$dist_root/$product_name.tar.gz"
     mkdir -p "$product_dir"
 
-    for app in localbase orgsuite "$product"; do
+    mapfile -t product_apps < <(php "$catalog_reader" product-bundle "$product")
+    for app in "${product_apps[@]}"; do
         cp "${archives[$app]}" "$product_dir/"
     done
+    cp "$catalog" "$product_dir/ad-product-catalog.json"
     cp "$workspace/scripts/install-ad-product-bundle.sh" "$product_dir/install.sh"
     chmod +x "$product_dir/install.sh"
     cp "$workspace/ad-suite/docs/INSTALLATION.md" "$product_dir/INSTALLATION.md"
@@ -150,10 +159,10 @@ for product in "${products[@]}"; do
     cp "$workspace/ad-suite/docs/LDAP-UNIVENTION.md" "$product_dir/LDAP-UNIVENTION.md"
 
     printf 'app\tversion\tgit_commit\tsha256\tsigned\n' > "$product_dir/manifest.tsv"
-    for app in localbase orgsuite "$product"; do
+    for app in "${product_apps[@]}"; do
         awk -F '\t' -v app="$app" '$1 == app { print }' "$release_dir/manifest.tsv" >> "$product_dir/manifest.tsv"
     done
-    (cd "$product_dir" && sha256sum ./*.tar.gz > SHA256SUMS && sha256sum --check SHA256SUMS)
+    (cd "$product_dir" && sha256sum ./*.tar.gz ad-product-catalog.json > SHA256SUMS && sha256sum --check SHA256SUMS)
     tar -C "$dist_root" -czf "$product_bundle" "$product_name"
     (cd "$dist_root" && sha256sum "$product_name.tar.gz" > "$product_name.tar.gz.sha256")
 done

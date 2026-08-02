@@ -2,7 +2,10 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-delivery_repositories=(. ad-suite localbase orgsuite adcalendar adplaner adurlaub adroom)
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t delivery_apps < <(php "$catalog_reader" full-suite)
+delivery_repositories=(. ad-suite "${delivery_apps[@]}")
 diagnostic=0
 
 if [[ "${1:-}" == '--diagnostic' ]]; then

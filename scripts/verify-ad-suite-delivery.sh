@@ -2,7 +2,10 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-apps=(localbase orgsuite adcalendar adplaner adurlaub adroom)
+catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+php "$catalog_reader" validate >/dev/null
+mapfile -t apps < <(php "$catalog_reader" full-suite)
+mapfile -t products < <(php "$catalog_reader" products)
 
 if [[ "${AD_SUITE_GATE_WRAPPER:-0}" != '1' ]]; then
     echo 'Direkter Aufruf ist nicht freigabefähig; scripts/check-ad-suite-delivery verwenden.' >&2
@@ -148,13 +151,14 @@ DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
 full_bundle_members="$(tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz")"
 for contract in \
     'ad-suite-delivery-check/install.sh' \
+    'ad-suite-delivery-check/ad-product-catalog.json' \
     'ad-suite-delivery-check/LDAP-UNIVENTION.md'; do
     if ! grep -Fq "$contract" <<< "$full_bundle_members"; then
         echo "Vollständiger Suite-Bundle-Vertrag fehlt: $contract" >&2
         exit 1
     fi
 done
-for product in adcalendar adplaner adurlaub adroom; do
+for product in "${products[@]}"; do
     product_bundle="$temporary_dist/ad-product-$product-delivery-check.tar.gz"
     product_hash="$product_bundle.sha256"
     if [[ ! -f "$product_bundle" || ! -f "$product_hash" ]]; then
@@ -168,6 +172,7 @@ for product in adcalendar adplaner adurlaub adroom; do
         "ad-product-$product-delivery-check/INSTALLATION.md" \
         "ad-product-$product-delivery-check/BETRIEB-UND-RUECKBAU.md" \
         "ad-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
+        "ad-product-$product-delivery-check/ad-product-catalog.json" \
         "ad-product-$product-delivery-check/localbase-" \
         "ad-product-$product-delivery-check/orgsuite-" \
         "ad-product-$product-delivery-check/$product-"; do
@@ -176,7 +181,7 @@ for product in adcalendar adplaner adurlaub adroom; do
             exit 1
         fi
     done
-    for other_product in adcalendar adplaner adurlaub adroom; do
+    for other_product in "${products[@]}"; do
         [[ "$other_product" == "$product" ]] && continue
         if grep -Eq "ad-product-$product-delivery-check/$other_product-[^/]+\\.tar\\.gz$" <<< "$product_members"; then
             echo "Fremdes Fachprodukt im Produktpaket $product: $other_product" >&2

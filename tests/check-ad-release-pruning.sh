@@ -7,9 +7,10 @@ temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
 
 for label in nc34-rc4 nc34-rc7 nc34-rc8; do
-    mkdir -p "$temporary/ad-suite-$label" "$temporary/ad-product-adcalendar-$label"
+    mkdir -p "$temporary/ad-suite-$label" "$temporary/ad-product-adcalendar-$label" "$temporary/ad-product-adrecruitment-$label"
     touch "$temporary/ad-suite-$label.tar.gz" "$temporary/ad-suite-$label.tar.gz.sha256"
     touch "$temporary/ad-product-adcalendar-$label.tar.gz" "$temporary/ad-product-adcalendar-$label.tar.gz.sha256"
+    touch "$temporary/ad-product-adrecruitment-$label.tar.gz" "$temporary/ad-product-adrecruitment-$label.tar.gz.sha256"
 done
 touch "$temporary/ad-suite-1.0.0.tar.gz"
 
@@ -26,6 +27,9 @@ for required in \
     ad-product-adcalendar-nc34-rc8 \
     ad-product-adcalendar-nc34-rc8.tar.gz \
     ad-product-adcalendar-nc34-rc8.tar.gz.sha256 \
+    ad-product-adrecruitment-nc34-rc8 \
+    ad-product-adrecruitment-nc34-rc8.tar.gz \
+    ad-product-adrecruitment-nc34-rc8.tar.gz.sha256 \
     ad-suite-1.0.0.tar.gz; do
     [[ -e "$temporary/$required" ]] || { echo "Aktuelles oder finales Artefakt wurde entfernt: $required" >&2; exit 1; }
 done
