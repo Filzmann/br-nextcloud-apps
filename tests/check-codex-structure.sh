@@ -529,6 +529,17 @@ if 'REQUIRE_TRACKED_STRUCTURE=1 "$workspace/scripts/check-fast"' not in delivery
     fail('Sauberes Delivery-Gate muss den strikten Parent-Fast-Pfad genau einmal ausführen')
 if 'PARENT_FAST_CHECK_VERIFIED=1' not in delivery_wrapper_text or 'PARENT_FAST_CHECK_VERIFIED' not in delivery_verify_text:
     fail('Delivery-Verify muss durch den erfolgreich geprüften Parent-Fast-Pfad geschützt sein')
+for contract in (
+    'RUN_INTEGRATION_SMOKES',
+    'adplaner/tests/access-matrix-ddev-smoke.sh',
+    'adplaner/tests/integration-ddev-smoke.sh',
+    'adcalendar/tests/admin-defaults-ddev-smoke.sh',
+    'adcalendar/tests/integration-ddev-smoke.sh',
+    'adurlaub/tests/migration-schema-ddev-smoke.sh',
+    'adrecruitment/tests/ddev-smoke.sh',
+):
+    if contract not in delivery_verify_text:
+        fail(f'Delivery-Verify bindet den realen App-Nachweis nicht ein: {contract}')
 
 
 def require_string(value: object, label: str) -> str:

@@ -137,10 +137,22 @@ fi
 
 if [[ "${RUN_ACCESS_MATRICES:-0}" == '1' ]]; then
     echo '== Selbstbereinigende DDEV-Rechtematrizen =='
+    ADP_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/adplaner/tests/access-matrix-ddev-smoke.sh"
     ADC_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
         "$workspace/adcalendar/tests/access-matrix-ddev-smoke.sh"
     ADU_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
         "$workspace/adurlaub/tests/access-matrix-ddev-smoke.sh"
+fi
+
+if [[ "${RUN_INTEGRATION_SMOKES:-0}" == '1' ]]; then
+    echo '== Reale DDEV-Integrations- und Migrations-Smokes =='
+    "$workspace/adplaner/tests/integration-ddev-smoke.sh"
+    ADC_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/adcalendar/tests/admin-defaults-ddev-smoke.sh"
+    "$workspace/adcalendar/tests/integration-ddev-smoke.sh"
+    "$workspace/adurlaub/tests/migration-schema-ddev-smoke.sh"
+    "$workspace/adrecruitment/tests/ddev-smoke.sh"
 fi
 
 echo '== Reproduzierbarer Paketbau =='
