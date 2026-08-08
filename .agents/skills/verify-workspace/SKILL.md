@@ -9,6 +9,10 @@ description: Select and run the established fast or full verification path for P
 
 - Use `scripts/check-workspace-structure` for the complete repository inventory, direct-start instruction chains, local skill synchronization, TOML, role sandboxing, symlinks, and tracking state.
 - Use `scripts/check-fast` for Parent documentation, Codex structure, shell scripts, ignore rules, or focused Parent contract changes.
+- For changes to `docs/privacy-architecture.md`, its rollout planning, or the
+  referenced Root workflows, run
+  `bash tests/check-privacy-architecture-contract.sh` as the focused contract
+  check before `scripts/check-fast`.
 - Use `scripts/check-apps` for the fast PHP and JavaScript entries of all app
   repositories registered in `config/workspace-repositories.tsv`.
 - Use `scripts/check-full` for the complete local Workspace path: Parent fast

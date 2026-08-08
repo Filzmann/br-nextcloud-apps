@@ -63,6 +63,7 @@ if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETR
 fi
 
 echo '== Parent-Contract-Tests =='
+bash tests/check-privacy-architecture-contract.sh
 bash tests/check-ad-suite-coverage-baseline.sh
 bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh

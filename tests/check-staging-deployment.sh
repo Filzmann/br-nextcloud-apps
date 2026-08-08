@@ -221,6 +221,7 @@ for app_id in brtop adplaner brstunden localbase br_permission_matrix adcalendar
     assert_contains "$caller" 'deploy-staging:'
     assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main'
     assert_contains "$caller" "app-id: $app_id"
+    assert_contains "$caller" 'secrets: inherit'
 done
 
 echo 'Staging-Deployment-Contract: OK'

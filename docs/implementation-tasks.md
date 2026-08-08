@@ -1,12 +1,43 @@
 # Freigegebene Parent-Umsetzungsaufgaben
 
-Stand: 27. Juli 2026
+Stand: 8. August 2026
 
 Diese Datei enthält ausschließlich freigegebene, noch nicht umgesetzte
 Aufgaben des Parent-Repositories. App-Code und app-spezifische Teilaufgaben
 bleiben in den Roadmaps der getrennten App-Repositories. Jede
 Verhaltensänderung benötigt einen eigenen Auftrag und folgt in den betroffenen
 Repositories dem Skill `test-driven-change`.
+
+## PARENT-PRIVACY-ROLLOUT – Datenschutzmigration koordinieren
+
+Status: Architektur festgelegt, Folgeaufträge offen
+
+Normative Quelle:
+
+- [`docs/privacy-architecture.md`](privacy-architecture.md)
+
+Umfang im Parent:
+
+- Migrationsmatrix nach jedem ausdrücklich beauftragten App-Schritt gegen den
+  tatsächlichen Code aktualisieren.
+- Ausbauetappen, offene Architekturentscheidungen und Providerabdeckung
+  nachvollziehbar halten.
+- Das Vollständigkeits-/Release-Gate erst nach einem realen Pilot und einer
+  realistisch erfüllbaren Migration der bestehenden Apps aktivieren.
+- Keine App durch eine leere Providerregistrierung oder reine Checkliste als
+  integriert ausweisen.
+
+Abnahmekriterien:
+
+- Jeder schreibende Folgeauftrag nennt die betroffenen getrennten
+  Repositories, Rechte-/Datenrisiken, Tests und Rückbaugrenzen ausdrücklich.
+- Runtime, Pilot und jede App-Migration folgen den in der normativen Quelle
+  beschriebenen kleinen Etappen; App-Code bleibt aus dem Parent heraus.
+- Die Matrix unterscheidet verifiziert, geplant, teilweise und implementiert
+  und bezeichnet keine geplante Funktion als vorhanden.
+- Ein späteres Gate besitzt Provider- und Consumer-Nachweise und wird nicht
+  eingeführt, solange bekannte Apps den Vertrag noch nicht realistisch
+  erfüllen können.
 
 ## PARENT-DOC-REFS – Technische Dokumentreferenzen prüfen
 

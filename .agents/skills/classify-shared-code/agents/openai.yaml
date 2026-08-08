@@ -1,0 +1,4 @@
+interface:
+  display_name: "Classify Shared Code"
+  short_description: "Classify shared code and runtime boundaries"
+  default_prompt: "Use $classify-shared-code to evaluate a proposed cross-app extraction and its release impact."

@@ -9,6 +9,7 @@ Es enthält keinen deploybaren App-Code.
 - Menschlicher Einstieg: `README.md`
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
+- Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
 - Wiederholbare Abläufe: `.agents/skills/`
 - Repositoryinventar: `config/workspace-repositories.tsv`
 - Unverbindliche Beobachtungen: `docs/learning-candidates.md`
@@ -48,6 +49,14 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 - Gemeinsamer Code wird erst extrahiert, wenn mindestens zwei Apps ihn
   semantisch gleich benötigen und der Vertrag app-übergreifend testbar ist.
   LocalBase bleibt klein und dependency-arm.
+- Die verbindliche Einteilung in gebundelte Bibliothek, eigenständige
+  Nextcloud-Laufzeit-App oder bewusst lokalen Code sowie der Vertrag für
+  App-Store-Releases stehen ausschließlich in
+  `docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`.
+  Neue Apps erhalten keine automatische LocalBase-Abhängigkeit.
+- Jede Bewertung oder Verschiebung von Code zwischen bestehenden Apps,
+  LocalBase und einer gemeinsamen Bibliothek folgt aus dem Root dem Skill
+  `classify-shared-code`. Er ersetzt keine app-lokalen Schreibfreigaben.
 - Deny by default, Least privilege und server-side first sind harte
   Anforderungen. Navigation oder UI-Sichtbarkeit erteilen niemals Rechte.
 - Nextcloud-native Gruppen-, Benutzer-, Session-, AppConfig-, Share-, Datei-,
@@ -66,6 +75,12 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 - Dateipfade werden normalisiert und nie ungeprüft aus Eingaben
   zusammengesetzt. Secrets und unnötige personenbezogene Daten bleiben aus
   Repository, Logs, Tests und Dokumentation.
+- Apps mit personenbezogenen Daten liefern Auskunft und Retention nur über die
+  öffentlichen Provider-Grenzen aus `docs/privacy-architecture.md`. Eine
+  zentrale Komponente liest oder verändert niemals Tabellen, Entitäten oder
+  Dateien einer Fachapp direkt. Neue oder wesentlich erweiterte Datenklassen
+  erhalten spätestens vor fachlicher Fertigstellung eine konkrete
+  Provider-, Retention-, Drittpersonen- und Testaufgabe.
 
 ## Suite- und Produktverträge
 

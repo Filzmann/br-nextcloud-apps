@@ -18,7 +18,8 @@ semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
 gemeinsamen AD-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
-Die vier AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub` und `adroom`
+Die fünf AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub`, `adroom` und
+`adrecruitment`
 bleiben einzeln installierbar. Bei genau einem aktiven Fachprodukt bleibt
 OrgSuite deaktiviert und das Fachprodukt stellt Navigation und
 Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
@@ -30,6 +31,14 @@ anderer Fachapps zu. Optionale Integrationen verwenden kleine LocalBase-Events
 oder Capability-Verträge. Ein fehlender Provider ist ein gültiger
 Standalone-Zustand. Navigation, Capability-Verfügbarkeit und Menüsichtbarkeit
 erweitern niemals fachliche Rechte.
+
+Die normative Einteilung gemeinsamen Codes und app-übergreifender
+Laufzeitdienste, die Store-Regeln sowie die komponentenweise
+LocalBase-Bestandsaufnahme stehen in
+[`ADR 0001`](architecture-decisions/0001-shared-code-runtime-and-app-store.md).
+Die Root-relative Quelle ist
+`docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`;
+diese Datei wiederholt das dortige Entscheidungs- und Release-Gate nicht.
 
 ## Schichten und Modelle
 
@@ -65,10 +74,34 @@ Datenoperation prüft Akteur, Scope und konkrete Berechtigung serverseitig.
 Nextcloud-Admin, App-Admin, Gruppenmitglied, normale Nutzer*innen,
 Read-only-/Bearbeitungsrollen und Hintergrundjobs werden nicht gleichgesetzt.
 
+Der öffentliche LocalBase-Organisationsvertrag Version 3 trennt `finance`
+und `payroll` unter derselben `finance_lead`. Fachapps lesen Rollen und
+Bürobereiche über den datensparsamen `AdOrganizationSnapshot`; ein fehlender,
+ungültiger oder nur aus Defaults rekonstruierter Persistenzstand erteilt keine
+Fachrechte. AD Recruitment verwendet diesen Vertrag für Personalreferat,
+Lohn, bereichsgebundene Erstbegleitungen und granulare Vertretungsscopes,
+ohne Tabellen oder Controller anderer Fachapps zu lesen.
+
 Requests werden validiert und typisiert, QueryBuilder-Werte gebunden, Ausgaben
 escaped und schreibende API-Aktionen per CSRF geschützt. SQL-Fragmente werden
 nie aus Requestdaten zusammengesetzt. Dateipfade werden normalisiert und nie
 ungeprüft aus Eingaben zusammengesetzt.
+
+## Datenlebenszyklus, Löschfristen und Austritt
+
+Der normative app-übergreifende Vertrag, das Provider- und Retention-Modell,
+Self-Service- und Admin-Auskunft, Ausbauetappen sowie die Migrationsmatrix
+stehen in der
+[Datenschutzarchitektur](privacy-architecture.md)
+(`docs/privacy-architecture.md`). Fachapps liefern und verändern ausschließlich
+ihre eigenen Daten über öffentliche Provider; die zentrale Komponente kennt
+keine fremden Tabellen oder internen Entitäten.
+
+Es gibt keine pauschale app-übergreifende Jahresfrist. Konkrete Fristen,
+Trigger, Löschsperren und Maßnahmen werden je Datenklasse fachlich sowie
+datenschutzrechtlich freigegeben. Ein Beschäftigungsende wird weder aus einer
+Kontodeaktivierung abgeleitet noch ohne belastbare Quelle erfunden. Fehlende
+oder widersprüchliche Ereignisse lösen keine destruktive Aktion aus.
 
 ## UI und Accessibility
 

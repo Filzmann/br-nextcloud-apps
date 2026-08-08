@@ -16,6 +16,7 @@ required_parent_files=(
     .codex/agents/explorer.toml
     .codex/agents/reviewer.toml
     .agents/skills/create-nextcloud-app/SKILL.md
+    .agents/skills/classify-shared-code/SKILL.md
     "$canonical_skill"
     "$canonical_tdd_skill"
     .agents/skills/verify-workspace/SKILL.md
@@ -24,6 +25,8 @@ required_parent_files=(
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
     docs/architecture.md
+    docs/privacy-architecture.md
+    docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md
     docs/plans/codex-structure-correction.md
     docs/plans/codex-structure-migration.md
     docs/workspace.md
@@ -34,6 +37,7 @@ required_parent_files=(
     scripts/check-ad-suite-delivery
     scripts/verify-ad-suite-delivery.sh
     tests/check-codex-structure.sh
+    tests/check-privacy-architecture-contract.sh
 )
 required_executables=(
     scripts/check-fast
@@ -339,6 +343,7 @@ for heading in ('## Red', '## Green', '## Refactor'):
             fail(f'Konkurrierender TDD-Ablauf in {duplicate_path}: {heading}')
 
 parent_text = (workspace / 'AGENTS.md').read_text(encoding='utf-8')
+architecture_text = (workspace / 'docs/architecture.md').read_text(encoding='utf-8')
 canonical_tdd_heading = '### Testgetriebene Funktionserweiterungen und Verhaltensänderungen'
 if parent_text.count(canonical_tdd_heading) != 1:
     fail('Root-AGENTS.md braucht genau eine kanonische TDD-Überschrift')
@@ -394,6 +399,23 @@ for contract in (
     if contract not in create_skill_text:
         fail(f'Verbindlicher Neue-App-Workflow fehlt: {contract}')
 
+shared_code_skill_text = (workspace / '.agents/skills/classify-shared-code/SKILL.md').read_text(encoding='utf-8')
+for contract in (
+    'docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md',
+    'at least two concrete real uses',
+    'identical semantics',
+    'same reason to change',
+    'no unnecessary runtime coupling',
+    'no direct foreign-table',
+    'clear source ownership, versioning and compatibility responsibility',
+    'installation, update, deinstallation, rollback',
+    'Quellcode-Abhängigkeit',
+    'gebundelte Produktionsabhängigkeit',
+    'externe Nextcloud-App-Laufzeitabhängigkeit',
+):
+    if contract not in shared_code_skill_text:
+        fail(f'Verbindlicher Shared-Code-Klassifikationsworkflow fehlt: {contract}')
+
 future_compatibility_skill_text = (workspace / '.agents/skills/verify-nextcloud-future-compatibility/SKILL.md').read_text(encoding='utf-8')
 for contract in (
     'https://github.com/nextcloud/server',
@@ -412,6 +434,67 @@ for contract in (
 release_skill_text = (workspace / '.agents/skills/build-ad-suite-release/SKILL.md').read_text(encoding='utf-8')
 if '`verify-nextcloud-future-compatibility`' not in release_skill_text:
     fail('AD-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
+
+shared_code_decision = 'docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md'
+shared_code_text = (workspace / shared_code_decision).read_text(encoding='utf-8')
+for contract in (
+    'Kategorie A: Gebundelte Bibliothek',
+    'Kategorie B: Eigenständige Nextcloud-Laufzeit-App',
+    'Kategorie C: Bewusst lokaler Code',
+    'keine ungepflegte Quellcode-Duplikation',
+    'Namespace-Isolierung',
+    'Quellcode-Abhängigkeit',
+    'gebundelte Produktionsabhängigkeit',
+    'externe Nextcloud-App-Laufzeitabhängigkeit',
+    'Keine automatische App-zu-App-Installation',
+):
+    if contract not in shared_code_text:
+        fail(f'Verbindliche Shared-Code-/App-Store-Entscheidung fehlt: {contract}')
+
+for source in (
+    'https://docs.nextcloud.com/server/latest/developer_manual/app_publishing_maintenance/release_process.html',
+    'https://nextcloudappstore.readthedocs.io/en/latest/developer.html',
+    'https://docs.nextcloud.com/server/stable/developer_manual/app_publishing_maintenance/code_signing.html',
+    'https://docs.nextcloud.com/server/latest/developer_manual/app_publishing_maintenance/publishing.html',
+):
+    if source not in shared_code_text:
+        fail(f'Offizielle Nextcloud-Quelle fehlt in der Architekturentscheidung: {source}')
+
+for controlling_text, label in (
+    (parent_text, 'Root-AGENTS.md'),
+    (architecture_text, 'Architekturdokumentation'),
+    (shared_code_skill_text, 'Shared-Code-Klassifikationsworkflow'),
+    (create_skill_text, 'Neue-App-Workflow'),
+    (release_skill_text, 'Release-Workflow'),
+):
+    if shared_code_decision not in controlling_text:
+        fail(f'{label} verweist nicht auf die zentrale Shared-Code-/App-Store-Entscheidung')
+
+for choice in (
+    'ohne gemeinsame Laufzeitabhängigkeit',
+    'mit gebundelter gemeinsamer Bibliothek',
+    'mit begründeter Abhängigkeit zu einer anderen Nextcloud-App',
+    'noch nicht entscheidbar',
+):
+    if choice not in create_skill_text:
+        fail(f'Neue-App-Workflow verlangt die Architekturwahl nicht: {choice}')
+
+for contract in (
+    'Quellcode-Abhängigkeit',
+    'gebundelte Produktionsabhängigkeit',
+    'externe Nextcloud-App-Laufzeitabhängigkeit',
+    'Lock-Dateien',
+    'zweite App-Wurzel',
+    'direkten Zugriffe auf Datenbanktabellen anderer Apps',
+    'Lizenzinformationen',
+    'sauberen Installation',
+    'Official App-Store single-app candidate',
+    'Do not run or cite the AD-Suite builder or Delivery Gate as proof',
+    'Parent currently has no generic App-Store builder',
+    'no publishable Store candidate can be produced',
+):
+    if contract not in release_skill_text:
+        fail(f'Release-Workflow unterscheidet oder prüft Abhängigkeiten nicht: {contract}')
 
 workspace_docs_text = (workspace / 'docs/workspace.md').read_text(encoding='utf-8')
 for contract in (
