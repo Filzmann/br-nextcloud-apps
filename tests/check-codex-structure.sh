@@ -537,6 +537,7 @@ for contract in (
     'adcalendar/tests/integration-ddev-smoke.sh',
     'adurlaub/tests/migration-schema-ddev-smoke.sh',
     'adrecruitment/tests/ddev-smoke.sh',
+    'RECR_BASE_URL=',
 ):
     if contract not in delivery_verify_text:
         fail(f'Delivery-Verify bindet den realen App-Nachweis nicht ein: {contract}')

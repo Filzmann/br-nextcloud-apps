@@ -152,7 +152,8 @@ if [[ "${RUN_INTEGRATION_SMOKES:-0}" == '1' ]]; then
         "$workspace/adcalendar/tests/admin-defaults-ddev-smoke.sh"
     "$workspace/adcalendar/tests/integration-ddev-smoke.sh"
     "$workspace/adurlaub/tests/migration-schema-ddev-smoke.sh"
-    "$workspace/adrecruitment/tests/ddev-smoke.sh"
+    RECR_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/adrecruitment/tests/ddev-smoke.sh"
 fi
 
 echo '== Reproduzierbarer Paketbau =='
