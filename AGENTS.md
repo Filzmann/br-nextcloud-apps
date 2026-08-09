@@ -10,6 +10,8 @@ Es enthält keinen deploybaren App-Code.
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
+- Nicht freigegebene AD-Suite-Zukunftsplanung:
+  `docs/ad-suite-zukunftsplanung.md`
 - Wiederholbare Abläufe: `.agents/skills/`
 - Repositoryinventar: `config/workspace-repositories.tsv`
 - Unverbindliche Beobachtungen: `docs/learning-candidates.md`

@@ -26,6 +26,13 @@ Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
 geprüfte Installer OrgSuite. LocalBase und OrgSuite sind Infrastruktur, keine
 eigenständigen Fachprodukte.
 
+Noch nicht freigegebene künftige AD-Suite-Module, insbesondere DPA-
+Fallsteuerung und Schichtvermittlung, stehen ausschließlich in der
+[`AD-Suite-Zukunftsplanung`](ad-suite-zukunftsplanung.md). Diese Vormerkung
+ändert weder den geltenden Produktkatalog noch Repositoryinventar,
+Laufzeitverträge oder app-lokale Roadmaps und erteilt keine
+Implementierungsfreigabe.
+
 Fachapps greifen nicht direkt auf Tabellen, Controller oder JavaScript-Assets
 anderer Fachapps zu. Optionale Integrationen verwenden kleine LocalBase-Events
 oder Capability-Verträge. Ein fehlender Provider ist ein gültiger

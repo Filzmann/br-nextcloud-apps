@@ -10,6 +10,8 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 - App-übergreifende Architektur: [`docs/architecture.md`](docs/architecture.md)
 - Datenschutzarchitektur und schrittweiser Rollout:
   [`docs/privacy-architecture.md`](docs/privacy-architecture.md)
+- Vorgemerkte, noch nicht freigegebene AD-Suite-Zukunftsmodule:
+  [`docs/ad-suite-zukunftsplanung.md`](docs/ad-suite-zukunftsplanung.md)
 - Verbindliche Codex-Grenzen: [`AGENTS.md`](AGENTS.md)
 - Wiederholbare Arbeitsabläufe: [`.agents/skills/`](.agents/skills/)
 - Kanonisches Repositoryinventar:
