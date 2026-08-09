@@ -1,4 +1,4 @@
-# AD-Suite-Zukunftsplanung: DPA, Schichtvermittlung und Personalbedarf
+# AD-Suite-Zukunftsplanung: Fachmodule und suiteweite Erweiterungen
 
 Stand: 9. August 2026
 
@@ -7,7 +7,8 @@ Status: **VORGEMERKT – NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN**
 ## Zweck und Verbindlichkeitsgrenze
 
 Diese Datei ist die kanonische Parent-Quelle für die fachliche und
-architektonische Vormerkung der hier beschriebenen künftigen AD-Suite-Module.
+architektonische Vormerkung der hier beschriebenen künftigen AD-Suite-Module
+und suiteweiten Erweiterungen.
 Sie ist weder eine freigegebene Umsetzungsaufgabe noch ein Scaffold-, Release-
 oder Migrationsauftrag.
 
@@ -105,6 +106,7 @@ idempotente Importmuster belegen keine fachliche Umsetzung dieser Module.
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Personalbedarfs-/Forecast-Modul | Rollierende Bedarfskorridore, Checkpoints, Szenarien und Forecast-vs-Ist | Bewerbungsakte, individuelle Krankheitsprognose und automatische Einstellungsentscheidung | etwa `adpersonalbedarf`; erst nach Ownership-Entscheidung |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Ausfallgeld-/Kapazitätsmodul | Nur falls der heutige Tabellenprozess später eine eigene führende digitale Quelle benötigt | DPA-Fallsteuerung und Suchbogen offener Schichten | derzeit nicht entscheidbar |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Aggregiertes Reporting | Datenschutzgeprüfte appübergreifende Kennzahlen und Strukturhinweise | Operative Fremddatenbankabfragen oder Personen-Dashboards | zunächst kein eigenes Modul festlegen |
+| **VORGEMERKT – NICHT FREIGEGEBEN** | Appübergreifender L10N-Rollout | Sichtbare Texte aller bestehenden und künftigen BR-/AD-Apps vollständig über aktive Nextcloud-Locale und Nextcloud-l10n ausgeben | Änderung technischer IDs, API-Schlüssel, Statuswerte, ISO-Daten, Monatsnummern, Schichtzeiten oder fachlicher Semantik | kein eigenes Modul; appweise Umsetzung nach Pilotentscheidung |
 
 Die bestehende Namenskonvention ist `ad` plus kleingeschriebener Fachbegriff
 ohne Trennzeichen. Die genannten IDs sind Vorschläge, keine Reservierungen.
@@ -288,6 +290,14 @@ getrennte Profile und Ownership.
 
 ## Spätere Migrations- und Teststrategie
 
+- Appübergreifende L10N wird appweise und testgetrieben ausgerollt. Vor dem Pilot
+  werden Pilot-App, Reihenfolge, unterstützte Locales, Fallbackvertrag und
+  Rohtext-Gate separat freigegeben.
+- Pro App werden mindestens deutsche Ausgabe, eine weitere Locale, Fallback,
+  Monats-/Jahresgrenzen, Pluralformen, Platzhalter und Escaping in PHP und
+  JavaScript geprüft. Abkürzungen entstehen nicht durch Abschneiden.
+- Technische IDs, API-Schlüssel, persistierte Statuswerte, ISO-Daten,
+  Monatsnummern und Schichtzeiten bleiben von der Lokalisierung unberührt.
 - Vor jeder Migration Datenwörterbuch, Altschema, Varianten,
   Transformationsregeln, Integritätsbedingungen und Rückbaugrenze festlegen.
 - Zuerst Import-Staging und Dry Run, danach kontrollierte Übernahme.
@@ -327,6 +337,8 @@ getrennte Profile und Ownership.
 - Trennung von BEM/medizinischen Gründen und operativen Einsatzbedingungen.
 - Standalone-/Store-Modell und versionierte Laufzeitverträge für neue Apps.
 - Öffentliche Eignung der vorgeschlagenen App-Namen und IDs.
+- Pilot-App, Rolloutreihenfolge, unterstützte Locales, Fallback und
+  verbindliches Rohtext-Gate für die appübergreifende Lokalisierung.
 
 ## Priorisierter späterer Backlog
 
@@ -348,6 +360,7 @@ Umsetzungswirkung.
 | P2 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Provider-/Consumer-Verträge mit Versionierung und Standalone-Fehlerfällen entwerfen |
 | P2 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Aggregierte Strukturhinweise und Schutz vor kleinen oder rückauflösbaren Gruppen spezifizieren |
 | P2 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Migrations-, Rollback-, Test- und Abnahmematrix erstellen |
+| P2 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Appübergreifenden L10N-Piloten, App-Reihenfolge, Locales, Fallback und Rohtext-Gate festlegen |
 | P3 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Erst nach separater Freigabe neue App-Repositories mit `create-nextcloud-app` anlegen |
 | P3 | **NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN:** Erst danach eine Pilotimplementierung testgetrieben in genau einem neuen Repository beginnen |
 
@@ -443,3 +456,5 @@ Vor dem ersten Implementierungsschritt müssen offiziell freigegeben werden:
     App-Store-Modell.
 18. Pilotreihenfolge, TDD-Nachweis, Testmatrix, Abnahmekriterien und
     Repositoryfreigabe für jede neue App.
+19. Pilot-App, App-Reihenfolge, unterstützte Locales, Fallbackvertrag und
+    Rohtext-Gate für den appübergreifenden L10N-Rollout.
