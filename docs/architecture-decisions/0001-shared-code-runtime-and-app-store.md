@@ -2,6 +2,7 @@
 
 - Status: angenommen
 - Entscheidung: 2026-08-08
+- Ergänzung PHP-Autoloading: 2026-08-09
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Noch nicht umgesetzt: die in dieser Datei beschriebene LocalBase-Migration
@@ -122,6 +123,86 @@ Installationskombinationen belegbar.
 Jeder gemeinsame Bestandteil wird vor Einführung oder Migration genau einer
 der folgenden Kategorien zugeordnet. „LocalBase“ ist keine Kategorie und der
 heutige Speicherort entscheidet nicht über die Zielkategorie.
+
+### Verbindlicher PHP-Autoloading- und Migrationsvertrag
+
+PHP-Klassen werden in Produktiv- und Testcode nicht dauerhaft über verteilte
+relative `require`- oder `require_once`-Ketten geladen. Für alle bestehenden
+und neuen Apps gelten folgende Grenzen:
+
+1. App-eigene Produktivklassen unter `lib/` folgen PSR-4 und werden durch den
+   Nextcloud-App-Autoloader geladen. Ein manueller Klassen-Fallback im
+   Produktivcode, der nur einen fehlenden Test-Autoloader kompensiert, ist
+   unzulässig.
+2. Eine gebündelte Kategorie-A-Produktionsabhängigkeit besitzt genau einen
+   reproduzierbar erzeugten app-lokalen Composer-Autoloader. Die konkrete
+   Paketversion ist gesperrt, die Bibliotheksklassen sind je ausliefernder App
+   namespace-isoliert beziehungsweise geprefixt und alle Laufzeitdateien
+   liegen im Releasearchiv derselben App-Wurzel.
+3. Kategorie-B-Dienste werden niemals über fremde Dateipfade oder einen
+   gemeinsamen Workspace-Autoloader eingebunden. Consumer verwenden nur den
+   dokumentierten öffentlichen Laufzeitvertrag mit Aktivierungs- und
+   Versionsprüfung sowie kontrolliertem Fehlerfall.
+4. Jede App besitzt für dependency-arme PHP-Tests einen zentralen app-lokalen Test-Bootstrap
+   beziehungsweise Autoloader. Einzelne Tests laden darüber
+   App- und Testklassen, statt deren Quelldateien einzeln aufzuzählen. Eine
+   test-only LocalBase-Unterstützung wird als versionierte
+   Entwicklungsabhängigkeit oder bis zu deren Bereitstellung über genau eine
+   zentral konfigurierte Übergangsstelle konsumiert; relative Zugriffe aus
+   vielen einzelnen Testdateien sind nach der App-Migration verboten.
+5. Nextcloud-Integrationstests dürfen den dokumentierten
+   Nextcloud-Testbootstrap laden. Template-Partials, explizite
+   Prozess-/Test-Entrypoints und der einmalige Bootstrap eines gebündelten
+   Composer-Autoloaders sind keine Klassen-`require`-Ketten und bleiben
+   zulässige, begründete Includes.
+6. Ein Composer-Path-Repository, ein gemeinsames `vendor/` mehrerer Apps oder
+   ein Autoloader auf benachbarte Produktions-Repositorys ist kein
+   Liefermodell. Test- und Entwicklungsabhängigkeiten gelangen nicht in das
+   Produktionsarchiv.
+
+Die Bestandsmigration erfolgt verbindlich appweise statt als unkontrollierter
+Cross-App-Umbau. Sobald ein Änderungsauftrag ausführbaren PHP-Code oder
+PHP-Tests einer noch nicht migrierten App schreibend berührt, gehört die
+vollständige Autoload-Migration dieser App als eigener vorbereitender Schritt
+zum selben App-Lauf. Sie folgt den lokalen Schreibfreigaben und dem
+`test-driven-change`-Vertrag, wenn dabei beobachtbares Verhalten geändert
+wird. Reine Dokumentations-, Formatierungs- oder JavaScript-Arbeit löst die
+PHP-Migration nicht künstlich aus.
+
+Eine App gilt erst als migriert, wenn
+
+- App- und Testklassen über die vorgesehenen Autoloader auflösbar sind;
+- verteilte manuelle Klassen-`require`-Ketten und direkte relative
+  LocalBase-Klassenpfade entfernt sind;
+- zulässige verbleibende Includes auf Bootstrap, Entrypoint oder Template
+  begrenzt und im Kontext nachvollziehbar sind;
+- die app-lokalen PHP-Tests einschließlich der relevanten Provider-/Consumer-
+  Contracts grün sind; und
+- Releaseprüfungen weder Entwicklungsabhängigkeiten noch fremde
+  Repositorypfade im Produktionsartefakt finden.
+
+Der beim Beschluss verifizierte Ausgangsstand umfasst keine Composer-Dateien,
+zwei produktive manuelle Klassen-Fallbacks in LocalBase und zahlreiche
+relative Test-Includes in allen Consumer-Apps. `br_permission_matrix` besitzt
+bereits einen kleinen app-lokalen PSR-4-Testloader, erfüllt den vollständigen
+Vertrag wegen des weiterhin relativ geladenen gemeinsamen Test-Runners aber
+noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
+
+| App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
+| --- | --- | --- | --- |
+| `brtop` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adplaner` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `localbase` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine Produktiv-Fallbacks, grüne PHP-Suite |
+| `br_permission_matrix` | teilweise vorbereitet, ausstehend | nächste schreibende PHP-Arbeit | zentraler vollständiger Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adcalendar` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adurlaub` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `orgsuite` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adroom` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adrecruitment` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+
+Der Status wird nur mit dem jeweiligen verifizierten App-Lauf geändert. Eine
+bloße zentrale Dokumentationsänderung erklärt keine App als migriert.
 
 ### Kategorie A: Gebundelte Bibliothek
 

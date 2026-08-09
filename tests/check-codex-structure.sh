@@ -309,6 +309,12 @@ required_contracts = (
     'must never be transferred to a production or hosting environment',
     'A switch between DDEV and production is an environment boundary',
     'If the target environment is unclear, stop before proceeding.',
+    'PHP classes must not remain coupled through distributed relative `require` or `require_once` chains.',
+    'Every app uses one central app-local test bootstrap/autoloader',
+    "include that app's complete autoload migration as a separate preparatory step",
+    'Documentation-only, formatting-only, and JavaScript-only work does not trigger an artificial PHP migration.',
+    'When Simon asks for the next open steps, priorities, remaining work, or a similar outlook',
+    'Mentioning an item does not expand the current write scope or authorize a gated change.',
 )
 for contract in required_contracts:
     if contract not in canonical_text:
@@ -447,6 +453,10 @@ for contract in (
     'gebundelte Produktionsabhängigkeit',
     'externe Nextcloud-App-Laufzeitabhängigkeit',
     'Keine automatische App-zu-App-Installation',
+    'Verbindlicher PHP-Autoloading- und Migrationsvertrag',
+    'zentralen app-lokalen Test-Bootstrap',
+    'vollständige Autoload-Migration dieser App',
+    'Ein Composer-Path-Repository, ein gemeinsames `vendor/` mehrerer Apps',
 ):
     if contract not in shared_code_text:
         fail(f'Verbindliche Shared-Code-/App-Store-Entscheidung fehlt: {contract}')

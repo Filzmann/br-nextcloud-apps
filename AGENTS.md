@@ -56,6 +56,15 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   App-Store-Releases stehen ausschließlich in
   `docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`.
   Neue Apps erhalten keine automatische LocalBase-Abhängigkeit.
+- PHP-Klassen werden nicht über verteilte relative `require`-Ketten geladen.
+  Produktivcode nutzt den Nextcloud-PSR-4-Autoloader oder für gebündelte
+  Kategorie-A-Abhängigkeiten genau einen reproduzierbar erzeugten,
+  app-lokalen und namespace-isolierten Composer-Autoloader. PHP-Tests nutzen
+  einen zentralen app-lokalen Test-Bootstrap. Bei der nächsten schreibenden
+  PHP-Arbeit an einer noch nicht migrierten App wird deren vollständige
+  Autoload-Migration als eigener, mitgeprüfter Schritt umgesetzt; der
+  verbindliche Migrations- und Ausnahmevertrag steht ausschließlich in der
+  genannten ADR 0001.
 - Jede Bewertung oder Verschiebung von Code zwischen bestehenden Apps,
   LocalBase und einer gemeinsamen Bibliothek folgt aus dem Root dem Skill
   `classify-shared-code`. Er ersetzt keine app-lokalen Schreibfreigaben.
@@ -237,6 +246,14 @@ verbindliche Regel und nicht über die Candidate-Liste nachgewiesen.
 
 ## Git und Definition of Done
 
+- Wenn Simon nach den nächsten offenen Schritten, Prioritäten oder
+  Restaufgaben fragt, werden die anwendbaren ausstehenden Migrationen und
+  Entscheidungen aus angenommenen ADRs sowie dokumentierten Rolloutplänen
+  mit ihrem Status, Auslöser und erforderlichen Freigabegate genannt. Dabei
+  werden sofort umsetzbare Schritte, erst bei späterer App-Arbeit ausgelöste
+  Schritte und derzeit nicht entscheidbare Punkte getrennt. Die Erwähnung
+  erweitert weder den aktuellen Schreibauftrag noch ersetzt sie eine
+  erforderliche Freigabe.
 - Keine Commits, Pushes, Releases oder Deployments ohne ausdrückliche
   Freigabe durch Simon; niemals `git add .`.
 - Bestehende fremde Änderungen bleiben unangetastet. Keine versionierten
