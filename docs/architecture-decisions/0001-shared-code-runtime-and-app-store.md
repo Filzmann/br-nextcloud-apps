@@ -193,12 +193,12 @@ noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
 | `brtop` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `adplaner` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `localbase` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine Produktiv-Fallbacks, grüne PHP-Suite |
+| `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `br_permission_matrix` | teilweise vorbereitet, ausstehend | nächste schreibende PHP-Arbeit | zentraler vollständiger Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `adcalendar` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `adurlaub` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `orgsuite` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `adroom` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `adrecruitment` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 
 Der Status wird nur mit dem jeweiligen verifizierten App-Lauf geändert. Eine

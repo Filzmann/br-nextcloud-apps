@@ -1,23 +1,22 @@
 # App-übergreifende Datenschutzarchitektur
 
-Stand: 8. August 2026
+Stand: 12. August 2026
 
 Dieses Dokument ist die normative Root-Quelle für app-übergreifende
 Datenschutzauskunft, Datenlebenszyklen, Aufbewahrung, Löschung und
-Anonymisierung. Es legt Verträge und Ausbauplanung fest, implementiert aber
-noch keine zentrale Runtime und trifft keine pauschale Aussage, der Workspace
-oder eine App sei DSGVO-konform.
+Anonymisierung. Es legt Verträge, Pilotstand und Ausbauplanung fest, trifft
+aber keine pauschale Aussage, der Workspace oder eine App sei DSGVO-konform.
 
 Die Inventur beschreibt den aktuellen Arbeitsbaum einschließlich noch nicht
 committeter Änderungen. App-spezifische Entscheidungen und Implementierungen
 bleiben Aufgaben der getrennten App-Repositories und brauchen jeweils einen
 eigenen Auftrag.
 
-## Verifizierter Ausgangsstand
+## Verifizierter Ausgangsstand vor dem Pilot
 
-- Keine App implementiert derzeit einen `PersonalDataProvider`,
+- Vor dem Pilot implementierte keine App einen `PersonalDataProvider`,
   `RetentionProvider` oder `SubjectLifecycleProvider`.
-- Es gibt keine aggregierte Self-Service- oder Admin-Auskunft.
+- Vor dem Pilot gab es keine aggregierte Self-Service- oder Admin-Auskunft.
 - Es gibt keine belastbare Quelle für Beschäftigungsende oder Austritt. Eine
   Kontodeaktivierung oder Kontolöschung in Nextcloud ist nicht mit einem
   Beschäftigungsende gleichzusetzen.
@@ -140,11 +139,13 @@ interface PersonalDataProvider {
 Sprache, Ausgabezweck und technische Begrenzungen. Ein Providerbericht enthält
 strukturierte Kategorien und menschenlesbare Einträge mit mindestens:
 
-- Datenkategorie und konkrete zulässige personenbezogene Daten;
-- Verarbeitungszweck;
+- Datenkategorie, appweise Abschnittsüberschrift und verständliche
+  Zusammenfassung des konkreten zulässigen Datensatzes;
+- datensatzbezogener Verarbeitungszweck;
 - Herkunft, soweit bekannt;
 - Empfänger oder Empfängerkategorie, soweit relevant;
-- Aufbewahrungsregel oder nachvollziehbare Kriterien;
+- datensatzbezogene Aufbewahrungsregel oder nachvollziehbare Kriterien; ein
+  reiner `REVIEW`-Stichtag darf nicht als Löschdatum ausgegeben werden;
 - Hinweis auf geschützte Inhalte anderer Personen;
 - Providerstatus, Einschränkungen und technischen Vollständigkeitshinweis.
 
@@ -248,10 +249,17 @@ bleibt auch ohne aktive OrgSuite erreichbar. Der Server konstruiert die
 `DataSubjectRef(nextcloud-user, <Session-UID>)` selbst. Eine vom Browser frei
 übermittelte UID wird nicht als Zielperson akzeptiert.
 
-Die Ansicht zeigt je App Kategorien, konkrete zulässige Daten, Zweck,
-Herkunft, Empfängerkategorien, Aufbewahrungskriterien und Providerstatus. Sie
-bietet eine verständliche HTML-Ansicht und einen strukturierten Download. Der
-Gesamtstatus nennt erfolgreiche, teilweise, fehlende und fehlgeschlagene
+Die Ansicht erklärt die Betroffenenrechte einmal im Kopf und zeigt danach je
+App zunächst Herkunft, Empfängerkategorien und weitere Verarbeitungsangaben.
+Darunter gliedert sie die Datensätze in Abschnitte je Datentyp. Die
+Tabellenköpfe bestehen aus sämtlichen vom Provider freigegebenen Datenfeldern.
+Ist ein Grund oder eine Aufbewahrungsaussage innerhalb des Datentyps
+identisch, wird sie einmal vor die Tabelle gezogen; nur unterschiedliche
+Werte bleiben zusätzliche Tabellenspalten. Sie bietet eine verständliche
+HTML-Ansicht und ein unmittelbar clientseitig erzeugtes mehrseitiges PDF.
+Menschenlesbare Datumsangaben verwenden in beiden Darstellungen die deutsche
+Kurzform `TT.MM.JJ`; Uhrzeiten werden bei Bedarf getrennt als `HH:MM Uhr`
+ergänzt. Der Gesamtstatus nennt erfolgreiche, teilweise, fehlende und fehlgeschlagene
 Provider. Eine Teilantwort wird nie als vollständig dargestellt.
 
 Berichte werden standardmäßig nur für die laufende Anfrage aggregiert und
@@ -297,7 +305,7 @@ eines Nextcloud-Kontos zusammenbrechen.
 
 ### Etappe 1 – Architekturvertrag
 
-Mit diesem Dokument umgesetzt:
+Mit diesem Dokument und dem Pilotstand vom 12. August 2026 umgesetzt:
 
 - aktuelles Dateninventar und Identifier-Grenzen;
 - Provider-, Registry-, Retention- und Lifecycle-Zielvertrag;
@@ -305,7 +313,26 @@ Mit diesem Dokument umgesetzt:
 - Root-Migrationsmatrix und schrittweise Ausbauplanung;
 - Root-Prüfvertrag für die normative Quelle.
 
-Noch nicht umgesetzt sind PHP-Verträge, Registry, UI, Jobs oder App-Provider.
+Im Pilot umgesetzt sind die PHP-Verträge für Nextcloud-User-Subjects,
+PersonalData- und Retention-Preview-Provider, feste Registry-Snapshots,
+fehlerisolierte Aggregation, Self-Service-/Admin-Grundansichten und die realen
+`adcalendar`-, `adroom`-, `adurlaub`-, `adplaner`- und `adrecruitment`-Provider sowie der LocalBase-eigene Provider für das
+Nextcloud-Konto. Der flüchtige Bericht enthält pro Provider
+Zwecke, Kategorien, Empfänger*innen, Herkunft, Aufbewahrung,
+Drittlandübermittlung und automatisierte Entscheidungen sowie zentrale
+Betroffenenrechte. Die Rechte erscheinen einmal im Berichtskopf; Datensätze
+werden nach App und Datenart mit Zweck und Aufbewahrungsaussage dargestellt.
+Nutzer*innen können exakt diesen Stand ohne Serverablage als mehrseitiges PDF
+herunterladen. Der kanonische Self-Service ist für normale Konten
+sowohl als `Datenschutz`-Eintrag im rechten Nextcloud-Benutzermenü als auch
+über den persönlichen Einstellungsbereich `Datenschutz` erreichbar; beide
+Einstiege führen auf denselben Bericht. Retention bleibt ausschließlich ein Dry Run mit
+`REVIEW`; für AD Raumplaner ist die Review-Frist im eigenen Adminbereich
+bearbeitbar. Admin-Karten sind zugänglich klapp- und per Tastatur oder
+Drag-and-drop verschiebbar; ihre persönliche Anordnung ist keine fachliche
+Konfiguration.
+nicht umgesetzt sind Ausführung, automatische Maßnahmen, Lifecycle-Provider,
+Jobs, allgemeine Providerabdeckung oder ein Vollständigkeits-/Release-Gate.
 
 ### Etappe 2 – Zentrale Basis
 
@@ -370,15 +397,15 @@ bewusst nicht vorweggenommen.
 | App | personenbezogene Daten laut aktuellem Code | PersonalDataProvider nötig | RetentionProvider nötig | Lifecycle-Abhängigkeit | Anonymisierung sinnvoll | Priorität | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `brtop` | Nextcloud-UIDs, Namen und E-Mails von Mitgliedern/Empfänger*innen, Vertretungen, Abwesenheiten, personenbezogene TOP-/Protokollinhalte, Dokument- und Anhangspfade | ja | ja | Konto, Mitgliedschaft und später Beschäftigungsende; Legislaturende ist ein eigener Fachtrigger | für einzelne historische Referenzen möglich; Ladungs- und Dokumentnachweise brauchen Fachentscheidung | hoch | Inventar verifiziert; kein Provider, keine Policy |
-| `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | Inventar verifiziert; kein Provider, keine Policy |
+| `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider für Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen implementiert; freie Tagesnotiztexte werden wegen möglicher Drittpersonendaten nicht automatisch ausgegeben; keine Retention-Policy |
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | Inventar verifiziert; fachliche Einzellöschung vorhanden, keine Retention |
-| `localbase` | persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Inventar verifiziert; öffentliche Privacy-Verträge fehlen |
+| `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
 | `br_permission_matrix` | Snapshot-/Export-Ersteller-UIDs, Audit-UIDs und optional Benutzerlisten bei `include_users=true` | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | mittel | Mengenbasierte Snapshot-Retention vorhanden; kein Privacy-Provider |
-| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | Inventar verifiziert; einzelne Opt-out-Löschwege, keine Retention |
-| `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | Inventar verifiziert; kein Provider, keine Policy |
+| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider für eigene Dienste und Termine implementiert; gemeinsame Meetings nennen weitere Beteiligte nur abstrakt. Persönliche Einstellungen, Verbindungen und DAV-Metadaten sowie Retention-Policy bleiben offen |
+| `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider und konfigurierbarer Retention-REVIEW-Dry-Run implementiert; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
-| `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter oder entfernte Buchungsreferenz gut als Pilot prüfbar | hoch, Pilot | Inventar verifiziert; kein Provider, keine Policy |
-| `adrecruitment` | interne Bewerber-ID, Namen/Kontakt, Bewerbung und Statushistorie, Interviews/Antworten, BQ-Bewertung, Einstellungsdaten, Nachrichten, Anhänge in AppData, Kommentare, Feldnachweise sowie Beschäftigten-UIDs in Bearbeitung/Audit | ja, getrennte Subject-Typen | ja | Prozessabschluss für Bewerbungen; Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen; keine Beschäftigungsquelle | nur differenziert: Akteur*innenreferenzen eventuell, Bewerbungsakte überwiegend löschen/sperren nach Fachentscheidung | sehr hoch | Umfangreiches Inventar verifiziert; `retention_state` ohne ausführende Policy |
+| `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter oder entfernte Buchungsreferenz gut als Pilot prüfbar | hoch, Pilot | PersonalDataProvider und Retention-Dry-Run mit `REVIEW` implementiert; keine Frist, Ausführung oder Lifecycle-Quelle |
+| `adrecruitment` | interne Bewerber-ID, Namen/Kontakt, Bewerbung und Statushistorie, Interviews/Antworten, BQ-Bewertung, Einstellungsdaten, Nachrichten, Anhänge in AppData, Kommentare, Feldnachweise sowie Beschäftigten-UIDs in Bearbeitung/Audit | ja, getrennte Subject-Typen | ja | Prozessabschluss für Bewerbungen; Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen; keine Beschäftigungsquelle | nur differenziert: Akteur*innenreferenzen eventuell, Bewerbungsakte überwiegend löschen/sperren nach Fachentscheidung | sehr hoch | PersonalDataProvider für alle internen Nextcloud-UID-Bezüge implementiert; Bewerber-Selbstauskunft bleibt bis zu einem sicheren authentifizierten Subject-Vertrag offen; `retention_state` ohne ausführende Policy |
 
 ## Neue Apps
 
@@ -422,15 +449,51 @@ Vor Etappe 2 zu entscheiden:
    deklarativ und im Standalone-Paket abgesichert?
 2. Dürfen Nextcloud-Admins Admin-Auskunft automatisch lesen oder benötigen
    auch sie die dedizierte Datenschutzrolle?
-3. Welches strukturierte Exportformat ergänzt JSON, ohne Inhalte oder
-   Drittpersonen unzulässig zu vervielfältigen?
-4. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
+3. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
    das spätere Release-Gate aktiv ist?
-5. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
+4. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
    belastbarer Semantik?
-6. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
+5. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
    zugestellt, ohne sie künstlich zu Nextcloud-Konten zu machen?
-7. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
+6. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
+
+### Pilotentscheidungen vom 12. August 2026
+
+Für den ausdrücklich beauftragten Pilot mit `localbase` und `adroom` gelten
+folgende enge Entscheidungen. Sie beantworten nur den Pilotumfang und nehmen
+keine allgemeine Store- oder rechtliche Retentionentscheidung vorweg:
+
+1. LocalBase ist im internen Pilot eine getrennt versionierte
+   Kategorie-B-Runtimevoraussetzung. Standalone bedeutet für AD Raumplaner
+   den Betrieb ohne andere Fachapps, nicht ohne diese deklarierte
+   Infrastruktur. Ein öffentlicher Store-Release bleibt blockiert, bis
+   Versionshandshake, Installations-/Deinstallationsvertrag und öffentliche
+   Zumutbarkeit der Zusatz-App gesondert entschieden und geprüft sind.
+2. Self-Service bindet das Subject ausschließlich an die UID der aktiven
+   Nextcloud-Sitzung. Die Admin-Auskunft benötigt zusätzlich zu einer
+   authentifizierten Sitzung die Mitgliedschaft in einer ausdrücklich
+   konfigurierten Nextcloud-Datenschutzgruppe. Nextcloud-Adminstatus allein
+   erteilt keinen inhaltlichen Auskunftszugriff. Fehlt die Konfiguration, gilt
+   deny by default.
+3. Der Pilot liefert eine zugängliche, appweise und nach Datenarten gegliederte
+   menschliche Ansicht. Jeder Datensatz nennt Zweck und Aufbewahrung; die
+   Betroffenenrechte werden einmal im Kopf erläutert. Derselbe flüchtig
+   aggregierte Stand wird clientseitig als mehrseitiges PDF erzeugt und nicht
+   auf dem Server gespeichert. Drittpersonen werden nur abstrakt erwähnt,
+   niemals namentlich aus fremden Datensätzen übernommen.
+4. Die Laufzeitantwort weist den festen Registry-Snapshot und den Status jedes
+   darin registrierten Providers aus. Eine erwartete vollständige App-Liste
+   und ein Release-Gate werden im Pilot noch nicht behauptet.
+5. Beschäftigungsende und Korrekturen bleiben bis zur Benennung einer
+   belastbaren Quelle außerhalb des Piloten. Retention beginnt ausschließlich
+   als Dry Run mit der Maßnahme `REVIEW`; es gibt keine erfundene Frist und
+   keine automatische Löschung oder Anonymisierung.
+6. Externe Bewerber*innen gehören nicht zum AD-Raumplaner-Pilot und werden
+   erst vor der Recruitment-Migration entschieden.
+7. Admin-Auskunft protokolliert nur datensparsame Metadaten über Nextclouds
+   vorhandenen Loggingmechanismus und persistiert keine Berichtskopie. Eine
+   eigene Audit-Tabelle oder app-spezifische Aufbewahrungsfrist entsteht erst
+   nach einer fachlich und datenschutzrechtlich freigegebenen Regel.
 
 ## Quellenrahmen
 

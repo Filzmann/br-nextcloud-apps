@@ -123,6 +123,15 @@ Persönliche Einstellungen liegen in einem eigenen semantischen Tab
 Fachapp, app-übergreifende Organisationskonfiguration im zuständigen
 Suite-Adminabschnitt.
 
+Neue und wesentlich überarbeitete Menüs arbeiten möglichst kompakt: häufige
+Aktionen bleiben direkt erreichbar, zusammengehörige seltene Optionen werden
+verständlich gruppiert oder schrittweise eingeblendet. Kompaktheit darf weder
+Beschriftungen, aktuellen Zustand und Fehlerhinweise noch Tastaturbedienung,
+sichtbaren Fokus oder ausreichend große Touch-Ziele verdrängen. Insbesondere
+Planungsoberflächen erhalten für kleine Smartphone-Viewports eine
+eigenständig nutzbare responsive Darstellung; ein horizontal verschiebbarer
+Desktop-Plan allein gilt nicht als smartphone-taugliche Ansicht.
+
 Der direkte App-Root ist der vertikale Scrollcontainer. Breite Tabellen
 scrollen horizontal nur in einem inneren Wrapper. Apps überschreiben weder
 `body` noch globale Nextcloud-Core-Selektoren.

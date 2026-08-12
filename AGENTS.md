@@ -48,6 +48,13 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - Controller bleiben dünn; Fachlogik, Datenzugriff, Darstellung,
   Dokumenterzeugung und Dateiablage bleiben getrennt.
+- Für jede relevante fachliche oder technische Information wird die bereits
+  kanonische Quelle identifiziert und wiederverwendet. Abgeleitete
+  Darstellungen werden daraus erzeugt oder dagegen geprüft; Rollen,
+  Berechtigungen, Konfiguration, Status-, Schema-, Versions-, Navigations- und
+  Repositoryinformationen erhalten keine zweite unabhängig gepflegte
+  Wahrheit. Bewusst unabhängige lokale Daten bleiben lokal; diese Regel
+  erzwingt weder formale DRY-Abstraktionen noch eine voreilige Auslagerung.
 - Gemeinsamer Code wird erst extrahiert, wenn mindestens zwei Apps ihn
   semantisch gleich benötigen und der Vertrag app-übergreifend testbar ist.
   LocalBase bleibt klein und dependency-arm.
@@ -86,6 +93,12 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 - Dateipfade werden normalisiert und nie ungeprüft aus Eingaben
   zusammengesetzt. Secrets und unnötige personenbezogene Daten bleiben aus
   Repository, Logs, Tests und Dokumentation.
+- Neue oder geänderte Fehlerzustände verwenden vorhandene Nextcloud- oder
+  Projektmechanismen für Fehlerbehandlung und Logging. Sie bleiben durch
+  spezifische Exceptions, stabile fachliche Fehlerzustände oder angemessen
+  strukturierte, datensparsame Logkontexte erkennbar und eingrenzbar;
+  Exceptions werden nicht still verschluckt. Eine neue Logging- oder
+  Telemetriearchitektur entsteht nur aus einem konkreten Bedarf.
 - Apps mit personenbezogenen Daten liefern Auskunft und Retention nur über die
   öffentlichen Provider-Grenzen aus `docs/privacy-architecture.md`. Eine
   zentrale Komponente liest oder verändert niemals Tabellen, Entitäten oder
@@ -136,6 +149,13 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 - Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden
   test-first entwickelt. Cross-App-Verträge erhalten Provider- und
   Consumer-Contract-Tests.
+- Berührt eine Änderung eine fachliche oder sicherheitsrelevante Schutz- oder
+  Zustandsgrenze, belegen Tests den erlaubten und mindestens einen sinnvollen
+  verweigerten, ungültigen oder manipulierten Fall einschließlich
+  ausbleibender Nebenwirkungen. Existiert kein sinnvoller Negativfall, wird
+  keiner künstlich erzeugt; ein nicht automatisierbarer relevanter Pfad wird
+  mit geeigneter Integrations- oder manueller Prüfung und verbleibender
+  Nachweislücke berichtet.
 - Zeitlich begrenzte Spikes und schwer isolierbare Nextcloud-Integration sind
   im Skill ausdrücklich zu begründende Abweichungen. Übernommener Spike-Code
   wird zuvor charakterisiert; deklarative Änderungen erhalten passende
@@ -162,8 +182,14 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   zuständigen Anwendungsservice gekapselt und positiv, negativ sowie im
   Fehlerfall getestet.
 - Bei Datenbankänderungen mit möglichen Bestandsdaten werden altes und neues
-  Schema, Transformationsregeln, Bestandsvarianten, Integritätsbedingungen,
-  Transaktionsgrenze, Fortsetzbarkeit und Rollbackgrenzen dokumentiert.
+  Schema, Transformationsregeln, Bestandsvarianten einschließlich `NULL`-,
+  Sonder- und Teilmigrationsständen, Integritätsbedingungen,
+  Schema-/Code-Kompatibilität, Transaktionsgrenze, Fortsetzbarkeit,
+  Wiederholbarkeit sowie Roll-forward- und Rollbackgrenzen dokumentiert.
+- Nicht triviale Strukturänderungen prüfen ein additives
+  Expand–Migrate/Backfill–Contract-Vorgehen; die alte Struktur entfällt erst
+  nach Verifikation von Code und Datenbestand. Triviale additive Migrationen
+  erhalten keinen künstlichen Mehrphasenprozess.
 - Erforderlich sind Tests der frischen Installation, des Upgrades aus der
   relevanten Vorversion mit synthetischen Bestandsdaten, der fachlichen Daten-
   und Beziehungsintegrität, ungültiger beziehungsweise widersprüchlicher
@@ -222,6 +248,14 @@ Freigabe einholen bei:
 - DDEV-, Docker-, Nextcloud- oder `occ`-Konfiguration;
 - breiten Refactorings zur Reparatur roter Tests;
 - unklarem Rückbauweg.
+
+Vor einer strukturellen Änderung wird außerdem gestoppt, wenn konkurrierende
+Quellen bestehen und ihre künftige Autorität nicht eindeutig ist, wenn kein
+sicherer Migrations- oder Roll-forward-Pfad erkennbar ist, Bestandsdaten
+destruktiv oder irreversibel gefährdet wären oder wenn eine kritische
+Schutzgrenze mangels Diagnostizierbarkeit nicht sicher implementiert oder
+verifiziert werden kann. Der Entscheidungsbericht nennt Fundstellen, Konflikt,
+Varianten, Auswirkungen, Empfehlung und benötigte Entscheidung.
 
 Ohne Freigabe sind dort nur Lesen, Analyse und ein minimaler Änderungsplan
 zulässig. Sofort stoppen, wenn Produktionssysteme, unerwartete externe
