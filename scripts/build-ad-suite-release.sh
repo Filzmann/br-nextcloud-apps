@@ -8,6 +8,7 @@ release_dir="$dist_root/ad-suite-$release_label"
 bundle="$dist_root/ad-suite-$release_label.tar.gz"
 catalog="$workspace/localbase/resources/ad-product-catalog.json"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+reproducible_archiver="$workspace/scripts/create-reproducible-tar-gz.sh"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
 mapfile -t products < <(php "$catalog_reader" products)
@@ -111,7 +112,7 @@ for app in "${apps[@]}"; do
     fi
 
     archive="$release_dir/$app-$version.tar.gz"
-    tar -C "$stage" -czf "$archive" "$app"
+    "$reproducible_archiver" "$archive" "$stage" "$app"
     mapfile -t roots < <(tar -tzf "$archive" | cut -d/ -f1 | sort -u)
     if [[ "${#roots[@]}" -ne 1 || "${roots[0]}" != "$app" ]]; then
         echo "Archiv besitzt keinen eindeutigen App-Wurzelordner: $archive" >&2
@@ -163,11 +164,11 @@ for product in "${products[@]}"; do
         awk -F '\t' -v app="$app" '$1 == app { print }' "$release_dir/manifest.tsv" >> "$product_dir/manifest.tsv"
     done
     (cd "$product_dir" && sha256sum ./*.tar.gz ad-product-catalog.json > SHA256SUMS && sha256sum --check SHA256SUMS)
-    tar -C "$dist_root" -czf "$product_bundle" "$product_name"
+    "$reproducible_archiver" "$product_bundle" "$dist_root" "$product_name"
     (cd "$dist_root" && sha256sum "$product_name.tar.gz" > "$product_name.tar.gz.sha256")
 done
 
-tar -C "$dist_root" -czf "$bundle" "$(basename "$release_dir")"
+"$reproducible_archiver" "$bundle" "$dist_root" "$(basename "$release_dir")"
 (cd "$dist_root" && sha256sum "$(basename "$bundle")" > "$(basename "$bundle").sha256")
 
 if [[ "$release_label" =~ ^nc34-rc[0-9]+$ ]]; then

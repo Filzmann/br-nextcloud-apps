@@ -63,6 +63,7 @@ if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETR
 fi
 
 echo '== Parent-Contract-Tests =='
+bash tests/check-privacy-architecture-contract.sh
 bash tests/check-ad-suite-coverage-baseline.sh
 bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh
@@ -70,6 +71,7 @@ bash tests/check-ad-product-catalog.sh
 bash tests/check-ad-suite-standalone-contract.sh
 bash tests/check-ad-product-installer.sh
 bash tests/check-ad-release-pruning.sh
+bash tests/check-reproducible-release-archive.sh
 bash tests/check-staging-deployment.sh
 
 if (( structure_tracking_warning )); then

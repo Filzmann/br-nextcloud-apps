@@ -23,6 +23,13 @@ freigegebene Umsetzungen werden im jeweils zuständigen Repository geführt.
 | Technische Dokumentreferenzen prüfen | Parent `PARENT-DOC-REFS` |
 | Explizite RC-Bereinigung | Parent `PARENT-RC-CLEANUP` |
 
+Die damalige Einordnung der L10N-Beobachtung als lokale App-Aufgaben wurde am
+9. August 2026 aufgehoben. Der appübergreifende L10N-Rollout ist seither nur
+in `docs/ad-suite-zukunftsplanung.md` vorgemerkt, nicht freigegeben und nicht
+zu implementieren. Lokale `*-L10N`-Einträge begründen keine freigegebene
+Aufgabe und sind bei der nächsten ausdrücklich beauftragten Roadmap-Pflege in
+dieselbe Zukunftsplanung einzuordnen.
+
 Die Parent-Aufgaben stehen in `docs/implementation-tasks.md`. App-Aufgaben
 stehen jeweils in der lokalen `ROADMAP.md`; die AD-Suite-Roadmap enthält die
 Produktdokumentationsaufgabe und eine Routingübersicht. Die Verschiebung ist
