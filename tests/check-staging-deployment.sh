@@ -196,6 +196,11 @@ assert_contains "$workflow" 'STAGING_SSH_PRIVATE_KEY'
 assert_contains "$workflow" 'STAGING_SSH_KNOWN_HOSTS'
 assert_contains "$workflow" 'sudo -n -u simonbeyer_sys /usr/local/sbin/teamcloud-staging-install'
 assert_contains "$workflow" '/var/tmp/teamcloud-staging-incoming'
+assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
+assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
+if grep -Fq '$STAGING_BASE_URL/apps/$APP_ID/' "$workflow"; then
+    fail 'Workflow prüft Custom-App-Assets über den nicht konfigurierten Core-App-URL-Pfad.'
+fi
 if grep -Fq 'control/scripts/install-staging-app.sh' "$workflow"; then
     fail 'Workflow lädt den root-eigenen Server-Installer unzulässig pro Deployment hoch.'
 fi

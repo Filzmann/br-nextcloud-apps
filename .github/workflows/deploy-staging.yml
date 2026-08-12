@@ -107,8 +107,8 @@ jobs:
           source "$RUNNER_TEMP/staging-package/metadata.env"
           css_headers="$RUNNER_TEMP/css-headers"
           js_headers="$RUNNER_TEMP/js-headers"
-          curl -fsS -o /dev/null -D "$css_headers" "$STAGING_BASE_URL/apps/$APP_ID/$CSS_ASSET"
-          curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/apps/$APP_ID/$JS_ASSET"
+          curl -fsS -o /dev/null -D "$css_headers" "$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET"
+          curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET"
           grep -Eiq '^content-type:[[:space:]]*text/css([;[:space:]]|$)' "$css_headers"
           grep -Eiq '^content-type:[[:space:]]*(application|text)/(javascript|x-javascript)([;[:space:]]|$)' "$js_headers"
 
