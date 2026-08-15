@@ -11,7 +11,7 @@ catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
 reproducible_archiver="$workspace/scripts/create-reproducible-tar-gz.sh"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
-mapfile -t products < <(php "$catalog_reader" products)
+mapfile -t products < <(php "$catalog_reader" bundle-products)
 declare -A archives=()
 stage="$(mktemp -d)"
 

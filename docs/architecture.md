@@ -18,9 +18,11 @@ semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
 gemeinsamen AD-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
-Die fünf AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub`, `adroom` und
-`adrecruitment`
-bleiben einzeln installierbar. Bei genau einem aktiven Fachprodukt bleibt
+Die sechs AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub`, `adroom`,
+`adrecruitment` und `adbqplanung` bleiben einzeln installierbar. Der BQ-Planer
+ist als Entwicklungsprodukt im gemeinsamen Menü und Standalone-Vertrag
+registriert, bis zur dokumentierten Release-Reife jedoch aus Full-Suite- und
+Einzelprodukt-Bundles ausgeschlossen. Bei genau einem aktiven Fachprodukt bleibt
 OrgSuite deaktiviert und das Fachprodukt stellt Navigation und
 Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
 geprüfte Installer OrgSuite. LocalBase und OrgSuite sind Infrastruktur, keine

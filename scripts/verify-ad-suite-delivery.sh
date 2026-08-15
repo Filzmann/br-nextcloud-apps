@@ -5,7 +5,7 @@ workspace="$(cd "$(dirname "$0")/.." && pwd)"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
-mapfile -t products < <(php "$catalog_reader" products)
+mapfile -t products < <(php "$catalog_reader" bundle-products)
 
 if [[ "${AD_SUITE_GATE_WRAPPER:-0}" != '1' ]]; then
     echo 'Direkter Aufruf ist nicht freigabefähig; scripts/check-ad-suite-delivery verwenden.' >&2

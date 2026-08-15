@@ -97,6 +97,15 @@ verifizierten Kandidaten für getrennte Produktveröffentlichungen
 werden sollen, ist derzeit nicht entscheidbar; ihre Metadaten und die direkte
 OrgSuite-/LocalBase-Kopplung reichen für diese Produktentscheidung nicht aus.
 
+Ergänzung vom 2026-08-15: `adbqplanung` ist als sechstes AD-Fachprodukt in
+denselben Kategorie-B-Laufzeitvertrag für Produktkatalog und Navigation
+aufgenommen. Die getrennten Katalogflags bleiben maßgeblich: Solange
+`fullSuiteBundle` und `productBundle` auf `false` stehen, ist die App ein
+navigierbares Entwicklungsprodukt, aber kein Bestandteil eines Release- oder
+App-Store-Kandidaten. Diese Aufnahme verschiebt weder BQ-Fachcode nach
+LocalBase noch ersetzt sie die ausstehenden Datenschutz-, Rechte- und
+Integrationsnachweise der Fachapp.
+
 Die aktuelle AD-Lieferung ist ein privates Multi-App-Produktbundle: jedes
 Fachproduktbundle enthält LocalBase, OrgSuite und das Fachprodukt
 (`ad-suite/docs/INSTALLATION.md`, `scripts/build-ad-suite-release.sh`). Das ist

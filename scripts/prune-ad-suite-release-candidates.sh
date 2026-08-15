@@ -10,7 +10,7 @@ keep_label=''
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
-mapfile -t catalog_products < <(php "$catalog_reader" products)
+mapfile -t catalog_products < <(php "$catalog_reader" bundle-products)
 declare -A allowed_products=()
 for catalog_product in "${catalog_products[@]}"; do
     allowed_products["$catalog_product"]=1

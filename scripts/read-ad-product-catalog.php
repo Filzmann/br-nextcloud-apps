@@ -26,6 +26,9 @@ try {
         case 'products':
             $writeLines(array_column($catalog->products(), 'id'));
             break;
+        case 'bundle-products':
+            $writeLines(array_column($catalog->bundleProducts(), 'id'));
+            break;
         case 'full-suite':
             $writeLines($catalog->fullSuiteAppIds());
             break;
@@ -43,7 +46,7 @@ try {
             echo "\n";
             break;
         default:
-            fwrite(STDERR, "Aufruf: read-ad-product-catalog.php validate|products|full-suite|product-bundle <Produkt>|field <Produkt> <Feld>\n");
+            fwrite(STDERR, "Aufruf: read-ad-product-catalog.php validate|products|bundle-products|full-suite|product-bundle <Produkt>|field <Produkt> <Feld>\n");
             exit(2);
     }
 } catch (Throwable $error) {
