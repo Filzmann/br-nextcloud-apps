@@ -33,7 +33,9 @@ br-nextcloud-apps/
 |       |-- docker-compose.adcalendar.yaml
 |       |-- docker-compose.adurlaub.yaml
 |       |-- docker-compose.orgsuite.yaml
-|       `-- docker-compose.adroom.yaml
+|       |-- docker-compose.adroom.yaml
+|       |-- docker-compose.adrecruitment.yaml
+|       `-- docker-compose.adbqplanung.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
@@ -44,6 +46,7 @@ br-nextcloud-apps/
 |-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
 |-- adroom/     # eigenes Git-Repo, Raumplanung
 |-- adrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
+|-- adbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
 `-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -63,6 +66,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
 | AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
 | AD Recruitment | `adrecruitment` | `adrecruitment/` | `https://nextcloud-dev.ddev.site/apps/adrecruitment/` |
+| AD BQ-Planer | `adbqplanung` | `adbqplanung/` | `https://nextcloud-dev.ddev.site/apps/adbqplanung/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -78,7 +82,7 @@ erzwingt bytegleiche lokale Kopien.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -110,6 +114,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
 ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
 ddev exec -d /var/www/html/html php occ app:list | grep -i adrecruitment
+ddev exec -d /var/www/html/html php occ app:list | grep -i adbqplanung
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -261,6 +266,19 @@ Konfiguration:
 
 ```text
 nextcloud-dev/.ddev/docker-compose.adrecruitment.yaml
+```
+
+AD BQ-Planer:
+
+```text
+${WORKSPACE_ROOT}/adbqplanung
+-> /var/www/html/html/custom_apps/adbqplanung
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.adbqplanung.yaml
 ```
 
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten

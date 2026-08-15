@@ -45,6 +45,10 @@
       "path": "adrecruitment"
     },
     {
+      "name": "adbqplanung",
+      "path": "adbqplanung"
+    },
+    {
       "name": "ad-suite",
       "path": "ad-suite"
     }

@@ -1,8 +1,10 @@
 # AD-Suite-Zukunftsplanung: Fachmodule und suiteweite Erweiterungen
 
-Stand: 9. August 2026
+Stand: 15. August 2026
 
-Status: **VORGEMERKT – NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN**
+Status: **VORGEMERKT – NICHT FREIGEGEBEN – NICHT IMPLEMENTIEREN**, sofern ein
+Abschnitt nicht ausdrücklich durch einen datierten Entscheidungsbericht
+freigegeben wurde.
 
 ## Zweck und Verbindlichkeitsgrenze
 
@@ -105,6 +107,7 @@ idempotente Importmuster belegen keine fachliche Umsetzung dieser Module.
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Schichtvermittlungs-App | Konkrete offene Schicht, sequenzieller Suchbogen, Kontakte, Ergebnisse, Stufenübergänge, Sonderzuschlag, Besetzungsstatus und aggregierte Strukturhinweise | Wunschdienstplanung, dauerhafte DPA-Wiederanbindung, automatische Kandidatenauswahl, Ablehnungsbewertung und Ausweitung von Meldepflichten | `adschichtvermittlung` |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Personalbedarfs-/Forecast-Modul | Rollierende Bedarfskorridore, Checkpoints, Szenarien und Forecast-vs-Ist | Bewerbungsakte, individuelle Krankheitsprognose und automatische Einstellungsentscheidung | etwa `adpersonalbedarf`; erst nach Ownership-Entscheidung |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Ausfallgeld-/Kapazitätsmodul | Nur falls der heutige Tabellenprozess später eine eigene führende digitale Quelle benötigt | DPA-Fallsteuerung und Suchbogen offener Schichten | derzeit nicht entscheidbar |
+| **FREIGEGEBEN – ERSTER KERN IMPLEMENTIERT, FOLGEPAKETE GEGATET** | BQ-Planungs-App | Durchlaufprogramm, Kapazität, einzelne Unterrichtstermine, Ressourcen, Warteliste und Anwesenheit | Bewerbungsakte, Eignungsentscheidung und automatische Einstellungsfreigabe | `adbqplanung`; Freigabe und Schnitt in `plans/bq-planer-start-2026-08-15.md` |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Aggregiertes Reporting | Datenschutzgeprüfte appübergreifende Kennzahlen und Strukturhinweise | Operative Fremddatenbankabfragen oder Personen-Dashboards | zunächst kein eigenes Modul festlegen |
 | **VORGEMERKT – NICHT FREIGEGEBEN** | Appübergreifender L10N-Rollout | Sichtbare Texte aller bestehenden und künftigen BR-/AD-Apps vollständig über aktive Nextcloud-Locale und Nextcloud-l10n ausgeben | Änderung technischer IDs, API-Schlüssel, Statuswerte, ISO-Daten, Monatsnummern, Schichtzeiten oder fachlicher Semantik | kein eigenes Modul; appweise Umsetzung nach Pilotentscheidung |
 
@@ -118,6 +121,7 @@ ohne Trennzeichen. Die genannten IDs sind Vorschläge, keine Reservierungen.
 | DPA-Fallsteuerung | noch kein Owner; DPA, Vermittlung und Forecast wären Consumer | fachlicher Bedarf belegt, technische Quelle fehlt | B | Eigenständige App wegen führender Fachdaten, Zuständen, Rechten, Retention und Administration | hoch: personenbezogene Fälle, Standalone- und Deinstallationsvertrag | 1 |
 | Schichtvermittlung | noch kein Owner; Teamplanung, DPA und Kapazitätsquellen wären Provider | fachlicher Bedarf belegt, technische Quelle fehlt | B | Eigenständige App wegen eigener offener Schicht, Suchhistorie, Audit und Rechte | hoch: Personenbezug, Nebenläufigkeit, optionale Provider | 1 |
 | Persistenter Personalbedarfsforecast | noch kein Owner; Recruitment, DPA und Strukturaggregate wären Provider | plausible Einordnung | B, falls persistiert | Eigenständiger fachlicher Dienst, nicht Teil der Bewerbungsakte | hoch: Scheingenauigkeit, Fehlsteuerung und Datenschutz | 2 |
+| BQ-Durchlaufprogramm und Ressourcenplanung | `adbqplanung`; AD Recruitment verwaltet weiterhin den manuellen Recruiting-Fallback | App-Grenze freigegeben und erster Planungskern implementiert; Persistenz und Integration offen | B | Eigenständige App wegen Kapazitäten, Einzelterminen, Ressourcen, Anwesenheit und eigener Zustände | hoch: Teilnehmerbezug, Kalenderkonflikte, Standalone- und Integrationsvertrag | 1 |
 | App-spezifische Tabellenimporte | jeweilige künftige Fachdaten-App | Formate noch unbekannt | C, zunächst | Importprofil bleibt beim Datenowner; keine universelle Personaldaten-Excel-Schicht | mittel: Quellqualität und Korrekturen | 2 |
 | Reine DTOs/Serialisierungsschemata | spätere Provider und Consumer | noch zu prüfen | A möglich | Nur bei mindestens zwei semantisch identischen Verwendungen und reproduzierbarem Build | mittel: Versions- und Namespaceisolation | 3 |
 | In-Process-Events/Capabilities | spätere Provider und Consumer | noch zu prüfen | B-Vertrag | Benötigen eine kontrollierte gemeinsame Klassenidentität und verständliches Missing-Provider-Verhalten | hoch: Laufzeitkopplung und Store-Voraussetzung | 2 |
@@ -140,6 +144,7 @@ Installations-, Update-, Deinstallations- und Store-Entscheidung.
 | Büro-Dienst/Termin | AD Kalender | bestehende lokale Kalendereintrags-ID |
 | Urlaub | AD Urlaub | bestehende lokale Urlaubs-ID |
 | Bewerbung, Stelle, BQ-Durchlauf und BQ-Zuordnung | AD Recruitment | bestehende lokale Recruitment-IDs |
+| BQ-Programm, Unterrichtstermin, Kapazität und Anwesenheit | `adbqplanung` | eigene stabile IDs; keine Umdeutung bestehender Recruitment-IDs |
 | Organisationsrollen und -bereiche | bestehender Organisationsvertrag | stabile semantische Schlüssel |
 | Nextcloud-Konto | Nextcloud | Nextcloud-UID; nicht mit Beschäftigtennummer gleichsetzen |
 | Beschäftigten-/Vertragsstammdaten | noch unbekannte führende Quelle | vor Umsetzung klären; nicht in LocalBase erfinden |
@@ -167,6 +172,7 @@ Die folgenden Namen sind Platzhalter, keine implementierten Verträge:
 | DPA → Forecast | Manuell bestätigte, aggregierte und realistisch passende Stundenkorridore; keine pauschale Fallzahl |
 | AD Recruitment → Forecast | Aggregierte Pipeline nach BQ/Status/Stundenkorridor sowie verbindlich eingestellte Zugänge |
 | Forecast → Recruitment/BQ | Freigegebener Bedarfskorridor und konfigurierbare Zielkapazität; keine automatische Einstellungsentscheidung |
+| BQ-Planung ↔ AD Recruitment | Stabile externe Durchlaufreferenz sowie notwendige Ereignisse für Bestätigung, Umbuchung, Abbruch, Nichtantritt und Abschluss; keine Bewerbungsakte und keine automatische Eignungsentscheidung |
 | Fachapps → Reporting | Datensparsame Aggregatprojektionen mit Perioden-, Qualitäts- und Vollständigkeitsstatus |
 
 Ein fehlender, deaktivierter oder inkompatibler Provider bleibt ein
@@ -241,6 +247,174 @@ Es gibt keinen Abzug `Anzahl DPA-Fälle`. Berücksichtigt werden nur manuell
 bestätigte, für Prognosezeitraum und Bedarf realistisch passende
 Stundenkorridore. Bereits eingestellte AS werden nicht systematisch gegenüber
 DPA-Beschäftigten nachrangig behandelt.
+
+## BQ-Planungs-App: Analyse und Zielplan
+
+### Freigabestand vom 15. August 2026
+
+Die eigenständige Kategorie-B-App `adbqplanung` und ihr erster
+dependency-armer Planungskern sind freigegeben und angelegt. Verbindlich sind
+der Standard von sieben konfigurierbaren Arbeitstagen, der konfigurierbare
+Starttag mit Freitag als Standard, erklärbare Vorschläge unter Berücksichtigung
+übergebener Sperrperioden, Curriculum-Snapshots, eine interne Haupt-PFK mit
+Modulabweichungen sowie Praxisreflexionen nach einem, drei und vier Monaten.
+
+Noch nicht freigegeben oder implementiert sind persistente Tabellen, das
+granulare Rollenmodell, produktive Kalender- und Recruitment-Verträge,
+Teilnehmerinnen, Anwesenheit und Kommunikation. Der vollständige erste Schnitt
+und seine Rückbaugrenze stehen im datierten Bericht
+`plans/bq-planer-start-2026-08-15.md`.
+
+### Verifizierter Altstand
+
+Der außerhalb dieses Workspaces untersuchte WordPress-Altversuch
+`flz_ad_basisqualifikation` ist keine übernehmbare Planungsanwendung, sondern
+eine frühe Terminliste mit Titel, Startdatum, Enddatum und anlegender
+WordPress-Benutzer-ID. Die Oberfläche kann Durchläufe anlegen, ändern, löschen
+und tabellarisch anzeigen.
+
+Ein Vorschlagsalgorithmus sucht einen Freitag in der zweiten oder dritten
+Monatswoche, legt ein siebentägiges Zeitfenster an und versucht, Berliner
+Schulferien und Feiertage zu vermeiden. Der Titel wird als
+`BQ YYYY-<römischer Monat>` gebildet. „Abgeschlossen“ bedeutet lediglich,
+dass das Enddatum in der Vergangenheit liegt.
+
+Nicht vorhanden sind Kapazitäten, Teilnehmer*innen, Wartelisten, einzelne
+Unterrichtstage, Inhalte, Lehrende, Räume, Anwesenheit, Konflikte, belastbare
+fachliche Zustände, Umbuchungen, Absagen, Benachrichtigungen und eine
+verbindliche Verbindung zum Bewerbungsprozess.
+
+Nutzbar bleiben nur die Produktideen eines monatsbezogenen Terminvorschlags,
+nachvollziehbarer Ferien-, Feiertags- und Sperrzeitwarnungen, manuell
+änderbarer Vorschläge und einer kompakten Liste kommender und vergangener
+Durchläufe.
+
+Der Altcode wird nicht übernommen. Er enthält unter anderem öffentliche
+`nopriv`-AJAX-Registrierungen, uneinheitliche Capability-Namen, automatisch an
+alle Rollen vergebene Rechte, SQL-Stringbildung, beim Deaktivieren gelöschte
+Tabellen, fest eingebaute und seit 2025 veraltete Feriendaten sowie einen rein
+datumsabhängigen Abschlussstatus.
+
+Auch die fachlichen Altannahmen werden nicht still übernommen: AD Recruitment
+verwendet derzeit `BQ MM/YY` und ungefähr zehntägige Durchläufe, nicht römische
+Monatszahlen und starre sieben Tage. Kalenderregeln erzeugen deshalb zunächst
+nur Vorschläge. Verbindliche Dauer, Wochentage und Sperrzeiten benötigen eine
+fachliche Entscheidung.
+
+### Empfohlene Produktgrenze
+
+AD Recruitment bleibt die kanonische Quelle für Bewerbung, BQ-Zuordnung,
+Auswahlergebnis und daraus folgende Einstellungsfreigabe. Die eigenständige
+BQ-Planungs-App ist die kanonische Quelle für
+Durchlaufprogramm, Kapazität, Unterrichtstermine, Ressourcen und Anwesenheit.
+
+Die Verbindung erfolgt ausschließlich über einen kleinen versionierten
+Capability-/Event-Vertrag. AD Recruitment speichert dabei nur eine stabile
+externe Durchlauf-ID und den für den Bewerbungsprozess notwendigen Snapshot.
+Fehlt die BQ-App, bleibt die vorhandene manuelle Durchlaufverwaltung
+vollständig nutzbar. Direkte Zugriffe auf Tabellen, Controller oder Assets der
+jeweils anderen App sind ausgeschlossen.
+
+### Zielmodell
+
+Ein BQ-Durchlauf besitzt mindestens:
+
+- stabile ID, sichtbare Bezeichnung und Planungsjahr;
+- Zeitraum, Zeitzone, Kapazität und optional Wartelistenkapazität;
+- Zustand `Entwurf`, `veröffentlicht`, `bestätigt`, `laufend`, `abgeschlossen`
+  oder `abgesagt`;
+- einzelne Termine mit Beginn, Ende, Thema, verantwortlicher Person und
+  optionaler Raumreferenz; sowie
+- versionierte Änderungen und einen nachvollziehbaren Verlauf.
+
+Eine Teilnahme besitzt eine stabile Referenz zur Bewerbung beziehungsweise
+Person, aber keine Kopie der vollständigen Bewerbungsakte. Ihr Zustand ist
+`vorgemerkt`, `bestätigt`, `Warteliste`, `abgesagt`, `nicht angetreten`,
+`teilgenommen` oder `abgebrochen`. Das Recruitment-Ergebnis `geeignet` oder
+`nicht geeignet` bleibt davon getrennt und wird weiterhin ausdrücklich durch
+das Personalreferat gesetzt.
+
+### Umsetzungspakete in empfohlener Reihenfolge
+
+#### BQ-01 – Fachentscheidungen und Vertrag – teilweise umgesetzt
+
+Vor jeder Schema- oder App-Entscheidung werden verbindlich geklärt:
+
+- typische und minimale/maximale Dauer sowie reguläre Unterrichtstage;
+- Berliner Ferien/Feiertage als harte Sperre, Warnung oder nur Präferenz;
+- Kapazität, Überbuchung und Wartelistenverfahren;
+- Rollen für Planung, Lehre, Anwesenheit und Ergebnisfreigabe;
+- erforderliche Teilnehmerdaten und deren Aufbewahrung; und
+- ob der erste Ausbau lokal in AD Recruitment bleibt oder eine neue,
+  separat versionierte App ausdrücklich beauftragt wird.
+
+Ergebnis ist ein freigegebener Zustands- und Berechtigungsvertrag mit
+zulässigen Übergängen, Nebenwirkungen, Konflikten und Rückbaugrenze.
+
+#### BQ-02 – Durchlauf- und Terminplanung – Planungskern begonnen
+
+- Jahres- und Listenansicht mit Entwürfen und veröffentlichten Durchläufen.
+- Manuelles Anlegen sowie erklärbarer Terminvorschlag auf Basis einer
+  austauschbaren Kalenderquelle.
+- Einzeltermine, Pausen/Sperrzeiten, Kapazität und optimistische Sperren.
+- Warnungen für Überlappungen, Ferien, Feiertage, fehlende Termine und
+  unplausible Dauer; keine stille automatische Verschiebung.
+- Absage statt Löschen, sobald ein Durchlauf veröffentlicht oder referenziert
+  wurde.
+
+#### BQ-03 – Teilnehmerplanung und Umbuchung
+
+- Vormerken, bestätigen, auf Warteliste setzen, absagen und kontrolliert in
+  einen anderen Durchlauf verschieben.
+- Kapazitätskonflikte atomar behandeln und wiederholte Requests idempotent
+  machen.
+- Umbuchungen erhalten den Verlauf und lösen keine automatische
+  Einstellungsfreigabe aus.
+- In AD Recruitment die bereits offene Verschiebung zwischen Durchläufen
+  zuerst lokal vervollständigen; sie bildet zugleich den Fallback für eine
+  spätere Integration.
+
+#### BQ-04 – Ressourcen und Tagesprogramm
+
+- Themen beziehungsweise Module je Termin, verantwortliche Lehrende und
+  interne Hinweise planen.
+- Räume und Kalender nur optional über kleine Provider-Verträge anbinden;
+  ohne `adroom` oder `adcalendar` bleiben lokale Freitextangaben möglich.
+- Ressourcen- und Zeitkonflikte vor Veröffentlichung sichtbar machen.
+
+#### BQ-05 – Anwesenheit, Abschluss und Recruitment-Rückmeldung
+
+- Anwesenheit datensparsam pro Termin erfassen und korrigierbar auditieren.
+- Teilnahmeabschluss und fachliches Recruitment-Ergebnis getrennt halten.
+- Nur notwendige Ereignisse oder Snapshots an AD Recruitment liefern:
+  bestätigt, umgebucht, abgebrochen, nicht angetreten und abgeschlossen.
+- Eignungsentscheidung und Einstellungsfreigabe bleiben bewusste, getrennte
+  Personalaktionen.
+
+#### BQ-06 – Kommunikation und Betrieb
+
+- Terminbestätigung, Änderung und Absage über versionierte Vorlagen und eine
+  idempotente Outbox vorbereiten; Testumleitung und zeitliche Planung nach dem
+  Recruitment-Muster verwenden.
+- Datenschutz-Auskunft, Retention und Drittpersonenbezug vor fachlicher
+  Fertigstellung ergänzen.
+- Import-, Export-, Backup- und Wiederanlaufpfade erst nach konkretem Bedarf
+  festlegen.
+
+### Nachweis und Freigabegates
+
+Jedes Paket wird testgetrieben umgesetzt. Zustands- und Rechteänderungen
+belegen erlaubte und verweigerte Fälle einschließlich ausbleibender
+Nebenwirkungen. Für persistente Änderungen sind additive Migration,
+Neuinstallation, Upgrade mit synthetischen Bestandsdaten, Wiederholbarkeit und
+Integrität nachzuweisen. Kalenderlogik wird mit einer injizierten Uhr und
+versionierten Kalenderdaten getestet.
+
+Die neue eigenständige App ist durch den Entscheidungsbericht vom 15. August
+2026 freigegeben. Ein Datenbankschema, ein Berechtigungsmodell oder ein
+öffentlicher Cross-App-Vertrag beginnt weiterhin erst nach der jeweils
+ausdrücklich erforderlichen Freigabe. Der Altversuch ist eine fachliche
+Fundstelle, aber weder Migrationsquelle noch kompatible Laufzeitabhängigkeit.
 
 ## Rollen- und Berechtigungsmatrix
 
