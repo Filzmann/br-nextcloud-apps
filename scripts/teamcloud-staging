@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+incoming_root='/var/tmp/teamcloud-staging-incoming'
+gate_owner='filzmann'
+installer_user='simonbeyer_sys'
+installer_uid=''
+install_wrapper='/usr/local/sbin/teamcloud-staging-install'
+sudo_bin='/usr/bin/sudo'
+logger_bin='/usr/bin/logger'
+setfacl_bin='setfacl'
+getfacl_bin='getfacl'
+max_archive_bytes=104857600
+
+usage() {
+    cat >&2 <<'EOF'
+Aufruf:
+  teamcloud-staging upload <Run-ID> <Versuch> <App-ID>
+  teamcloud-staging install <Run-ID> <Versuch> <App-ID> <Commit> <SHA-256>
+  teamcloud-staging cleanup <Run-ID> <Versuch> <App-ID>
+EOF
+}
+
+fail() {
+    echo "$1" >&2
+    exit 2
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || fail "Erforderliches Serverwerkzeug fehlt: $1"
+}
+
+require_acl_tools() {
+    require_command "$setfacl_bin"
+    require_command "$getfacl_bin"
+    installer_uid="$(id -u "$installer_user" 2>/dev/null)" \
+        || fail "Installer-Benutzer fehlt: $installer_user"
+}
+
+validate_common() {
+    local run_id="$1"
+    local attempt="$2"
+    local app_id="$3"
+
+    [[ "$run_id" =~ ^[0-9]+$ && "$attempt" =~ ^[0-9]+$ ]] \
+        || fail 'Run-ID und Versuch müssen positive Ganzzahlen sein.'
+    case "$app_id" in
+        brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+        *) fail "Nicht freigegebene App-ID: $app_id" ;;
+    esac
+}
+
+run_directory() {
+    printf '%s/%s-%s-%s' "$incoming_root" "$1" "$2" "$3"
+}
+
+archive_path() {
+    local run_dir
+    run_dir="$(run_directory "$1" "$2" "$3")"
+    printf '%s/%s.tar.gz' "$run_dir" "$3"
+}
+
+assert_owned_regular_file() {
+    local archive="$1"
+    [[ -f "$archive" && ! -L "$archive" ]] \
+        || fail 'Archiv fehlt, ist kein reguläres File oder ist ein Symlink.'
+    [[ "$(stat -c '%U' -- "$archive")" == "$gate_owner" ]] \
+        || fail 'Archiv gehört nicht dem freigegebenen Upload-Benutzer.'
+}
+
+assert_incoming_root() {
+    [[ -d "$incoming_root" && ! -L "$incoming_root" ]] \
+        || fail "Incoming-Verzeichnis fehlt oder ist unsicher: $incoming_root"
+    [[ "$(stat -c '%U' -- "$incoming_root")" == "$gate_owner" ]] \
+        || fail 'Incoming-Verzeichnis gehört nicht dem Gate-Benutzer.'
+}
+
+assert_acl_line() {
+    local path="$1"
+    local expected="$2"
+    "$getfacl_bin" -ncp -- "$path" | grep -Fqx -- "$expected" \
+        || fail "Erforderliche ACL fehlt für $path: $expected"
+}
+
+assert_directory_acl() {
+    local path="$1"
+    [[ -d "$path" && ! -L "$path" ]] || fail "Ungültiges Gate-Verzeichnis: $path"
+    assert_acl_line "$path" 'user::rwx'
+    assert_acl_line "$path" "user:$installer_uid:--x"
+    assert_acl_line "$path" 'group::---'
+    assert_acl_line "$path" 'mask::--x'
+    assert_acl_line "$path" 'other::---'
+    [[ "$("$getfacl_bin" -ncp -- "$path" | grep -Ec '^user:[0-9]+:')" -eq 1 ]] \
+        || fail "Verzeichnis besitzt eine zusätzliche benannte Benutzer-ACL: $path"
+    ! "$getfacl_bin" -ncp -- "$path" | grep -q '^default:' \
+        || fail "Verzeichnis besitzt eine unerlaubte Default-ACL: $path"
+}
+
+assert_archive_acl() {
+    local archive="$1"
+    assert_acl_line "$archive" 'user::rw-'
+    assert_acl_line "$archive" "user:$installer_uid:r--"
+    assert_acl_line "$archive" 'group::---'
+    assert_acl_line "$archive" 'mask::r--'
+    assert_acl_line "$archive" 'other::---'
+    [[ "$("$getfacl_bin" -ncp -- "$archive" | grep -Ec '^user:[0-9]+:')" -eq 1 ]] \
+        || fail 'Archiv besitzt eine zusätzliche benannte Benutzer-ACL.'
+    if "$getfacl_bin" -ncp -- "$archive" | grep -Eq "^user:$installer_uid:.*w"; then
+        fail 'Installer-Benutzer besitzt unerlaubtes Schreibrecht auf das Archiv.'
+    fi
+}
+
+apply_upload_acl() {
+    local run_dir="$1"
+    local archive="$2"
+
+    "$setfacl_bin" -b -- "$incoming_root" "$run_dir" "$archive"
+    "$setfacl_bin" -k -- "$incoming_root" "$run_dir"
+    chmod 700 -- "$incoming_root" "$run_dir"
+    chmod 600 -- "$archive"
+    "$setfacl_bin" -m "u:$installer_uid:--x,g::---,m::--x,o::---" -- "$incoming_root" "$run_dir"
+    "$setfacl_bin" -m "u:$installer_uid:r--,g::---,m::r--,o::---" -- "$archive"
+
+    assert_directory_acl "$incoming_root"
+    assert_directory_acl "$run_dir"
+    assert_archive_acl "$archive"
+}
+
+gate_upload() {
+    local run_id="$1"
+    local attempt="$2"
+    local app_id="$3"
+    local run_dir archive temporary size
+
+    validate_common "$run_id" "$attempt" "$app_id"
+    require_acl_tools
+    assert_incoming_root
+
+    run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
+    archive="$(archive_path "$run_id" "$attempt" "$app_id")"
+    [[ ! -e "$run_dir" && ! -L "$run_dir" ]] || fail 'Run-Verzeichnis existiert bereits.'
+    install -d -m 700 -- "$run_dir"
+    temporary="$run_dir/.upload.$$"
+    head -c "$((max_archive_bytes + 1))" > "$temporary"
+    chmod 600 -- "$temporary"
+    size="$(stat -c '%s' -- "$temporary")"
+    if [[ "$size" -le 0 || "$size" -gt "$max_archive_bytes" ]]; then
+        rm -f -- "$temporary"
+        fail 'Archivgröße liegt außerhalb des erlaubten Bereichs.'
+    fi
+    mv -- "$temporary" "$archive"
+    assert_owned_regular_file "$archive"
+    apply_upload_acl "$run_dir" "$archive"
+    "$logger_bin" -t teamcloud-staging-ssh -- "UPLOAD run=$run_id attempt=$attempt app=$app_id bytes=$size"
+}
+
+gate_install() {
+    local run_id="$1"
+    local attempt="$2"
+    local app_id="$3"
+    local commit="$4"
+    local expected_hash="$5"
+    local run_dir archive
+
+    validate_common "$run_id" "$attempt" "$app_id"
+    [[ "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ && "$expected_hash" =~ ^[0-9a-f]{64}$ ]] \
+        || fail 'Ungültige Commit-ID oder SHA-256-Prüfsumme.'
+    require_acl_tools
+    [[ -x "$sudo_bin" ]] || fail "Sudo fehlt: $sudo_bin"
+    [[ -x "$install_wrapper" ]] || fail "Installationswrapper fehlt: $install_wrapper"
+
+    run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
+    archive="$(archive_path "$run_id" "$attempt" "$app_id")"
+    assert_owned_regular_file "$archive"
+    assert_directory_acl "$incoming_root"
+    assert_directory_acl "$run_dir"
+    assert_archive_acl "$archive"
+
+    "$logger_bin" -t teamcloud-staging-ssh -- "INSTALL run=$run_id attempt=$attempt app=$app_id"
+    "$sudo_bin" -n -u "$installer_user" "$install_wrapper" \
+        "$archive" "$app_id" "$commit" "$expected_hash"
+}
+
+gate_cleanup() {
+    local run_id="$1"
+    local attempt="$2"
+    local app_id="$3"
+    local run_dir
+
+    validate_common "$run_id" "$attempt" "$app_id"
+    assert_incoming_root
+    run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
+    [[ ! -L "$run_dir" ]] || fail 'Run-Verzeichnis ist ein unerlaubter Symlink.'
+    rm -rf -- "$run_dir"
+    "$logger_bin" -t teamcloud-staging-ssh -- "CLEANUP run=$run_id attempt=$attempt app=$app_id"
+}
+
+parse_original_command() {
+    local -a parts=()
+    read -r -a parts <<< "${SSH_ORIGINAL_COMMAND:-}"
+    [[ "${#parts[@]}" -ge 2 ]] || fail 'SSH_ORIGINAL_COMMAND fehlt oder ist ungültig.'
+    case "${parts[0]}" in
+        teamcloud-staging|/usr/local/bin/teamcloud-staging) ;;
+        *) fail 'SSH_ORIGINAL_COMMAND ruft nicht das freigegebene Gate auf.' ;;
+    esac
+    printf '%s\0' "${parts[@]:1}"
+}
+
+main() {
+    local -a arguments=("$@")
+    if [[ "${#arguments[@]}" -eq 0 ]]; then
+        mapfile -d '' -t arguments < <(parse_original_command)
+    fi
+    [[ "$(id -un)" == "$gate_owner" ]] || fail "Gate muss als $gate_owner laufen."
+
+    case "${arguments[0]:-}" in
+        upload)
+            [[ "${#arguments[@]}" -eq 4 ]] || { usage; exit 2; }
+            gate_upload "${arguments[1]}" "${arguments[2]}" "${arguments[3]}"
+            ;;
+        install)
+            [[ "${#arguments[@]}" -eq 6 ]] || { usage; exit 2; }
+            gate_install "${arguments[1]}" "${arguments[2]}" "${arguments[3]}" "${arguments[4]}" "${arguments[5]}"
+            ;;
+        cleanup)
+            [[ "${#arguments[@]}" -eq 4 ]] || { usage; exit 2; }
+            gate_cleanup "${arguments[1]}" "${arguments[2]}" "${arguments[3]}"
+            ;;
+        *)
+            usage
+            exit 2
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
