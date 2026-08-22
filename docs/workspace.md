@@ -70,6 +70,17 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
+## Lokale Test- und Demokonten
+
+Für alle ausschließlich in der lokalen Entwicklungsumgebung erzeugten Test-
+und Demokonten gilt: Das initiale Passwort entspricht exakt dem Benutzernamen.
+Diese bewusst einfache Vorgabe dient der lokalen manuellen Abnahme und darf
+weder in Produktions-, Staging- oder öffentlich erreichbare Umgebungen noch
+in echte Konten oder externe Benutzer-Backends übernommen werden. Vorhandene
+fremde, produktive oder LDAP-verwaltete Konten werden dafür niemals
+umgewidmet. App-spezifische Demo-Packs verwenden die gemeinsame lokale
+Provisionierung; abweichende lokale Testskripte halten denselben Vertrag ein.
+
 App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App
 führt außerdem die gemeinsamen Skills `work-in-nextcloud-app` und
 `test-driven-change` als normale lokale Dateien unter `.agents/skills/` mit.
@@ -325,7 +336,31 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 
 `check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
 
-DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+Ein Releasebau löscht keine älteren Release Candidates. Eine Bereinigung ist
+ein eigener Auftrag nach erfolgreichem Neubau. Zuerst wird ausschließlich die
+Vorschau geprüft:
+
+```bash
+scripts/prune-ad-suite-release-candidates.sh \
+  --dist-root <DIST-ROOT> \
+  --keep-label nc34-rcN
+```
+
+Erst die Wiederholung desselben Aufrufs mit `--execute` entfernt die exakt
+ausgegebenen, validierten lokalen `nc34-rcN`-Artefakte. Der benannte RC und
+finale Releases bleiben erhalten. Gelöschte Artefakte sind nur aus einer
+anderen Kopie oder durch einen reproduzierbaren Neubau der exakten
+Quellcommits wiederherstellbar.
+
+DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `scripts/verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+
+Der schnelle Parent-Check prüft eindeutig ausgeschriebene technische Pfade in
+der aktuellen Betriebs-, Architektur- und Vertragsdokumentation gegen den
+Workspace. Nicht mehr vorhandene exakte Pfade blockieren. Bloße technische
+Basenames ohne Repositorykontext bleiben wegen möglicher Mehrdeutigkeit eine
+Warnung. Historische Dateien unter `docs/plans/` sind von diesem laufenden
+Vertrag eng ausgenommen; ihr historischer Stand wird nicht nachträglich auf
+den aktuellen Quellbaum umgeschrieben.
 
 Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln und die lokale `AGENTS.md` samt lokalem Skill lesen. Der Parent startet mit `sandbox_mode = "workspace-write"` und `approval_policy = "on-request"`, damit ausdrücklich beauftragte Änderungen sowie gezieltes Staging und Committen innerhalb des Workspaces möglich sind. Dieser technische Schreibzugriff erteilt keine fachliche Schreibfreigabe und ersetzt weder Repository-Grenzen noch Git-Regeln. Externe Connector-/MCP-Systeme bleiben separat durch Auftrag und Rollenregeln begrenzt. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen. Schreibende Cross-App-Arbeit ist ein ausdrücklich beauftragter Sonderlauf; `.gitignore` ersetzt diese Grenze nicht.
 

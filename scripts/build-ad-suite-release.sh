@@ -171,10 +171,6 @@ done
 "$reproducible_archiver" "$bundle" "$dist_root" "$(basename "$release_dir")"
 (cd "$dist_root" && sha256sum "$(basename "$bundle")" > "$(basename "$bundle").sha256")
 
-if [[ "$release_label" =~ ^nc34-rc[0-9]+$ ]]; then
-    "$workspace/scripts/prune-ad-suite-release-candidates.sh" --dist-root "$dist_root" --keep-label "$release_label"
-fi
-
 echo "AD-Suite-Release erstellt:"
 echo "  $release_dir"
 echo "  $bundle"

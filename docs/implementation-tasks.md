@@ -39,33 +39,11 @@ Abnahmekriterien:
   eingeführt, solange bekannte Apps den Vertrag noch nicht realistisch
   erfüllen können.
 
-## PARENT-DOC-REFS – Technische Dokumentreferenzen prüfen
-
-Status: bereit zur Umsetzung
-
-Umfang:
-
-- Eindeutig maschinenlesbare Klassen-, Background-Job-, Skript- und
-  Repositorypfade aus Betriebsdokumentation gegen die technische Quelle
-  prüfen.
-- Bereits vorhandene Versions-, Release- und Skill-Synchronisationschecks
-  wiederverwenden und nicht duplizieren.
-- Semantische Aussagen, Roadmap-Inhalte und frei formulierte Beispiele nicht
-  als vermeintlich exakten technischen Vertrag behandeln.
-
-Abnahmekriterien:
-
-- Ein zunächst roter Fixture-Test belegt mindestens eine veraltete technische
-  Referenz und wird durch den kleinsten neuen Check grün.
-- Exakte Referenzen blockieren bei Nichtexistenz; heuristisch erkannte
-  Referenzen melden zunächst nur eine Warnung mit enger, dokumentierter
-  Ausnahme.
-- Der Check ist in `scripts/check-fast` eingebunden und erzeugt bei korrekter
-  Dokumentation keine Warnungen.
-
 ## PARENT-RC-CLEANUP – RC-Bereinigung explizit machen
 
-Status: bereit zur Umsetzung
+Status: im aktuellen Arbeitsstand umgesetzt und im Parent-Schnelltest grün;
+sauberes Delivery-Gate durch den separaten Befund
+`adrecruitment/lib/Service/StatusMailService.php` blockiert
 
 Umfang:
 
