@@ -10,15 +10,22 @@ reader="$workspace/scripts/read-ad-product-catalog.php"
 
 php "$reader" validate >/dev/null
 mapfile -t products < <(php "$reader" products)
-expected=(adcalendar adplaner adurlaub adroom adrecruitment)
+expected=(adcalendar adplaner adurlaub adroom adrecruitment adbqplanung)
 [[ "${products[*]}" == "${expected[*]}" ]] || { echo 'AD-Produktliste oder Reihenfolge weicht ab.' >&2; exit 1; }
 
 mapfile -t full_suite < <(php "$reader" full-suite)
-expected_full=(localbase orgsuite "${expected[@]}")
+expected_full=(localbase orgsuite adcalendar adplaner adurlaub adroom adrecruitment)
 [[ "${full_suite[*]}" == "${expected_full[*]}" ]] || { echo 'Vollständige Suite enthält nicht alle katalogisierten Apps.' >&2; exit 1; }
+
+mapfile -t bundle_products < <(php "$reader" bundle-products)
+[[ "${bundle_products[*]}" == 'adcalendar adplaner adurlaub adroom adrecruitment' ]] || { echo 'Nicht freigegebene Produkte gelangen in Produktbundles.' >&2; exit 1; }
 
 mapfile -t recruitment_bundle < <(php "$reader" product-bundle adrecruitment)
 [[ "${recruitment_bundle[*]}" == 'localbase orgsuite adrecruitment' ]] || { echo 'Recruitment-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
+if php "$reader" product-bundle adbqplanung >/dev/null 2>&1; then
+    echo 'BQ-Planer besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle.' >&2
+    exit 1
+fi
 
 for product in "${products[@]}"; do
     route="$(php "$reader" field "$product" route)"

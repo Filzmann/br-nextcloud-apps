@@ -6,7 +6,7 @@ installer="$workspace/scripts/install-ad-product-bundle.sh"
 catalog="$workspace/localbase/resources/ad-product-catalog.json"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
-mapfile -t products < <(php "$catalog_reader" products)
+mapfile -t products < <(php "$catalog_reader" bundle-products)
 mapfile -t full_suite_apps < <(php "$catalog_reader" full-suite)
 temporary="$(mktemp -d)"
 

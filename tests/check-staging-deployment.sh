@@ -194,8 +194,13 @@ assert_contains "$workflow" 'workflow_call:'
 assert_contains "$workflow" 'environment: staging'
 assert_contains "$workflow" 'STAGING_SSH_PRIVATE_KEY'
 assert_contains "$workflow" 'STAGING_SSH_KNOWN_HOSTS'
-assert_contains "$workflow" 'sudo -n -u simonbeyer_sys /usr/local/sbin/teamcloud-staging-install'
-assert_contains "$workflow" '/var/tmp/teamcloud-staging-incoming'
+assert_contains "$workflow" '- name: Archiv über SSH-Gate installieren'
+assert_contains "$workflow" 'teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
+assert_contains "$workflow" '< "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"'
+assert_contains "$workflow" 'teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${GITHUB_SHA} ${SHA256}'
+assert_contains "$workflow" '- name: Temporäre Serverdateien entfernen'
+assert_contains "$workflow" 'if: always()'
+assert_contains "$workflow" 'teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
 if grep -Fq '$STAGING_BASE_URL/apps/$APP_ID/' "$workflow"; then
@@ -206,6 +211,15 @@ if grep -Fq 'control/scripts/install-staging-app.sh' "$workflow"; then
 fi
 if grep -Fq 'CONTROL_REPOSITORY_TOKEN' "$workflow"; then
     fail 'Öffentliches Parent-Repository verlangt unnötig ein zusätzliches Zugriffstoken.'
+fi
+if grep -Eq '(^|[[:space:]])scp([[:space:]]|$)' "$workflow"; then
+    fail 'Workflow umgeht das SSH-Gate mit einem direkten SCP-Aufruf.'
+fi
+if grep -Fq 'sudo -n -u simonbeyer_sys' "$workflow"; then
+    fail 'Workflow umgeht das SSH-Gate mit einem direkten Sudo-Aufruf.'
+fi
+if grep -Fq '/var/tmp/teamcloud-staging-incoming' "$workflow"; then
+    fail 'Workflow greift direkt auf das serverseitige Incoming-Verzeichnis zu.'
 fi
 
 assert_file "$server_wrapper"
