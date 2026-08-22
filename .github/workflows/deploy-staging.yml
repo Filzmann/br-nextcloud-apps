@@ -109,3 +109,21 @@ jobs:
           curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET"
           grep -Eiq '^content-type:[[:space:]]*text/css([;[:space:]]|$)' "$css_headers"
           grep -Eiq '^content-type:[[:space:]]*(application|text)/(javascript|x-javascript)([;[:space:]]|$)' "$js_headers"
+
+      - name: Temporäre Serverdateien entfernen
+        if: always()
+        run: |
+          set -euo pipefail
+
+          target="$STAGING_USER@$STAGING_HOST"
+
+          if [[ -f "$RUNNER_TEMP/staging-ssh/key" && -f "$RUNNER_TEMP/staging-ssh/known_hosts" ]]; then
+            ssh \
+              -i "$RUNNER_TEMP/staging-ssh/key" \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
+              "$target" \
+              "teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" || true
+          fi
