@@ -91,7 +91,7 @@ command -v getfacl
 id simonbeyer_sys
 ```
 
-Das Gate prüft dieselben Voraussetzungen bei jedem Upload und Install erneut
+Das Gate prüft dieselben Voraussetzungen bei Upload, Install und Cleanup erneut
 und bricht bei fehlenden Werkzeugen, unbekanntem Zielbenutzer oder abweichenden
 ACLs fail-closed ab.
 
@@ -125,6 +125,10 @@ getfacl -n /var/tmp/teamcloud-staging-incoming
 Die Gruppen- und Other-Einträge müssen effektiv `---` bleiben. Die in `ls -l`
 angezeigten Gruppenbits bilden bei erweiterten ACLs die ACL-Maske ab und sind
 deshalb kein Ersatz für die Prüfung mit `getfacl`.
+Das Gate repariert diesen administrativ gesetzten Zustand nicht. Upload,
+Install und Cleanup lehnen einen abweichenden Owner oder ACL-Vertrag des
+Incoming-Roots geschlossen ab; nur das neu erzeugte Run-Verzeichnis und das
+fertige Archiv erhalten beim Upload ihre gezielten ACLs.
 
 Die Sudoers-Regel wird ausschließlich mit `visudo` angelegt:
 
@@ -164,14 +168,8 @@ probe=/var/tmp/teamcloud-staging-incoming/999999-1-br_permission_matrix/br_permi
 test "$(stat -c %U -- "$probe")" = filzmann
 getfacl -n "$probe"
 sudo -u simonbeyer_sys test -r "$probe"
-if sudo -u simonbeyer_sys test -w "$probe"; then
-  echo 'FEHLER: Installer kann das Archiv schreiben.' >&2
-  exit 1
-fi
-if sudo -u <UNBETEILIGTER-BENUTZER> test -r "$probe"; then
-  echo 'FEHLER: Unbeteiligter Benutzer kann das Archiv lesen.' >&2
-  exit 1
-fi
+! sudo -u simonbeyer_sys test -w "$probe"
+! sudo -u <UNBETEILIGTER-BENUTZER> test -r "$probe"
 sudo -u filzmann /usr/local/bin/teamcloud-staging \
   cleanup 999999 1 br_permission_matrix
 ```

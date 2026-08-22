@@ -1,5 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash -p
 set -euo pipefail
+
+PATH='/usr/sbin:/usr/bin:/sbin:/bin'
+export PATH
+umask 077
+unset BASH_ENV ENV CDPATH
 
 incoming_root='/var/tmp/teamcloud-staging-incoming'
 gate_owner='filzmann'
@@ -8,8 +13,8 @@ installer_uid=''
 install_wrapper='/usr/local/sbin/teamcloud-staging-install'
 sudo_bin='/usr/bin/sudo'
 logger_bin='/usr/bin/logger'
-setfacl_bin='setfacl'
-getfacl_bin='getfacl'
+setfacl_bin=''
+getfacl_bin=''
 max_archive_bytes=104857600
 
 usage() {
@@ -31,6 +36,20 @@ require_command() {
 }
 
 require_acl_tools() {
+    if [[ -z "$setfacl_bin" ]]; then
+        setfacl_bin="$(command -v setfacl 2>/dev/null || true)"
+    fi
+    if [[ -z "$getfacl_bin" ]]; then
+        getfacl_bin="$(command -v getfacl 2>/dev/null || true)"
+    fi
+    case "$setfacl_bin" in
+        /usr/bin/setfacl|/usr/sbin/setfacl|/bin/setfacl|/sbin/setfacl) ;;
+        *) fail 'setfacl wurde nicht in einem freigegebenen Systempfad gefunden.' ;;
+    esac
+    case "$getfacl_bin" in
+        /usr/bin/getfacl|/usr/sbin/getfacl|/bin/getfacl|/sbin/getfacl) ;;
+        *) fail 'getfacl wurde nicht in einem freigegebenen Systempfad gefunden.' ;;
+    esac
     require_command "$setfacl_bin"
     require_command "$getfacl_bin"
     installer_uid="$(id -u "$installer_user" 2>/dev/null)" \
@@ -114,14 +133,13 @@ apply_upload_acl() {
     local run_dir="$1"
     local archive="$2"
 
-    "$setfacl_bin" -b -- "$incoming_root" "$run_dir" "$archive"
-    "$setfacl_bin" -k -- "$incoming_root" "$run_dir"
-    chmod 700 -- "$incoming_root" "$run_dir"
+    "$setfacl_bin" -b -- "$run_dir" "$archive"
+    "$setfacl_bin" -k -- "$run_dir"
+    chmod 700 -- "$run_dir"
     chmod 600 -- "$archive"
-    "$setfacl_bin" -m "u:$installer_uid:--x,g::---,m::--x,o::---" -- "$incoming_root" "$run_dir"
+    "$setfacl_bin" -m "u:$installer_uid:--x,g::---,m::--x,o::---" -- "$run_dir"
     "$setfacl_bin" -m "u:$installer_uid:r--,g::---,m::r--,o::---" -- "$archive"
 
-    assert_directory_acl "$incoming_root"
     assert_directory_acl "$run_dir"
     assert_archive_acl "$archive"
 }
@@ -135,6 +153,7 @@ gate_upload() {
     validate_common "$run_id" "$attempt" "$app_id"
     require_acl_tools
     assert_incoming_root
+    assert_directory_acl "$incoming_root"
 
     run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
     archive="$(archive_path "$run_id" "$attempt" "$app_id")"
@@ -171,6 +190,7 @@ gate_install() {
 
     run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
     archive="$(archive_path "$run_id" "$attempt" "$app_id")"
+    assert_incoming_root
     assert_owned_regular_file "$archive"
     assert_directory_acl "$incoming_root"
     assert_directory_acl "$run_dir"
@@ -188,7 +208,9 @@ gate_cleanup() {
     local run_dir
 
     validate_common "$run_id" "$attempt" "$app_id"
+    require_acl_tools
     assert_incoming_root
+    assert_directory_acl "$incoming_root"
     run_dir="$(run_directory "$run_id" "$attempt" "$app_id")"
     [[ ! -L "$run_dir" ]] || fail 'Run-Verzeichnis ist ein unerlaubter Symlink.'
     rm -rf -- "$run_dir"
