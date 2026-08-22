@@ -75,12 +75,13 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
           chmod 600 "$RUNNER_TEMP/staging-ssh/key" "$RUNNER_TEMP/staging-ssh/known_hosts"
 
-      - name: Archiv installieren
+      - name: Archiv über SSH-Gate installieren
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/staging-package/metadata.env"
-          remote_dir="/var/tmp/teamcloud-staging-incoming/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
+
           target="$STAGING_USER@$STAGING_HOST"
+
           ssh_options=(
             -i "$RUNNER_TEMP/staging-ssh/key"
             -o BatchMode=yes
@@ -88,18 +89,15 @@ jobs:
             -o StrictHostKeyChecking=yes
             -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts"
           )
-          ssh "${ssh_options[@]}" "$target" "mkdir -p '$remote_dir'"
-          scp "${ssh_options[@]}" \
-            "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz" \
-            "$target:$remote_dir/"
-          printf -v install_command \
-            "sudo -n -u simonbeyer_sys /usr/local/sbin/teamcloud-staging-install %q %q %q %q" \
-            "$remote_dir/$APP_ID.tar.gz" \
-            "$APP_ID" \
-            "$GITHUB_SHA" \
-            "$SHA256"
-          ssh "${ssh_options[@]}" "$target" "$install_command"
-          ssh "${ssh_options[@]}" "$target" "rm -rf '$remote_dir'"
+
+          ssh "${ssh_options[@]}" \
+            "$target" \
+            "teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" \
+            < "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"
+
+          ssh "${ssh_options[@]}" \
+            "$target" \
+            "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${GITHUB_SHA} ${SHA256}"
 
       - name: Öffentliche Assets prüfen
         run: |
@@ -111,19 +109,3 @@ jobs:
           curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET"
           grep -Eiq '^content-type:[[:space:]]*text/css([;[:space:]]|$)' "$css_headers"
           grep -Eiq '^content-type:[[:space:]]*(application|text)/(javascript|x-javascript)([;[:space:]]|$)' "$js_headers"
-
-      - name: Temporäre Serverdateien entfernen
-        if: always()
-        run: |
-          set -euo pipefail
-          remote_dir="/var/tmp/teamcloud-staging-incoming/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
-          target="$STAGING_USER@$STAGING_HOST"
-          if [[ -f "$RUNNER_TEMP/staging-ssh/key" && -f "$RUNNER_TEMP/staging-ssh/known_hosts" ]]; then
-            ssh \
-              -i "$RUNNER_TEMP/staging-ssh/key" \
-              -o BatchMode=yes \
-              -o IdentitiesOnly=yes \
-              -o StrictHostKeyChecking=yes \
-              -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
-              "$target" "rm -rf '$remote_dir'" || true
-          fi
