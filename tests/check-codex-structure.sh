@@ -528,6 +528,7 @@ check_fast_text = (workspace / 'scripts/check-fast').read_text(encoding='utf-8')
 delivery_wrapper_text = (workspace / 'scripts/check-ad-suite-delivery').read_text(encoding='utf-8')
 delivery_verify_text = (workspace / 'scripts/verify-ad-suite-delivery.sh').read_text(encoding='utf-8')
 parent_contract_scripts = (
+    'check-parent-governance-contract.sh',
     'check-ad-suite-coverage-baseline.sh',
     'check-ad-suite-ci-contract.sh',
     'check-ad-suite-standalone-contract.sh',

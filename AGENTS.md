@@ -9,6 +9,8 @@ Es enthält keinen deploybaren App-Code.
 - Menschlicher Einstieg: `README.md`
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
+- Governance-Hierarchie für Subrepositories:
+  `docs/parent-governance-contract.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
 - Öffentlicher Privacy-Providervertrag: `docs/privacy-provider-guide.md`
 - IKT-/Datenschutz-Zuordnung der Berechtigungsmatrix:

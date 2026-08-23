@@ -93,6 +93,13 @@ Laufzeitabhängigkeit. Die Parent-Fassungen sind kanonisch, das
 Repositorymanifest benennt beide Pflicht-Skills und die Strukturprüfung
 erzwingt bytegleiche lokale Kopien.
 
+Die Governance-Hierarchie steht kanonisch in
+`docs/parent-governance-contract.md`. Ihr versionierter Block wird zusätzlich
+vollständig in jeder Subrepository-`AGENTS.md` mitgeführt: Repository-lokale Regeln bleiben bei
+einem Einzel-Checkout vollständig, dürfen anwendbare Parent-Verträge aber nur
+konkretisieren oder verschärfen. Der Parent-Contract-Test prüft jede im
+Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
+
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
