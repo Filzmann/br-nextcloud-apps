@@ -1,0 +1,5 @@
+services:
+  web:
+    volumes:
+      - ${DDEV_APPROOT}/../filzmann_data_protection:/var/www/html/html/custom_apps/filzmann_data_protection:cached
+

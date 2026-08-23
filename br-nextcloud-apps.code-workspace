@@ -49,6 +49,10 @@
       "path": "adbqplanung"
     },
     {
+      "name": "filzmann_data_protection",
+      "path": "filzmann_data_protection"
+    },
+    {
       "name": "ad-suite",
       "path": "ad-suite"
     }

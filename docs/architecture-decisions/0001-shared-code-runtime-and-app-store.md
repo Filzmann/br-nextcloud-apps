@@ -3,6 +3,7 @@
 - Status: angenommen
 - Entscheidung: 2026-08-08
 - Ergänzung PHP-Autoloading: 2026-08-09
+- Ergänzung Standalone-Privacy-Verweis: 2026-08-23
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Noch nicht umgesetzt: die in dieser Datei beschriebene LocalBase-Migration
@@ -388,6 +389,7 @@ aktuelle offizielle Dokumentation geprüft.
 | `DemoAccountProvisioningService` mit zentralem Kontoregister | mehrere AD-Demo-Packs | B-intern, **wahrscheinlich / nicht migrieren bis Produktentscheid** | gemeinsam gespeicherte Eigentümerschaft verhindert lokale A-Einstufung; für öffentliche Releases optionalen Demo-Lebenszyklus und Entfernung klären | hoch: Konten/Gruppen, Datenschutz, LDAP und Deinstallation | 4 |
 | Produktkatalog und `StandaloneAppNavigationService` | alle AD-Produkte, OrgSuite, Parent-Installer | A für statischen Vertrag/Adapter oder B als Suite-Dienst, **derzeit nicht entscheidbar** | Produktownership, externe Namen und Updatequelle zuerst entscheiden; keine private Katalogdatei still in Store-App voraussetzen | hoch: Installation, Navigation, interne IDs, Releasekopplung | 3 |
 | OrgSuite-Adapterlogik | OrgSuite und einzelne AD-Produkte | B, **wahrscheinlich** | Navigation/Adminplatzierung gehört zu einer bewusst versionierten Suite-Laufzeit, nicht in generische Bibliothek | mittel bis hoch: öffentliche Zusatz-App muss sachlich zumutbar sein | 3 |
+| Privacy-DTOs, Providerinterfaces, Registry, Aggregation, Self-Service, Admin-Auskunft und künftige Privacy-Jobs; heute im LocalBase-Pilot | LocalBase sowie reale Provider in AD Kalender, AD Raumplaner, AD Urlaub, AD Planer und AD Recruitment | B, **sofort eindeutig / verifiziert**; Ziel durch ADR 0002 entschieden | geschlossene Migration in die Standalone-App `filzmann_data_protection`; Fachprovider bleiben lokal, kein Daten-Fallback und keine zweite aktive Vertragsquelle | sehr hoch: öffentliche API, Rechte, Versionshandshake, optionale Installation, Consumer-Migration und Rückbau; Store-Gate bis zum Nachweis blockiert | 1 |
 | LocalBase-spezifischer Organisationseditor/Exporter | keine zweite semantisch identische UI gefunden | B als Adminoberfläche, nicht A; **nicht migrieren** | gehört zur zentralen Organisationsverwaltung; ähnliche Fachapp-UIs sind keine zweite Verwendung | hoch: Personendarstellung, Export, Accessibility | 3 |
 | app-spezifische Fachmodelle, Repositorys, Workflows und UI-Komponenten außerhalb LocalBase | jeweilige Fachapp | C, **verifiziert / nicht migrieren** | ähnliche CRUD-/Dialog-/Kalenderformen haben unterschiedliche Fachsemantik und Änderungsgründe | niedrig bei lokalem Verbleib; voreilige Abstraktion wäre Store-Kopplung | fortlaufend |
 
@@ -404,6 +406,12 @@ Prefixing, Provider-/Consumer-Tests und Releaseintegration machen daraus eine
 gebundelte Bibliothek. Ebenso bleibt Kategorie B vorerst eine Klassifikation;
 Name, App-ID und Umfang des späteren Laufzeitdienstes sind noch nicht
 entschieden.
+
+Für die Privacy-Komponente sind Produktname und App-ID mit
+`Data Protection Center` beziehungsweise `filzmann_data_protection`
+entschieden. ADR 0002 ordnet sie als Standalone-App der Kategorie B ein und
+ersetzt damit ausschließlich die frühere Zielannahme, die öffentliche
+Privacy-Runtime dauerhaft in LocalBase zu belassen.
 
 ## Migrationsplan in prüfbaren Schritten
 
@@ -458,8 +466,8 @@ verbindlich ist, dass neue Apps nicht automatisch von LocalBase abhängen.
 Dokumentiert, aber noch nicht technisch umgesetzt sind die Paketextraktion,
 Namespace-Isolierung, API-Versionierung und LocalBase-Migration.
 
-Noch zu entscheiden sind insbesondere Name und App-ID eines möglichen
-Kategorie-B-Dienstes, öffentliche Zumutbarkeit dieser Zusatz-App, genaue
+Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
+öffentliche Zumutbarkeit dieser Zusatz-App, genaue
 Composer-/Frontend-Paketgrenzen, Prefixing-Werkzeug, Lizenzfreigabe aller
 gebündelten Bestandteile, Store-Ziel der BR-Apps, Umgang mit Demo-Packs und
 Produktkatalog sowie die Deinstallationspolitik für zentrale AppConfig-Daten.

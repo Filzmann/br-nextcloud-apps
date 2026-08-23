@@ -66,6 +66,7 @@ echo '== Parent-Contract-Tests =='
 bash tests/check-document-references.sh
 scripts/check-document-references
 bash tests/check-privacy-architecture-contract.sh
+bash tests/check-ikt-privacy-portfolio-contract.sh
 bash tests/check-ad-suite-coverage-baseline.sh
 bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh

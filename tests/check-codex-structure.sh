@@ -26,7 +26,10 @@ required_parent_files=(
     README.md
     docs/architecture.md
     docs/privacy-architecture.md
+    docs/privacy-provider-guide.md
     docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md
+    docs/architecture-decisions/0002-standalone-privacy-platform.md
+    docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md
     docs/plans/codex-structure-correction.md
     docs/plans/codex-structure-migration.md
     docs/workspace.md
@@ -38,6 +41,7 @@ required_parent_files=(
     scripts/verify-ad-suite-delivery.sh
     tests/check-codex-structure.sh
     tests/check-privacy-architecture-contract.sh
+    tests/check-ikt-privacy-portfolio-contract.sh
 )
 required_executables=(
     scripts/check-fast

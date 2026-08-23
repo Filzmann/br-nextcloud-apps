@@ -21,8 +21,9 @@ description: Create and wire a new, separately versioned Nextcloud app repositor
    The last choice blocks completion of runtime and release wiring. Never add
    a LocalBase dependency by default.
 6. If personal data is already part of the requested scope, read
-   `docs/privacy-architecture.md` completely and identify the real subject
-   types and person references before choosing a provider or retention design.
+   `docs/privacy-architecture.md` and `docs/privacy-provider-guide.md`
+   completely and identify the real subject types and person references
+   before choosing a provider or retention design.
 
 ## Workflow
 
@@ -40,8 +41,10 @@ description: Create and wire a new, separately versioned Nextcloud app repositor
 10. When personal data belongs to the app scope, add an app-local planning
     task covering subject identifiers, `PersonalDataProvider`, third-person
     content, retention triggers, supported measures and tests according to
-    `docs/privacy-architecture.md`. The provider need not be implemented in
-    the initial scaffold, but the decision task must not disappear.
+    `docs/privacy-architecture.md` and `docs/privacy-provider-guide.md`. The
+    provider need not be implemented in the initial scaffold, but the
+    decision task must not disappear. Do not add a SQL, reflection, file or
+    migration-export fallback when the standalone Privacy-App is missing.
 11. From the new Git root, confirm that `AGENTS.md` and both required local skills resolve locally, run the app's declared fast PHP and JavaScript checks, and inspect its Git status.
 12. From the Parent, compare both local skills byte-for-byte with their canonical skills and run the structure checks. Run state-changing DDEV or `occ app:enable` only when explicitly requested or approved.
 

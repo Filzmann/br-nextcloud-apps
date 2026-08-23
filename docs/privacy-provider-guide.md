@@ -1,0 +1,161 @@
+# Leitfaden für Nextcloud-Datenschutzprovider
+
+Stand: 23. August 2026
+
+Dieser Leitfaden beschreibt den geplanten öffentlichen Vertrag, mit dem eine
+Nextcloud-App personenbezogene Daten für eine verständliche Art.-15-Auskunft
+bereitstellt. Er ist eine Entwicklerempfehlung und keine Behauptung, eine App
+oder Installation erfülle allein dadurch die DSGVO.
+
+Normative Architektur- und Eigentumsentscheidungen stehen in
+[`privacy-architecture.md`](privacy-architecture.md) und
+[`ADR 0002`](architecture-decisions/0002-standalone-privacy-platform.md).
+
+## Grundsatz
+
+Die datenbesitzende App erzeugt selbst eine zulässige, strukturierte
+Projektion. Die Privacy-App aggregiert nur. Sie kennt weder Tabellennamen noch
+private Entitäten oder Speicherpfade eines Providers.
+
+Es gibt keinen SQL-Fallback, keine Reflection fremder Modelle, keine
+Volltextsuche durch fremde Dateien und keine direkte Abfrage fremder
+AppConfig-/UserConfig-Werte. Ein fehlender Provider bleibt sichtbar
+`missing`; er wird nicht durch Heuristik kaschiert.
+
+## Minimalvertrag Version 1
+
+Der kanonische Namespace ist
+`OCA\FilzmannDataProtection\PublicApi\V1`. Der erste pre-release Contract-Kern
+liegt in der Standalone-App; externe Consumer bleiben bis zur ausdrücklichen
+Freigabe und einem vollständigen Contract-Test-Kit blockiert. Fachlich
+benötigt Version 1 mindestens:
+
+```php
+interface PersonalDataProvider {
+    public function descriptor(): ProviderDescriptor;
+    public function collect(PersonalDataRequest $request): PersonalDataPage;
+}
+```
+
+`ProviderDescriptor` enthält eine stabile Provider- und App-ID,
+Vertragsversion, Anzeigename, unterstützte Subject-Typen, Fähigkeiten und
+Paginggrenzen. Der Versionshandshake erfolgt vor dem ersten Datenabruf.
+
+`PersonalDataRequest` enthält eine von der Privacy-App serverseitig gebundene
+`DataSubjectRef`, Sprache, Auskunftszweck, Seitenlimit und einen opaken Cursor.
+Ein Self-Service-Provider akzeptiert keine frei vom Browser gewählte UID.
+
+`PersonalDataPage` enthält verständliche Dateneinträge, Einschränkungen,
+Status und entweder einen nächsten opaken Cursor oder eine eindeutige
+Endmarke. Cursor-Paging darf Datensätze weder überspringen noch doppelt
+ausgeben; ein Provider muss Änderungen während eines längeren Exports
+kontrolliert als `partial` kenntlich machen oder einen stabilen Snapshot
+verwenden.
+
+## Erforderliche Art.-15-Angaben
+
+Ein Provider liefert je App und Datenart mindestens:
+
+- Datenkategorie, verständliche Bezeichnung und freigegebene Attribute;
+- Verarbeitungszweck;
+- Herkunft der Daten, soweit bekannt;
+- Empfänger oder Empfängerkategorien;
+- Aufbewahrungsfrist oder nachvollziehbare Kriterien;
+- Drittlandübermittlung oder deren Nichtvorliegen;
+- automatisierte Entscheidungen oder deren Nichtvorliegen;
+- Hinweis auf zurückgehaltene Drittpersonen- oder Sicherheitsinhalte;
+- technische Referenz, die keine fremde interne Primärschlüsselbedeutung
+  vortäuscht.
+
+Passwörter, Hashes, Tokens, App-Passwörter, OAuth-/CalDAV-Zugangsdaten,
+Schlüssel und andere Sicherheitsgeheimnisse werden nicht ausgegeben. Ihre
+Existenz und ihr Zweck können ohne Geheimniswert beschrieben werden.
+
+## Status und Vollständigkeit
+
+- `complete`: alle vom Provider für Subject, Anfrage und Seite zugesagten
+  Daten wurden geliefert;
+- `partial`: eine bekannte Teilmenge wurde geliefert und die Einschränkung ist
+  maschinen- sowie menschenlesbar benannt;
+- `not_applicable`: der Subject-Typ wird unterstützt, für diese Person liegen
+  aber keine auskunftspflichtigen Daten vor;
+- `failed`: der Provider konnte seine Antwort nicht sicher erzeugen;
+- `missing`: ein laut Coverage-Profil erwarteter Provider fehlt oder ist
+  inkompatibel.
+
+`complete` bezeichnet niemals die gesamte Nextcloud-Instanz, sondern nur den
+zugesagten Providerumfang. Das Gesamturteil entsteht erst aus einem
+administrativ nachvollziehbaren Coverage-Profil.
+
+## Registrierung und Betrieb ohne Privacy-App
+
+Die Providerintegration wird lazy über den typisierten Nextcloud-Event-
+Dispatcher registriert. Die Fachapp bleibt ohne aktive Privacy-App vollständig
+fachlich nutzbar. Providerklassen werden erst auf einen kompatiblen
+Registry-Aufruf instanziiert; ein fehlender Vertrag endet weder in einem
+PHP-Fatal-Error noch in einem alternativen Datenzugriff.
+
+Vor einer öffentlichen Freigabe muss jede Consumer-App folgende Matrix
+prüfen:
+
+| Zustand | Erwartung |
+| --- | --- |
+| Privacy-App fehlt | Fachapp funktioniert; keine Auskunftsintegration |
+| Privacy-App deaktiviert | Fachapp funktioniert; keine Providerinstanziierung |
+| kompatible Version | Provider registriert sich genau einmal |
+| inkompatible Version | kontrollierter `missing`-/Kompatibilitätsstatus |
+| Providerfehler | `failed`; andere Provider laufen weiter |
+
+Da Nextcloud keine automatische App-zu-App-Installation als Store-Vertrag
+bereitstellt, darf eine Consumer-App weder Installationsreihenfolge noch eine
+unkontrollierte Klassenauflösung voraussetzen.
+
+## Abgrenzung zu nativen Nextcloud-Funktionen
+
+`OCP\UserMigration\IUserMigrator` bleibt der native Vertrag für Export,
+Import und Datenportabilität zwischen Instanzen. Er ersetzt keinen
+`PersonalDataProvider`, weil ein Migrationsarchiv nicht automatisch Zwecke,
+Empfänger, Aufbewahrung, Drittpersonenschutz oder verständliche
+Vollständigkeit beschreibt.
+
+Eine App sollte möglichst einen gemeinsamen internen, berechtigungsgeprüften
+Projektionsservice verwenden und daraus getrennt Art.-15-Bericht und
+`IUserMigrator`-Export erzeugen. Die Ausgabeformate und Sicherheitsgrenzen
+bleiben verschieden.
+
+`RetentionProvider` und `SubjectLifecycleProvider` sind ebenfalls getrennte
+Verträge. Eine Auskunft löst niemals nebenbei Löschung, Anonymisierung oder
+Statusänderungen aus.
+
+## Contract-Test-Kit
+
+Die Standalone-App soll ein neutrales Contract-Test-Kit veröffentlichen. Ein
+Providerrelease belegt mindestens:
+
+- eigene Person erfolgreich, fremde oder manipulierte Person abgewiesen;
+- keine Nebenwirkung einer Auskunft;
+- Geheimnisse und nicht freigegebene Drittpersonendaten fehlen;
+- `complete`, `partial`, `not_applicable` und `failed` sind erreichbar und
+  korrekt begründet;
+- Cursor-Grenzen, letzte Seite, Wiederholung und veränderter Datenstand;
+- fehlende, deaktivierte und inkompatible Privacy-App ohne Fatal Error;
+- Providerfehler blockiert keinen nachfolgenden Provider;
+- synthetische, neutrale und datenschutzarme Fixtures.
+
+Das Test-Kit prüft den technischen Vertrag, nicht die rechtliche
+Vollständigkeit der konkreten Dateninventur. Diese bleibt Reviewaufgabe der
+datenbesitzenden App und der verantwortlichen Stelle.
+
+## Reviewfragen vor Veröffentlichung
+
+1. Welche realen Personentypen und Identifier unterstützt die App?
+2. Welche Tabellen, Dateien, AppData-, DAV-, Share-, Konfigurations-, Cache-
+   und Exportbestände gehören zum Inventar?
+3. Welche Einträge enthalten Inhalte oder Rechte anderer Personen?
+4. Welche Geheimnisse werden nur als Kategorie beschrieben?
+5. Wie werden mehr als eine Seite und gleichzeitige Änderungen behandelt?
+6. Woran erkennt der Aggregator den vollständigen Providerumfang?
+7. Welche Vertragsversionen sind kompatibel und wie wird Inkompatibilität
+   diagnostiziert?
+8. Verwenden Art.-15-Auskunft, Portabilität und Retention dieselbe kanonische
+   Fachdatenprojektion ohne ihre Zwecke zu vermischen?

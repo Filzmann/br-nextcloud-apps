@@ -1,6 +1,6 @@
 # App-übergreifende Datenschutzarchitektur
 
-Stand: 12. August 2026
+Stand: 23. August 2026
 
 Dieses Dokument ist die normative Root-Quelle für app-übergreifende
 Datenschutzauskunft, Datenlebenszyklen, Aufbewahrung, Löschung und
@@ -68,19 +68,39 @@ Nach
 (`docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`) ist
 die zentrale Datenschutzkomponente wegen öffentlicher Services, eigener
 Nextcloud-Oberfläche und app-übergreifender Koordination eine eigenständige
-Nextcloud-Laufzeit-App der Kategorie B, keine gebundelte Hilfsbibliothek. Die
-öffentlichen DTOs, Provider-Verträge, Registry und Aggregation werden in einer
-späteren Ausbaustufe in LocalBase umgesetzt. OrgSuite darf bei aktiver Suite
-einen Navigation- oder Adminadapter anbieten, ist aber weder
+Nextcloud-Laufzeit-App der Kategorie B, keine gebundelte Hilfsbibliothek.
+
+[`ADR 0002`](architecture-decisions/0002-standalone-privacy-platform.md)
+(`docs/architecture-decisions/0002-standalone-privacy-platform.md`) legt als
+Ziel die neutrale Standalone-App `filzmann_data_protection` fest. Sie besitzt
+künftig DTOs,
+Provider-Verträge, Registry, Aggregation, Coverage, Oberflächen, Audit und
+Jobs geschlossen. LocalBase bleibt der verifizierte Pilot und während der
+schrittweisen Migration rückbaufähig, ist aber nicht die dauerhafte
+Eigentümerin der öffentlichen Privacy-Runtime. OrgSuite darf bei aktiver
+Suite einen Navigation- oder Adminadapter anbieten, ist jedoch weder
 Fachdatenbesitzerin noch notwendige Runtime der Auskunft.
 
-Eine Fachapp, die einen Provider nutzt, muss vor ihrer Anbindung die
-kompatible LocalBase-Laufzeitvoraussetzung dokumentieren, kontrolliert prüfen
-und in ihrem Standalone-Liefervertrag als getrennte App erhalten. Es wird
-keine automatische App-zu-App-Installation oder unkontrollierte
-Versionsauflösung vorausgesetzt. Die aktuell noch nicht überall ausdrücklich
-abgesicherte Abhängigkeit ist eine Migrationsaufgabe und kein Grund für
-versteckte Klassenkopien.
+Fachapps bleiben ohne aktive Privacy-App fachlich nutzbar und registrieren
+ihre Provider lazy erst bei einem kompatiblen Registry-Aufruf. Ein
+Versionshandshake prüft Vertragsversion, Subject-Typen, Fähigkeiten und
+Paginggrenzen vor dem Datenabruf. Es wird keine automatische
+App-zu-App-Installation oder unkontrollierte Versionsauflösung vorausgesetzt.
+Bei fehlendem oder inkompatiblem Provider gilt sichtbar `missing`; es gibt
+kein Daten-Fallback über SQL, Reflection, Volltextsuche, fremde Speicherpfade
+oder `IUserMigrator`-Archive. Der öffentliche Integrationsvertrag und die
+Empfehlungen für andere App-Entwickler stehen in
+[`docs/privacy-provider-guide.md`](privacy-provider-guide.md).
+
+Die Berechtigungsmatrix ist nach
+[`ADR 0003`](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
+(`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`)
+perspektivisch im selben Portfolio IKT/Datenschutz angesiedelt, bleibt aber
+eine eigenständige Kategorie-B-App. Sie wird nicht in die Privacy-App
+verschmolzen. Matrixdaten, Scans, Baselines, Exporte, Audit und Rechte bleiben
+bei der heutigen App `br_permission_matrix`; ihre Ziel-ID ist
+`filzmann_permission_matrix`. Nur ihre Art.-15-Projektion wird später über den
+öffentlichen Providervertrag geliefert.
 
 ## Personenreferenzen
 
@@ -103,10 +123,13 @@ ihres Providers bedeutungslos.
 ## Provider-Registry
 
 Aktivierte Fachapps registrieren konkrete Provider über einen kleinen,
-typisierten LocalBase-Registrierungsvertrag. Eine Registrierung enthält eine
-stabile App-ID, Anzeigename, unterstützte Subject-Typen und die tatsächlich
-angebotenen Providerfähigkeiten. Doppelte App-IDs oder widersprüchliche
-Fähigkeiten werden abgelehnt.
+typisierten Vertrag der Standalone-App. Während der Migration ist der
+gleichartige LocalBase-Vertrag der charakterisierte Pilot, aber keine zweite
+dauerhafte Quelle. Eine Registrierung enthält eine stabile App-ID,
+Anzeigename, Vertragsversion, unterstützte Subject-Typen, angebotene
+Providerfähigkeiten und Paginggrenzen. Doppelte App-IDs, inkompatible
+Versionen oder widersprüchliche Fähigkeiten werden abgelehnt beziehungsweise
+als kontrollierter Coverage-Fehler ausgewiesen.
 
 Die Registry erzeugt pro Anfrage eine feste Providerliste. Der Aggregator
 ruft jeden Provider getrennt auf und fängt dessen Fehler ab. Statuswerte sind
@@ -129,15 +152,18 @@ Der konzeptionelle Minimalvertrag lautet:
 
 ```php
 interface PersonalDataProvider {
-    public function appId(): string;
-    public function supportedSubjectTypes(): array;
-    public function collect(PersonalDataRequest $request): PersonalDataReport;
+    public function descriptor(): ProviderDescriptor;
+    public function collect(PersonalDataRequest $request): PersonalDataPage;
 }
 ```
 
 `PersonalDataRequest` enthält ausschließlich die typisierte betroffene Person,
-Sprache, Ausgabezweck und technische Begrenzungen. Ein Providerbericht enthält
-strukturierte Kategorien und menschenlesbare Einträge mit mindestens:
+Sprache, Ausgabezweck, technische Begrenzungen und einen opaken Cursor.
+`PersonalDataPage` liefert eine eindeutige Endmarke oder den nächsten Cursor.
+Cursor-Paging darf keine Datensätze still auslassen oder doppeln; Änderungen
+während einer langen Auskunft werden durch stabilen Snapshot oder sichtbaren
+`partial`-Status behandelt. Ein Providerbericht enthält strukturierte
+Kategorien und menschenlesbare Einträge mit mindestens:
 
 - Datenkategorie, appweise Abschnittsüberschrift und verständliche
   Zusammenfassung des konkreten zulässigen Datensatzes;
@@ -334,39 +360,57 @@ Konfiguration.
 nicht umgesetzt sind Ausführung, automatische Maßnahmen, Lifecycle-Provider,
 Jobs, allgemeine Providerabdeckung oder ein Vollständigkeits-/Release-Gate.
 
-### Etappe 2 – Zentrale Basis
+### Etappe 2 – Standalone-Vertrag und App-Identität
 
-Eigener Cross-Repository-Auftrag für `localbase` und genau eine Pilot-App:
+Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 
-1. LocalBase-Laufzeitabhängigkeit und Standalone-Paketvertrag klären.
-2. DTOs, Provider-Registry und Aggregator test-first implementieren.
-3. Retention-Policy-Modell und ausschließlich Dry-Run-Infrastruktur ergänzen.
-4. Self-Service- und Admin-Grundansicht mit getrennten Rechtepfaden bauen.
-5. Providerfehler, Teilantworten und strukturierte Exporte testen.
+1. Produktname `Data Protection Center`/`Datenschutz-Center`, App-ID
+   `filzmann_data_protection`, AGPL-Lizenz und Repository sind entschieden
+   und angelegt; Governance bleibt offen;
+2. den LocalBase-Pilot als rückwärtskompatiblen Ausgangsvertrag
+   charakterisieren;
+3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
+   Cursor-Paging und Versionshandshake festlegen;
+4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
+   modellieren;
+5. Contract-Test-Kit und neutrale Referenzfixtures bereitstellen;
+6. saubere Installation mit fehlender, deaktivierter, kompatibler und
+   inkompatibler Privacy-App planen und später automatisieren.
 
-Es entsteht keine universelle Runtime ohne gleichzeitig angebundene reale
-Pilot-App.
+Die App wird mit `create-nextcloud-app` erst nach der ausdrücklichen
+Namens-/App-ID- und Repositoryfreigabe angelegt. Es gibt keine automatische
+App-zu-App-Installation und kein Daten-Fallback.
 
-### Etappe 3 – Pilot-App
+### Etappe 3 – Standalone-Runtime und erster Provider
 
-`adroom` ist der bevorzugte Pilot: Buchungen besitzen eine klare
-Nextcloud-UID, überschaubare Felder sowie einen bereits gekapselten
-Repository-/Servicepfad. Der Pilot muss PersonalDataProvider, Self-Service,
-Admin-Auskunft, Retention-Kandidaten, Dry Run und eine freigegebene Lösch- oder
-Anonymisierungsaktion vollständig demonstrieren. Frist und konkrete Maßnahme
-werden erst im Pilotauftrag entschieden.
+1. Registry, Aggregator, Self-Service und getrennte Adminberechtigung in der
+   neutralen Standalone-App test-first implementieren.
+2. Zunächst einen synthetischen Referenzprovider anbinden, damit keine
+   Fachdatenmigration die Runtimegrenze verdeckt.
+3. Danach genau einen vorhandenen realen Provider mit Aktivierungs- und
+   Versionsprüfung aus LocalBase migrieren; `adroom` bleibt wegen der klaren
+   UID- und Repositorygrenze der bevorzugte Consumer.
+4. Installation mit und ohne Privacy-App, Providerfehler, Cursor-Grenzen,
+   Teilantwort, Audit und Rückbau zum charakterisierten Pilotstand prüfen.
+5. Erst nach grünem Consumerlauf die nächste App freigeben.
 
-### Etappe 4 – Appweise Migration
+Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
+Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
+aktiver Aggregator oder zweite kanonische Vertragsquelle betrieben werden.
+
+### Etappe 4 – Appweise Provider-Migration
 
 Jede App erhält einen einzelnen Auftrag in ihrem Repository:
 
 1. Dateninventar gegen den dann aktuellen Code bestätigen.
 2. Subject-Typen und Drittpersonensicht entscheiden.
-3. `PersonalDataProvider` implementieren und testen.
+3. `PersonalDataProvider` gegen das öffentliche Contract-Test-Kit migrieren
+   beziehungsweise implementieren und testen.
 4. Policies, Trigger und Sperren fachlich freigeben.
 5. `RetentionProvider`, Dry Run und Maßnahmen test-first implementieren.
 6. Dateien und Nebenspeicher einbeziehen.
-7. Self-Service-, Admin-, Provider- und Negativfälle prüfen.
+7. Self-Service-, Admin-, Provider-, Versions-, Paging- und Negativfälle
+   prüfen; Betrieb ohne Privacy-App bleibt fachlich grün.
 8. Matrixstatus aktualisieren; erst danach die nächste App beginnen.
 
 Kein Big-Bang und keine leeren Provider.
@@ -381,12 +425,15 @@ Erst nach Benennung einer belastbaren Beschäftigungsdatenquelle:
 - Rechteentzug, Zuständigkeitsübergabe und nachgelagerte Retention getrennt
   testen.
 
-### Etappe 6 – Vollständigkeits- und Release-Gates
+### Etappe 6 – LocalBase-Rückbau, Vollständigkeits- und Release-Gates
 
-Ein Gate wird erst aktiviert, wenn Pilot und realistisch migrierbare Apps die
-Verträge erfüllen. Es prüft dann mechanisch, ob als personenbezogen
-klassifizierte Apps Provider und Datenschutzmetadaten besitzen. Bis dahin
-meldet der Root-Check nur Planungs- und Dokumentkonsistenz; er behauptet keine
+Self-Service, Adminoberfläche, Registry und öffentliche Privacy-Klassen werden
+erst aus LocalBase entfernt, wenn alle vorgesehenen Consumer auf dem
+Standalone-Vertrag stehen und Update, Deinstallation sowie Rückbau geprüft
+sind. Danach wird ein Coverage-Gate aktiviert. Es prüft mechanisch, ob als
+personenbezogen klassifizierte oder administrativ erwartete Apps kompatible
+Provider und Datenschutzmetadaten besitzen. Bis dahin meldet der Root-Check
+nur Planungs- und Dokumentkonsistenz; er behauptet keine
 Runtime-Vollständigkeit.
 
 ## Migrationsmatrix
@@ -400,7 +447,7 @@ bewusst nicht vorweggenommen.
 | `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider für Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen implementiert; freie Tagesnotiztexte werden wegen möglicher Drittpersonendaten nicht automatisch ausgegeben; keine Retention-Policy |
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | Inventar verifiziert; fachliche Einzellöschung vorhanden, keine Retention |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
-| `br_permission_matrix` | Snapshot-/Export-Ersteller-UIDs, Audit-UIDs und optional Benutzerlisten bei `include_users=true` | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | mittel | Mengenbasierte Snapshot-Retention vorhanden; kein Privacy-Provider |
+| `br_permission_matrix` → `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs, Audit-UIDs und optional Benutzerlisten bei `include_users=true` | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | Ziel-ID gemäß ADR 0003 entschieden, technisch noch unverändert; mengenbasierte Snapshot-Retention vorhanden, kein Privacy-Provider; heutige OrgSuite-/BR-Navigation bleibt bis zum Umbenennungsauftrag unverändert |
 | `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider für eigene Dienste und Termine implementiert; gemeinsame Meetings nennen weitere Beteiligte nur abstrakt. Persönliche Einstellungen, Verbindungen und DAV-Metadaten sowie Retention-Policy bleiben offen |
 | `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider und konfigurierbarer Retention-REVIEW-Dry-Run implementiert; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
@@ -446,17 +493,21 @@ Scope gehören.
 
 Vor Etappe 2 zu entscheiden:
 
-1. Wie wird die LocalBase-Laufzeitabhängigkeit für alle Pilot-/Consumer-Apps
-   deklarativ und im Standalone-Paket abgesichert?
-2. Dürfen Nextcloud-Admins Admin-Auskunft automatisch lesen oder benötigen
+1. Welche Organisation und welcher Maintainerkreis verantworten den
+   öffentlichen Vertrag, Releases und Sicherheitsmeldungen?
+2. Welche kleinste Nextcloud-Version und welche Vertragsversionen werden im
+   ersten Release unterstützt?
+3. Dürfen Nextcloud-Admins Admin-Auskunft automatisch lesen oder benötigen
    auch sie die dedizierte Datenschutzrolle?
-3. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
+4. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
    das spätere Release-Gate aktiv ist?
-4. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
+5. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
    belastbarer Semantik?
-5. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
+6. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
    zugestellt, ohne sie künstlich zu Nextcloud-Konten zu machen?
-6. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
+7. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
+8. Wann ist der Vertrag stabil genug, um eine implementierbare OCP-
+   Schnittstelle bei Nextcloud vorzuschlagen?
 
 ### Pilotentscheidungen vom 12. August 2026
 
@@ -495,6 +546,17 @@ keine allgemeine Store- oder rechtliche Retentionentscheidung vorweg:
    vorhandenen Loggingmechanismus und persistiert keine Berichtskopie. Eine
    eigene Audit-Tabelle oder app-spezifische Aufbewahrungsfrist entsteht erst
    nach einer fachlich und datenschutzrechtlich freigegebenen Regel.
+
+### Zielentscheidung vom 23. August 2026
+
+Der LocalBase-Pilot wird nicht zur dauerhaft öffentlichen Privacy-Plattform
+ausgebaut. Ziel ist `filzmann_data_protection` aus ADR 0002. Andere
+Nextcloud-Apps integrieren sich über einen kleinen, versionierten und lazy
+registrierten Providervertrag aus
+[`docs/privacy-provider-guide.md`](privacy-provider-guide.md). Sie bleiben
+ohne Privacy-App fachlich standalone. Fehlende oder inkompatible Provider
+werden transparent ausgewiesen; SQL-, Reflection-, Datei- oder Migrator-
+Fallbacks sind verboten.
 
 ## Quellenrahmen
 
