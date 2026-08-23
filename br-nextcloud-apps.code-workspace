@@ -21,8 +21,8 @@
       "path": "localbase"
     },
     {
-      "name": "br_permission_matrix",
-      "path": "br_permission_matrix"
+      "name": "filzmann_permission_matrix",
+      "path": "filzmann_permission_matrix"
     },
     {
       "name": "adcalendar",

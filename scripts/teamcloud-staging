@@ -64,7 +64,7 @@ validate_common() {
     [[ "$run_id" =~ ^[0-9]+$ && "$attempt" =~ ^[0-9]+$ ]] \
         || fail 'Run-ID und Versuch müssen positive Ganzzahlen sein.'
     case "$app_id" in
-        brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+        brtop|adplaner|brstunden|localbase|filzmann_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
         *) fail "Nicht freigegebene App-ID: $app_id" ;;
     esac
 }

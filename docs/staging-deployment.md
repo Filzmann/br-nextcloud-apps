@@ -162,16 +162,16 @@ vorhandenes, weder an Upload noch Installation beteiligtes Konto ersetzt:
 ```bash
 printf 'synthetischer ACL-Test\n' | \
   sudo -u filzmann /usr/local/bin/teamcloud-staging \
-    upload 999999 1 br_permission_matrix
+    upload 999999 1 filzmann_permission_matrix
 
-probe=/var/tmp/teamcloud-staging-incoming/999999-1-br_permission_matrix/br_permission_matrix.tar.gz
+probe=/var/tmp/teamcloud-staging-incoming/999999-1-filzmann_permission_matrix/filzmann_permission_matrix.tar.gz
 test "$(stat -c %U -- "$probe")" = filzmann
 getfacl -n "$probe"
 sudo -u simonbeyer_sys test -r "$probe"
 ! sudo -u simonbeyer_sys test -w "$probe"
 ! sudo -u <UNBETEILIGTER-BENUTZER> test -r "$probe"
 sudo -u filzmann /usr/local/bin/teamcloud-staging \
-  cleanup 999999 1 br_permission_matrix
+  cleanup 999999 1 filzmann_permission_matrix
 ```
 
 Dieser Test installiert das synthetische Archiv nicht. Er belegt Eigentum,

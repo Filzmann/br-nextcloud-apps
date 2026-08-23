@@ -5,8 +5,8 @@ workspace="$(cd "$(dirname "$0")/.." && pwd)"
 manifest="$workspace/config/workspace-repositories.tsv"
 php_coverage_baseline="$workspace/scripts/ad-suite-php-coverage-baseline.tsv"
 mapfile -t apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
-consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden br_permission_matrix adrecruitment)
-branch_matched_consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden br_permission_matrix adrecruitment)
+consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden filzmann_permission_matrix adrecruitment)
+branch_matched_consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden filzmann_permission_matrix adrecruitment)
 declare -A consumer_repositories=(
     [orgsuite]='nextcloud-orgsuite'
     [adcalendar]='nextcloud-adcalendar'
@@ -15,7 +15,7 @@ declare -A consumer_repositories=(
     [adroom]='nextcloud-adroom'
     [brtop]='nextcloud-brtop'
     [brstunden]='nextcloud-brstunden'
-    [br_permission_matrix]='nextcloud-br-permission-matrix'
+    [filzmann_permission_matrix]='nextcloud-br-permission-matrix'
     [adrecruitment]='nextcloud-recruitment'
 )
 

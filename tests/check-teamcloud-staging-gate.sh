@@ -65,7 +65,7 @@ chmod 700 "$sudo_bin" "$logger_bin" "$install_wrapper"
 
 run_id='32576122333'
 attempt='1'
-app_id='br_permission_matrix'
+app_id='filzmann_permission_matrix'
 commit='0123456789abcdef0123456789abcdef01234567'
 hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 run_dir="$incoming_root/$run_id-$attempt-$app_id"

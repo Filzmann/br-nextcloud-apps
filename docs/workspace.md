@@ -29,7 +29,7 @@ br-nextcloud-apps/
 |       |-- docker-compose.adplaner.yaml
 |       |-- docker-compose.brstunden.yaml
 |       |-- docker-compose.localbase.yaml
-|       |-- docker-compose.br_permission_matrix.yaml
+|       |-- docker-compose.filzmann_permission_matrix.yaml
 |       |-- docker-compose.adcalendar.yaml
 |       |-- docker-compose.adurlaub.yaml
 |       |-- docker-compose.orgsuite.yaml
@@ -41,7 +41,7 @@ br-nextcloud-apps/
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
-|-- br_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
+|-- filzmann_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- adcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
 |-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
 |-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
@@ -62,7 +62,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | AdPlaner | `adplaner` | `adplaner/` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
 | LocalBase | `localbase` | `localbase/` | keine Navigation |
-| Berechtigungsmatrix | `br_permission_matrix` | `br_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
+| Berechtigungsmatrix | `filzmann_permission_matrix` | `filzmann_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/filzmann_permission_matrix/` |
 | AD Kalender | `adcalendar` | `adcalendar/` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
 | AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
 | AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
@@ -96,7 +96,7 @@ erzwingt bytegleiche lokale Kopien.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/`, `filzmann_data_protection/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `filzmann_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/`, `filzmann_data_protection/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -122,7 +122,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
-ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
+ddev exec -d /var/www/html/html php occ app:list | grep -i filzmann_permission_matrix
 ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
@@ -208,14 +208,14 @@ nextcloud-dev/.ddev/docker-compose.localbase.yaml
 Berechtigungsmatrix:
 
 ```text
-${WORKSPACE_ROOT}/br_permission_matrix
--> /var/www/html/html/custom_apps/br_permission_matrix
+${WORKSPACE_ROOT}/filzmann_permission_matrix
+-> /var/www/html/html/custom_apps/filzmann_permission_matrix
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
+nextcloud-dev/.ddev/docker-compose.filzmann_permission_matrix.yaml
 ```
 
 AD Kalender:

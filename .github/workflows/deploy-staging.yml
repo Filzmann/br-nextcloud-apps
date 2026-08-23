@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$APP_ID" in
-            brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+            brtop|adplaner|brstunden|localbase|filzmann_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
             *) echo "Nicht freigegebene App-ID: $APP_ID" >&2; exit 2 ;;
           esac
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || {

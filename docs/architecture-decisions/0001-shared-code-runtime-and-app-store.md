@@ -58,7 +58,7 @@ persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus
 | `brtop` | API-Responder, Modelltrait, Logger, Gruppenservice sowie LocalBase-JavaScript | `brtop/lib/Controller/ApiController.php`, `lib/Model/Meeting.php`, `lib/Service/BrtopLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
 | `adplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `adplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
 | `brstunden` | API-Responder, Modelltrait, Logger, Gruppenservice und LocalBase-JavaScript | `brstunden/lib/Controller/ApiController.php`, `lib/Model/HourEntry.php`, `lib/Service/BrStundenLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `br_permission_matrix` | keine LocalBase-Produktivklasse gefunden; gemeinsamer PHP-Test-Runner | `br_permission_matrix/tests/run.php`; Produktivtemplate bindet nur einen OrgSuite-Host ein |
+| `filzmann_permission_matrix` | optionaler versionierter LocalBase-Organisationssnapshot; eigenständiger Test-Runner und Nextcloud-Navigation | `filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `filzmann_permission_matrix/tests/run.php`, `filzmann_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
 | `adcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
 | `adurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
 | `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `orgsuite/tests/http-smoke.sh` |
@@ -193,10 +193,8 @@ Eine App gilt erst als migriert, wenn
 
 Der beim Beschluss verifizierte Ausgangsstand umfasst keine Composer-Dateien,
 zwei produktive manuelle Klassen-Fallbacks in LocalBase und zahlreiche
-relative Test-Includes in allen Consumer-Apps. `br_permission_matrix` besitzt
-bereits einen kleinen app-lokalen PSR-4-Testloader, erfüllt den vollständigen
-Vertrag wegen des weiterhin relativ geladenen gemeinsamen Test-Runners aber
-noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
+relative Test-Includes in allen Consumer-Apps. Die nachfolgende Tabelle hält
+den inzwischen je App nachgewiesenen Stand fest:
 
 | App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
 | --- | --- | --- | --- |
@@ -204,10 +202,10 @@ noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
 | `adplaner` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
-| `br_permission_matrix` | teilweise vorbereitet, ausstehend | nächste schreibende PHP-Arbeit | zentraler vollständiger Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `filzmann_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adcalendar` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `orgsuite` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `adrecruitment` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 

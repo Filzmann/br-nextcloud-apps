@@ -3,9 +3,9 @@
 - Status: angenommen
 - Entscheidung: 2026-08-23
 - Geltungsbereich: Produktzuordnung, Navigation und künftige Integration der
-  App `br_permission_matrix`
-- Umsetzung: geplant; Ziel-ID entschieden, App-Code und bestehende
-  Berechtigungen sind unverändert
+  App `filzmann_permission_matrix`
+- Umsetzung: abgeschlossen für Identität, Standalone-Navigation und
+  OrgSuite-Entkopplung; Privacy-Provider und Retention bleiben offen
 
 ## Kontext und verifizierter Stand
 
@@ -18,17 +18,17 @@ nicht bei Sitzungen, Beschlüssen oder sonstiger Gremienarbeit.
 
 Im aktuellen Repository ist verifiziert:
 
-- eigene App-ID `br_permission_matrix`, eigenes Repository und eigener
+- historische App-ID `br_permission_matrix`, eigenes Repository und eigener
   Release-Lebenszyklus;
 - eigene Snapshot-, Zeilen-, Zellen-, Diff-, Export-, Adapterstatus- und
   Auditpersistenz;
 - eigene Konfiguration, Administration, Hintergrundjob und `occ`-Kommandos;
 - read-only Adapter auf öffentliche Nextcloud- beziehungsweise ausdrücklich
   versionierte Providerverträge;
-- direkter heutiger Navigationsvertrag mit OrgSuite: `info.xml` nennt
+- historischer Navigationsvertrag mit OrgSuite: `info.xml` nannte
   `orgsuite`, das Template lädt OrgSuite-Assets und verwendet
   `data-suite="br"`;
-- kein eigener Nextcloud-Hauptnavigationseintrag;
+- inzwischen eigener berechtigungsgeprüfter Nextcloud-Hauptnavigationseintrag;
 - personenbezogene Snapshot-, Export- und Auditbezüge, für die noch ein
   `PersonalDataProvider` und fachliche Retentionentscheidungen fehlen.
 
@@ -75,12 +75,14 @@ aus.
 | Art.-15-Aggregation und Coverage | Privacy-App | nur öffentlicher Providervertrag, kein Fremddatenzugriff |
 | Portfolioauffindbarkeit | perspektivisch IKT/Datenschutz | unabhängige Navigation oder kleiner optionaler, versionierter Adapter |
 
-## Navigation und heutige BR-Kopplung
+## Navigation und aufgehobene BR-Kopplung
 
-Die aktuelle OrgSuite-Kopplung und `data-suite="br"` sind historischer
-Ist-Zustand, nicht die Zielklassifikation. Ihre Entfernung ist eine spätere
-schreibende Änderung in `br_permission_matrix` und gegebenenfalls `orgsuite`
-mit eigenem Auftrag, Rechte-/Navigationsprüfung und Rückbau.
+Die frühere OrgSuite-Kopplung und `data-suite="br"` waren ein historischer
+Ist-Zustand, nicht die Zielklassifikation. Sie wurden am 23. August 2026 aus
+`filzmann_permission_matrix` und OrgSuite entfernt. Die Matrix registriert
+einen eigenen Nextcloud-Navigationseintrag und prüft dessen Sichtbarkeit über
+ihren bestehenden serverseitigen `AccessService`. OrgSuite führt die Matrix nicht
+mehr als BR-Ziel oder Weiterleitungsziel.
 
 Das Ziel ist:
 
@@ -92,18 +94,17 @@ Das Ziel ist:
    Controller oder Rechte übernehmen.
 4. Menüsichtbarkeit bleibt ohne Berechtigungswirkung.
 
-Die konkrete Navigationsform wird erst im App-Auftrag nach einer UI- und
-Standalone-Prüfung entschieden. Eine zweite unabhängig gepflegte Linkliste
-entsteht nicht.
+Die konkrete Navigationsform ist damit als eigener Nextcloud-Einstieg
+umgesetzt. Eine zweite unabhängig gepflegte Linkliste entsteht nicht.
 
 ## Technische Identität und öffentliche Eignung
 
-Die App-ID `br_permission_matrix` und der PHP-Namespace enthalten eine
-historische BR-Zuordnung. Am 23. August 2026 wurde für die öffentliche
-Zielidentität `filzmann_permission_matrix` entschieden. Der Stagingbestand
-ist ausdrücklich nicht erhaltenswert; Produktions- oder veröffentlichte
-Store-Bestände sind nicht bekannt. Vor der technischen Umbenennung wird dies
-noch einmal am tatsächlichen Zielstand verifiziert.
+Die frühere App-ID `br_permission_matrix` und der frühere PHP-Namespace
+enthielten eine historische BR-Zuordnung. Am 23. August 2026 wurde die
+öffentliche Zielidentität `filzmann_permission_matrix` umgesetzt. Der
+Stagingbestand ist ausdrücklich nicht erhaltenswert; Produktions- oder
+veröffentlichte Store-Bestände sind nicht bekannt. Eine Datenübernahme fand
+nicht statt und der Stagingbestand wurde durch diesen Lauf nicht verändert.
 
 Die zuvor bewerteten Varianten waren:
 
@@ -132,11 +133,10 @@ niemandem Zugriff.
    Entscheidungen dokumentieren; kein App-Code.
 2. **App-Auftrag:** aktuelles Navigations-, OrgSuite-, Daten-, Konfigurations-
    und Releaseinventar gegen den dann aktuellen Code bestätigen.
-3. **Identitätsgate:** Ziel-ID `filzmann_permission_matrix` entschieden;
-   vor Umsetzung den fehlenden Erhaltungsbedarf und alle Referenzen erneut
-   bestätigen.
-4. **Standalone-Navigation:** zunächst die Erreichbarkeit ohne OrgSuite
-   test-first herstellen; vorhandene Rechte bleiben unverändert.
+3. **Identitätsgate:** Ziel-ID `filzmann_permission_matrix`, fehlender
+   Erhaltungsbedarf und Referenzen bestätigt; umgesetzt.
+4. **Standalone-Navigation:** Erreichbarkeit ohne OrgSuite test-first
+   hergestellt; vorhandene Rechte blieben unverändert.
 5. **Privacy-Provider:** personenbezogene Snapshot-, Export-, Audit- und
    optionale Benutzerlistenbezüge vollständig inventarisieren und einen
    subjectgebundenen Provider implementieren.
@@ -157,9 +157,9 @@ migriert oder verändert.
 
 - Die Root-Produktplanung behandelt die Matrix nicht mehr als Teil einer
   Gremienarbeits-Suite.
-- `br_permission_matrix` bleibt bis zu einem eigenen Auftrag technisch und
-  visuell unverändert.
-- Noch zu entscheiden sind neutrale Defaultgruppen, Navigationsform,
-  öffentliches Store-Ziel und der konkrete optionale Portfolioadapter.
+- Die historische ID `br_permission_matrix` bleibt nur zur Dokumentation des
+  nicht migrierten Vorgängerstands erhalten.
+- Noch zu entscheiden sind neutrale Defaultgruppen, öffentliches Store-Ziel
+  und der konkrete optionale Portfolioadapter.
 - Art.-15-, Audit- und Retentionlücken bleiben sichtbar und werden nicht durch
   die bloße thematische Zuordnung als gelöst dargestellt.

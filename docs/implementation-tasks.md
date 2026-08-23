@@ -71,8 +71,8 @@ Umsetzungsreihenfolge und Freigabegates:
 
 ## PARENT-IKT-PRIVACY-PORTFOLIO – Berechtigungsmatrix neu zuordnen
 
-Status: Produktdomäne und Ziel-ID `filzmann_permission_matrix` festgelegt;
-technische Entkopplung und App-Migration noch nicht begonnen
+Status: Produktdomäne, Ziel-ID `filzmann_permission_matrix`, technische
+Entkopplung von OrgSuite und eigenständige Navigation umgesetzt
 
 Normative Quelle:
 
@@ -81,14 +81,13 @@ Normative Quelle:
 
 Umfang im Parent:
 
-- die heutige `br_permission_matrix` als eigenständige Kategorie-B-App dem
-  Portfolio IKT/Datenschutz zuordnen, nicht mehr als Gremien-Arbeits-App
-  planen und später in die Ziel-ID `filzmann_permission_matrix` überführen.
+- `filzmann_permission_matrix` als eigenständige Kategorie-B-App dem Portfolio
+  IKT/Datenschutz zuordnen und nicht mehr als Gremien-Arbeits-App führen.
 - Eigenständigkeit gegenüber Privacy-App und OrgSuite, Datenownership,
   Providerpriorität und offene Navigationsentscheidungen sichtbar
   halten.
-- Keine thematische Zuordnung als umgesetzte Navigation, Providerabdeckung,
-  Rechteänderung oder App-Umbenennung darstellen.
+- Die weiterhin offene Providerabdeckung und Retention nicht durch die
+  umgesetzte Identitäts- und Navigationsänderung als gelöst darstellen.
 
 Freigabegates für spätere App-Arbeit:
 

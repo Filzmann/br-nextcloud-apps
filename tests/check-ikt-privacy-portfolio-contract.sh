@@ -20,12 +20,17 @@ for contract in \
     'eigenständige App' \
     'nicht in die Privacy-App verschmolzen' \
     'ohne aktive Privacy-App' \
-    'br_permission_matrix' \
-    'OrgSuite' \
-    'data-suite="br"'; do
+    'filzmann_permission_matrix' \
+    'Umsetzung: abgeschlossen' \
+    'eigenen Nextcloud-Navigationseintrag' \
+    'OrgSuite führt die Matrix nicht'; do
     [[ "$decision_text" == *"$contract"* ]] \
         || fail "Entscheidung enthält den Vertrag nicht: $contract"
 done
+
+if rg -Fq $'br_permission_matrix\tapp\tbr_permission_matrix' "$workspace/config/workspace-repositories.tsv"; then
+    fail 'Workspace-Inventar enthält weiterhin die historische App-ID.'
+fi
 
 for source in \
     AGENTS.md \
