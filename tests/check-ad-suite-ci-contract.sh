@@ -15,7 +15,7 @@ declare -A consumer_repositories=(
     [adroom]='nextcloud-adroom'
     [brtop]='nextcloud-brtop'
     [brstunden]='nextcloud-brstunden'
-    [filzmann_permission_matrix]='nextcloud-br-permission-matrix'
+    [filzmann_permission_matrix]='nextcloud-filzmann-permission-matrix'
     [adrecruitment]='nextcloud-recruitment'
 )
 

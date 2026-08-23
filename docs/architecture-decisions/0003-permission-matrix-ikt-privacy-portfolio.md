@@ -120,12 +120,16 @@ Verzeichnisumbenennung unzulässig. Die neutral benannten Tabellen
 `permission_matrix_*` können bei einem nachweislich wegwerfbaren Bestand
 unverändert neu angelegt werden; eine Datenübernahme wird nicht unterstellt.
 
-Auch die heutigen Standardgruppen `Betriebsrat`, `IKT-Ausschuss`,
-`Datenschutz` und `IT-Administration` werden nicht durch diese Root-Planung
-verändert. Vor einer neutralen Veröffentlichung ist zu entscheiden, ob
-organisationsspezifische Defaults entfallen oder nur als explizites
-Migrationsprofil bestehen bleiben. Die Portfoliozuordnung allein erteilt
-niemandem Zugriff.
+Die Ausgangsbeispiele `Betriebsrat`, `IKT-Ausschuss`,
+`Datenschutzbeauftragte` und `IT-Administration` bleiben erhalten, sind aber
+vollständig anpassbar und keine vorausgesetzten Organisationsrollen. Im
+Normalfall erhält die zuständige Beschäftigtenvertretung Leserechte: je nach
+Organisation ein Betriebsrat oder Personalrat. IKT-Ausschuss und
+Datenschutzbeauftragte sind sinnvolle weitere lesende Rollen für technische
+Prüfung und datenschutzrechtliche Beratung. Administrative Konfigurations-,
+Scan- und Baseline-Rechte bleiben auf eine kleine zuständige Gruppe wie
+`IT-Administration` und native Nextcloud-Administratoren begrenzt. Die
+Portfoliozuordnung allein erteilt niemandem Zugriff.
 
 ## Migrationsplan und Gates
 
@@ -159,7 +163,7 @@ migriert oder verändert.
   Gremienarbeits-Suite.
 - Die historische ID `br_permission_matrix` bleibt nur zur Dokumentation des
   nicht migrierten Vorgängerstands erhalten.
-- Noch zu entscheiden sind neutrale Defaultgruppen, öffentliches Store-Ziel
-  und der konkrete optionale Portfolioadapter.
+- Noch zu entscheiden sind das öffentliche Store-Ziel und der konkrete
+  optionale Portfolioadapter.
 - Art.-15-, Audit- und Retentionlücken bleiben sichtbar und werden nicht durch
   die bloße thematische Zuordnung als gelöst dargestellt.

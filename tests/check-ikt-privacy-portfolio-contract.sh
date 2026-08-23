@@ -23,7 +23,10 @@ for contract in \
     'filzmann_permission_matrix' \
     'Umsetzung: abgeschlossen' \
     'eigenen Nextcloud-Navigationseintrag' \
-    'OrgSuite führt die Matrix nicht'; do
+    'OrgSuite führt die Matrix nicht' \
+    'Personalrat' \
+    'Datenschutzbeauftragte' \
+    'vollständig anpassbar'; do
     [[ "$decision_text" == *"$contract"* ]] \
         || fail "Entscheidung enthält den Vertrag nicht: $contract"
 done
