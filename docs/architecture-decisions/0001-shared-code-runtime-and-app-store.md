@@ -203,7 +203,7 @@ den inzwischen je App nachgewiesenen Stand fest:
 | `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `filzmann_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
-| `adcalendar` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adcalendar` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap mit genau einem LocalBase-Testübergang, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
 | `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
