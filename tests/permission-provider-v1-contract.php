@@ -13,6 +13,8 @@ $apps = [
     'OCA\\AdRoom\\' => $workspace . '/adroom/lib/',
     'OCA\\BrTop\\' => $workspace . '/brtop/lib/',
     'OCA\\BrStunden\\' => $workspace . '/brstunden/lib/',
+    'OCA\\Recruitment\\' => $workspace . '/adrecruitment/lib/',
+    'OCA\\AdBqPlanning\\' => $workspace . '/adbqplanung/lib/',
 ];
 
 spl_autoload_register(static function (string $class) use ($apps): void {
@@ -31,6 +33,8 @@ spl_autoload_register(static function (string $class) use ($apps): void {
 
 use OCA\AdCalendar\Permission\CalendarPermissionProvider;
 use OCA\AdCalendar\Permission\CalendarPermissionSourceInterface;
+use OCA\AdBqPlanning\Permission\BqPermissionProvider;
+use OCA\AdBqPlanning\Permission\BqPermissionSourceInterface;
 use OCA\AdPlaner\Permission\PlanerPermissionProvider;
 use OCA\AdPlaner\Permission\PlanerPermissionSourceInterface;
 use OCA\AdRoom\Permission\RoomPermissionProvider;
@@ -42,6 +46,9 @@ use OCA\BrTop\Permission\BrTopPermissionProvider;
 use OCA\BrTop\Permission\BrTopPermissionSourceInterface;
 use OCA\FilzmannPermissionMatrix\PublicApi\V1\PermissionProvider;
 use OCA\LocalBase\Organization\AdOrganizationDefinition;
+use OCA\LocalBase\Organization\AdOrganizationSnapshot;
+use OCA\Recruitment\Permission\RecruitmentPermissionProvider;
+use OCA\Recruitment\Permission\RecruitmentPermissionSourceInterface;
 
 $definition = AdOrganizationDefinition::defaults();
 $providers = [
@@ -67,6 +74,29 @@ $providers = [
     }),
     new BrStundenPermissionProvider(new class implements BrStundenPermissionSourceInterface {
         public function memberGroupId(): string { return 'br-members'; }
+    }),
+    new RecruitmentPermissionProvider(new class implements RecruitmentPermissionSourceInterface {
+        public function organization(): AdOrganizationSnapshot {
+            return new AdOrganizationSnapshot(true, 4, [
+                'staff_hr' => ['groupId' => 'ad-HR', 'label' => 'HR'],
+                'payroll' => ['groupId' => 'ad-Payroll', 'label' => 'Lohn'],
+                'eb' => ['groupId' => 'ad-EB', 'label' => 'Einsatzbegleitung'],
+            ], [
+                'north' => ['groupId' => 'ad-Area-North', 'label' => 'Nord'],
+            ]);
+        }
+        public function permissionSettings(): array {
+            return ['firstGuideGroupId' => 'ad-first-guides', 'representatives' => []];
+        }
+    }),
+    new BqPermissionProvider(new class implements BqPermissionSourceInterface {
+        public function roleGroups(): array {
+            return [
+                'planning' => 'bq-planning',
+                'teaching' => 'bq-teaching',
+                'publishing' => 'bq-publishing',
+            ];
+        }
     }),
 ];
 
