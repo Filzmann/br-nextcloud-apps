@@ -9,7 +9,12 @@ Es enthält keinen deploybaren App-Code.
 - Menschlicher Einstieg: `README.md`
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
+- Governance-Hierarchie für Subrepositories:
+  `docs/parent-governance-contract.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
+- Öffentlicher Privacy-Providervertrag: `docs/privacy-provider-guide.md`
+- IKT-/Datenschutz-Zuordnung der Berechtigungsmatrix:
+  `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`
 - Nicht freigegebene AD-Suite-Zukunftsplanung:
   `docs/ad-suite-zukunftsplanung.md`
 - Wiederholbare Abläufe: `.agents/skills/`
@@ -105,6 +110,17 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   Dateien einer Fachapp direkt. Neue oder wesentlich erweiterte Datenklassen
   erhalten spätestens vor fachlicher Fertigstellung eine konkrete
   Provider-, Retention-, Drittpersonen- und Testaufgabe.
+- Zielruntime des öffentlichen Datenschutzvertrags ist die Standalone-App
+  `filzmann_data_protection` der Kategorie B aus
+  `docs/architecture-decisions/0002-standalone-privacy-platform.md`.
+  LocalBase bleibt bis zur kontrollierten Migration nur Pilot. Fehlende oder
+  inkompatible Provider werden sichtbar ausgewiesen; SQL-, Reflection-,
+  Datei-, AppConfig- und Migrator-Fallbacks sind verboten.
+- Die Berechtigungsmatrix ist eine eigenständige Kategorie-B-App im Portfolio
+  IKT/Datenschutz und keine Gremien-Arbeits-App. Sie wird nicht in die
+  Privacy-App verschmolzen; Produktzuordnung, Navigation, Datenownership und
+  Berechtigungen bleiben getrennte Verträge gemäß
+  `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`.
 
 ## Suite- und Produktverträge
 

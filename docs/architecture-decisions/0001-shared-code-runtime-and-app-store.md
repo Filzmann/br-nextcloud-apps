@@ -3,6 +3,7 @@
 - Status: angenommen
 - Entscheidung: 2026-08-08
 - Ergänzung PHP-Autoloading: 2026-08-09
+- Ergänzung Standalone-Privacy-Verweis: 2026-08-23
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Noch nicht umgesetzt: die in dieser Datei beschriebene LocalBase-Migration
@@ -57,10 +58,10 @@ persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus
 | `brtop` | API-Responder, Modelltrait, Logger, Gruppenservice sowie LocalBase-JavaScript | `brtop/lib/Controller/ApiController.php`, `lib/Model/Meeting.php`, `lib/Service/BrtopLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
 | `adplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `adplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
 | `brstunden` | API-Responder, Modelltrait, Logger, Gruppenservice und LocalBase-JavaScript | `brstunden/lib/Controller/ApiController.php`, `lib/Model/HourEntry.php`, `lib/Service/BrStundenLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `br_permission_matrix` | keine LocalBase-Produktivklasse gefunden; gemeinsamer PHP-Test-Runner | `br_permission_matrix/tests/run.php`; Produktivtemplate bindet nur einen OrgSuite-Host ein |
+| `filzmann_permission_matrix` | optionaler versionierter LocalBase-Organisationssnapshot; eigenständiger Test-Runner und Nextcloud-Navigation | `filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `filzmann_permission_matrix/tests/run.php`, `filzmann_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
 | `adcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
 | `adurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
-| `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `tests/http-smoke.sh` |
+| `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `orgsuite/tests/http-smoke.sh` |
 | `adroom` | Kalenderkontext/Feiertage, Demokonten, Navigation/Capability und LocalBase-JavaScript | `adroom/lib/Service/BookingService.php`, `lib/Service/HolidayService.php`, `lib/Service/RoomDemoPackService.php`, `templates/index.php` |
 | `adrecruitment` | unveränderlicher Organisationssnapshot, Rechtepolicy und Standalone-Navigation | `adrecruitment/lib/Service/RecruitmentAccessService.php`, `lib/Service/RecruitmentPermissionPolicy.php`, `lib/Listener/StandaloneNavigationListener.php` |
 
@@ -192,10 +193,8 @@ Eine App gilt erst als migriert, wenn
 
 Der beim Beschluss verifizierte Ausgangsstand umfasst keine Composer-Dateien,
 zwei produktive manuelle Klassen-Fallbacks in LocalBase und zahlreiche
-relative Test-Includes in allen Consumer-Apps. `br_permission_matrix` besitzt
-bereits einen kleinen app-lokalen PSR-4-Testloader, erfüllt den vollständigen
-Vertrag wegen des weiterhin relativ geladenen gemeinsamen Test-Runners aber
-noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
+relative Test-Includes in allen Consumer-Apps. Die nachfolgende Tabelle hält
+den inzwischen je App nachgewiesenen Stand fest:
 
 | App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
 | --- | --- | --- | --- |
@@ -203,10 +202,10 @@ noch nicht. Daher stehen zunächst alle registrierten Apps auf **ausstehend**:
 | `adplaner` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
-| `br_permission_matrix` | teilweise vorbereitet, ausstehend | nächste schreibende PHP-Arbeit | zentraler vollständiger Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `filzmann_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adcalendar` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `orgsuite` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `adrecruitment` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 
@@ -376,7 +375,7 @@ aktuelle offizielle Dokumentation geprüft.
 | --- | --- | --- | --- | --- | --- |
 | `Controller/ApiResponder.php`, `Model/ModelApiTrait.php`, `Service/AppLogger.php` | BRTop, AdPlaner, BRStunden; Trait zusätzlich AD Urlaub | A, **sofort eindeutig / verifiziert** | zustandslose technische Verträge; separates PHP-Paket, beim App-Build geprefixt und gebundelt | mittel: Klassenidentität und BC testen; beseitigt harte LocalBase-App-Pflicht | 1 |
 | `js/api`, `js/models`, `js/repositories`, kleine `js/ui`-Primitives | BRTop, AdPlaner, BRStunden, AD Kalender, AD Urlaub, AD Raumplaner | A, **sofort eindeutig / verifiziert** | gleiche Basisklassen/Clientprimitives; separates Frontend-Paket, app-lokal gebaut, keine globalen `window.LocalBase`-Kollisionen | hoch: viele Consumer und Ladeordnung; wesentlich für Store-Standalone | 1 |
-| `tests/Support`, Assertions, JS-Fakes und Coverage-Tooling | fast alle App-Testläufer/CI | A, **sofort eindeutig / verifiziert**, test-only | separat versioniertes Dev-Paket oder reproduzierbare Testtool-Abhängigkeit; niemals Produktivarchiv | niedrig für Runtime, mittel für CI-Reproduzierbarkeit/Lizenz | 2 |
+| app-lokale Test-Support-Verzeichnisse, Assertions, JS-Fakes und Coverage-Tooling | fast alle App-Testläufer/CI | A, **sofort eindeutig / verifiziert**, test-only | separat versioniertes Dev-Paket oder reproduzierbare Testtool-Abhängigkeit; niemals Produktivarchiv | niedrig für Runtime, mittel für CI-Reproduzierbarkeit/Lizenz | 2 |
 | `GroupProvisioningService.php` | BRTop, BRStunden | A, **wahrscheinlich / plausible Einordnung** | native, zustandslose Gruppenoperation; Semantik beider Consumer vor Extraktion als Contract bestätigen | mittel: Rechte-/Backend-Negativfälle; keine Basis-App nur für Helfer | 2 |
 | `AdDemoFixtureCatalog.php` | AD Kalender, AD Urlaub | A-intern oder C, **noch zu prüfen** | gleiche Demo-Semantik und öffentliche Eignung der Organisationsbeispiele prüfen; sonst app-lokal | mittel: interne Namen/Fixtures dürfen nicht in Store-Paket rutschen | 4 |
 | Kalender-Value-Objects ohne Persistenz (`CalendarContext`, `HolidayPeriod`, `HolidayCalendar`) | Kalender, Urlaub, Raum | A, **wahrscheinlich** | reine Werte/Serialisierung in isoliertes PHP-Paket; nicht den Cache/Provider versteckt mitnehmen | mittel: Vertrag muss unabhängig vom Laufzeitdienst testbar sein | 2 |
@@ -388,6 +387,7 @@ aktuelle offizielle Dokumentation geprüft.
 | `DemoAccountProvisioningService` mit zentralem Kontoregister | mehrere AD-Demo-Packs | B-intern, **wahrscheinlich / nicht migrieren bis Produktentscheid** | gemeinsam gespeicherte Eigentümerschaft verhindert lokale A-Einstufung; für öffentliche Releases optionalen Demo-Lebenszyklus und Entfernung klären | hoch: Konten/Gruppen, Datenschutz, LDAP und Deinstallation | 4 |
 | Produktkatalog und `StandaloneAppNavigationService` | alle AD-Produkte, OrgSuite, Parent-Installer | A für statischen Vertrag/Adapter oder B als Suite-Dienst, **derzeit nicht entscheidbar** | Produktownership, externe Namen und Updatequelle zuerst entscheiden; keine private Katalogdatei still in Store-App voraussetzen | hoch: Installation, Navigation, interne IDs, Releasekopplung | 3 |
 | OrgSuite-Adapterlogik | OrgSuite und einzelne AD-Produkte | B, **wahrscheinlich** | Navigation/Adminplatzierung gehört zu einer bewusst versionierten Suite-Laufzeit, nicht in generische Bibliothek | mittel bis hoch: öffentliche Zusatz-App muss sachlich zumutbar sein | 3 |
+| Privacy-DTOs, Providerinterfaces, Registry, Aggregation, Self-Service, Admin-Auskunft und künftige Privacy-Jobs; heute im LocalBase-Pilot | LocalBase sowie reale Provider in AD Kalender, AD Raumplaner, AD Urlaub, AD Planer und AD Recruitment | B, **sofort eindeutig / verifiziert**; Ziel durch ADR 0002 entschieden | geschlossene Migration in die Standalone-App `filzmann_data_protection`; Fachprovider bleiben lokal, kein Daten-Fallback und keine zweite aktive Vertragsquelle | sehr hoch: öffentliche API, Rechte, Versionshandshake, optionale Installation, Consumer-Migration und Rückbau; Store-Gate bis zum Nachweis blockiert | 1 |
 | LocalBase-spezifischer Organisationseditor/Exporter | keine zweite semantisch identische UI gefunden | B als Adminoberfläche, nicht A; **nicht migrieren** | gehört zur zentralen Organisationsverwaltung; ähnliche Fachapp-UIs sind keine zweite Verwendung | hoch: Personendarstellung, Export, Accessibility | 3 |
 | app-spezifische Fachmodelle, Repositorys, Workflows und UI-Komponenten außerhalb LocalBase | jeweilige Fachapp | C, **verifiziert / nicht migrieren** | ähnliche CRUD-/Dialog-/Kalenderformen haben unterschiedliche Fachsemantik und Änderungsgründe | niedrig bei lokalem Verbleib; voreilige Abstraktion wäre Store-Kopplung | fortlaufend |
 
@@ -404,6 +404,12 @@ Prefixing, Provider-/Consumer-Tests und Releaseintegration machen daraus eine
 gebundelte Bibliothek. Ebenso bleibt Kategorie B vorerst eine Klassifikation;
 Name, App-ID und Umfang des späteren Laufzeitdienstes sind noch nicht
 entschieden.
+
+Für die Privacy-Komponente sind Produktname und App-ID mit
+`Data Protection Center` beziehungsweise `filzmann_data_protection`
+entschieden. ADR 0002 ordnet sie als Standalone-App der Kategorie B ein und
+ersetzt damit ausschließlich die frühere Zielannahme, die öffentliche
+Privacy-Runtime dauerhaft in LocalBase zu belassen.
 
 ## Migrationsplan in prüfbaren Schritten
 
@@ -458,8 +464,8 @@ verbindlich ist, dass neue Apps nicht automatisch von LocalBase abhängen.
 Dokumentiert, aber noch nicht technisch umgesetzt sind die Paketextraktion,
 Namespace-Isolierung, API-Versionierung und LocalBase-Migration.
 
-Noch zu entscheiden sind insbesondere Name und App-ID eines möglichen
-Kategorie-B-Dienstes, öffentliche Zumutbarkeit dieser Zusatz-App, genaue
+Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
+öffentliche Zumutbarkeit dieser Zusatz-App, genaue
 Composer-/Frontend-Paketgrenzen, Prefixing-Werkzeug, Lizenzfreigabe aller
 gebündelten Bestandteile, Store-Ziel der BR-Apps, Umgang mit Demo-Packs und
 Produktkatalog sowie die Deinstallationspolitik für zentrale AppConfig-Daten.

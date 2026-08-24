@@ -21,8 +21,8 @@
       "path": "localbase"
     },
     {
-      "name": "br_permission_matrix",
-      "path": "br_permission_matrix"
+      "name": "filzmann_permission_matrix",
+      "path": "filzmann_permission_matrix"
     },
     {
       "name": "adcalendar",
@@ -47,6 +47,10 @@
     {
       "name": "adbqplanung",
       "path": "adbqplanung"
+    },
+    {
+      "name": "filzmann_data_protection",
+      "path": "filzmann_data_protection"
     },
     {
       "name": "ad-suite",

@@ -10,6 +10,10 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 - App-übergreifende Architektur: [`docs/architecture.md`](docs/architecture.md)
 - Datenschutzarchitektur und schrittweiser Rollout:
   [`docs/privacy-architecture.md`](docs/privacy-architecture.md)
+- Öffentlicher Leitfaden für Privacy-Provider:
+  [`docs/privacy-provider-guide.md`](docs/privacy-provider-guide.md)
+- Portfolioentscheidung zur Berechtigungsmatrix:
+  [`ADR 0003`](docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
 - Vorgemerkte, noch nicht freigegebene AD-Suite-Zukunftsmodule:
   [`docs/ad-suite-zukunftsplanung.md`](docs/ad-suite-zukunftsplanung.md)
 - Verbindliche Codex-Grenzen: [`AGENTS.md`](AGENTS.md)

@@ -23,6 +23,11 @@ bleiben dadurch zentral gepflegt.
   der Workflow verwendet kein dynamisches `ssh-keyscan`.
 - Installiert werden Ein-Wurzel-Archive ohne `.git`, `.github`, Tests,
   Agentensteuerung, Abhängigkeit-Caches oder Symlinks.
+- Das SSH-Gate akzeptiert ausschließlich `upload`, `install` und `cleanup`.
+  Fertige Archive bleiben Eigentum von `filzmann`. Eine gezielte POSIX-ACL
+  erteilt `simonbeyer_sys` nur Traverse auf Incoming- und Run-Verzeichnis sowie
+  Leserecht auf das Archiv; Gruppen, andere Benutzer und der Installer erhalten
+  kein Schreibrecht.
 - Ein root-eigener Wrapper erlaubt ausschließlich Archive aus dem fest
   vorgegebenen Incoming-Verzeichnis und delegiert ohne Passwort an den
   Plesk-Systembenutzer `simonbeyer_sys`. Der Installer serialisiert alle
@@ -75,7 +80,22 @@ Für Teamcloud wurden der reale Nextcloud-Root
 Plesk-Benutzer kann `occ` lesen und `custom_apps` schreiben. `filzmann`
 erhält deshalb keine zusätzlichen Zugriffsrechte auf den vHost.
 
-Die beiden geprüften Parent-Skripte werden zunächst als `filzmann` in ein
+Vor Installation des Gates müssen `setfacl` und `getfacl` aus dem
+POSIX-ACL-Paket verfügbar sein. Auf Debian-/Ubuntu-Systemen liefert sie das
+Paket `acl`. Die Voraussetzung und der Zielbenutzer werden vor Gate-Nutzung
+explizit geprüft:
+
+```bash
+command -v setfacl
+command -v getfacl
+id simonbeyer_sys
+```
+
+Das Gate prüft dieselben Voraussetzungen bei Upload, Install und Cleanup erneut
+und bricht bei fehlenden Werkzeugen, unbekanntem Zielbenutzer oder abweichenden
+ACLs fail-closed ab.
+
+Die drei geprüften Parent-Skripte werden zunächst als `filzmann` in ein
 temporäres Bootstrap-Verzeichnis hochgeladen. Anschließend werden sie als
 Root unveränderlich für den Deploymentbenutzer installiert:
 
@@ -87,12 +107,28 @@ install -o root -g root -m 755 \
 install -o root -g root -m 755 \
   /tmp/teamcloud-staging-bootstrap/teamcloud-staging-install \
   /usr/local/sbin/teamcloud-staging-install
+install -o root -g root -m 755 \
+  /tmp/teamcloud-staging-bootstrap/teamcloud-staging \
+  /usr/local/bin/teamcloud-staging
 
-install -d -o filzmann -g psacln -m 750 \
+install -d -o filzmann -g <FILZMANN-GRUPPE> -m 700 \
   /var/tmp/teamcloud-staging-incoming
 install -d -o simonbeyer_sys -g psacln -m 750 \
   /var/lib/teamcloud-staging
+
+setfacl -b -k /var/tmp/teamcloud-staging-incoming
+setfacl -m u:simonbeyer_sys:--x,g::---,m::--x,o::--- \
+  /var/tmp/teamcloud-staging-incoming
+getfacl -n /var/tmp/teamcloud-staging-incoming
 ```
+
+Die Gruppen- und Other-Einträge müssen effektiv `---` bleiben. Die in `ls -l`
+angezeigten Gruppenbits bilden bei erweiterten ACLs die ACL-Maske ab und sind
+deshalb kein Ersatz für die Prüfung mit `getfacl`.
+Das Gate repariert diesen administrativ gesetzten Zustand nicht. Upload,
+Install und Cleanup lehnen einen abweichenden Owner oder ACL-Vertrag des
+Incoming-Roots geschlossen ab; nur das neu erzeugte Run-Verzeichnis und das
+fertige Archiv erhalten beim Upload ihre gezielten ACLs.
 
 Die Sudoers-Regel wird ausschließlich mit `visudo` angelegt:
 
@@ -118,6 +154,29 @@ sudo -u filzmann sudo -n -u simonbeyer_sys \
 Der letzte Befehl muss ohne Passwortabfrage mit der Usage-Meldung und Exit 2
 enden. Ein Root-Aufruf von `occ`, `chmod 777`, ein schreibbarer Core-App-Pfad
 oder zusätzliche Rechte von `filzmann` am vHost sind nicht zulässig.
+
+Vor dem ersten produktiven Gate-Lauf wird die tatsächliche ACL-Wirkung mit
+einem synthetischen Upload geprüft. `<UNBETEILIGTER-BENUTZER>` wird durch ein
+vorhandenes, weder an Upload noch Installation beteiligtes Konto ersetzt:
+
+```bash
+printf 'synthetischer ACL-Test\n' | \
+  sudo -u filzmann /usr/local/bin/teamcloud-staging \
+    upload 999999 1 filzmann_permission_matrix
+
+probe=/var/tmp/teamcloud-staging-incoming/999999-1-filzmann_permission_matrix/filzmann_permission_matrix.tar.gz
+test "$(stat -c %U -- "$probe")" = filzmann
+getfacl -n "$probe"
+sudo -u simonbeyer_sys test -r "$probe"
+! sudo -u simonbeyer_sys test -w "$probe"
+! sudo -u <UNBETEILIGTER-BENUTZER> test -r "$probe"
+sudo -u filzmann /usr/local/bin/teamcloud-staging \
+  cleanup 999999 1 filzmann_permission_matrix
+```
+
+Dieser Test installiert das synthetische Archiv nicht. Er belegt Eigentum,
+Traverse-/Leserecht, fehlendes Schreibrecht, Fremdbenutzer-Ablehnung und den
+weiterhin funktionierenden Cleanup getrennt vom Installationswrapper.
 
 Den zu GitHub passenden Host-Key direkt auf dem Server anzeigen und seinen
 Fingerprint getrennt prüfen:

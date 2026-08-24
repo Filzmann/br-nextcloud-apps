@@ -3,8 +3,14 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 pruner="$workspace/scripts/prune-ad-suite-release-candidates.sh"
+builder="$workspace/scripts/build-ad-suite-release.sh"
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
+
+if grep -Fq 'prune-ad-suite-release-candidates.sh' "$builder"; then
+    echo 'Ein normaler AD-Suite-Build ruft weiterhin automatisch die RC-Bereinigung auf.' >&2
+    exit 1
+fi
 
 for label in nc34-rc4 nc34-rc7 nc34-rc8; do
     mkdir -p "$temporary/ad-suite-$label" "$temporary/ad-product-adcalendar-$label" "$temporary/ad-product-adrecruitment-$label"
@@ -14,7 +20,19 @@ for label in nc34-rc4 nc34-rc7 nc34-rc8; do
 done
 touch "$temporary/ad-suite-1.0.0.tar.gz"
 
-"$pruner" --dist-root "$temporary" --keep-label nc34-rc8
+preview="$($pruner --dist-root "$temporary" --keep-label nc34-rc8)"
+
+for expected in \
+    ad-suite-nc34-rc4 \
+    ad-suite-nc34-rc4.tar.gz \
+    ad-product-adcalendar-nc34-rc7.tar.gz.sha256; do
+    grep -Fqx "$temporary/$expected" <<< "$preview" \
+        || { echo "Vorschau nennt das erkannte RC-Artefakt nicht exakt: $expected" >&2; exit 1; }
+    [[ -e "$temporary/$expected" ]] \
+        || { echo "Die Vorschau hat ein RC-Artefakt gelöscht: $expected" >&2; exit 1; }
+done
+
+"$pruner" --dist-root "$temporary" --keep-label nc34-rc8 --execute
 
 if find "$temporary" -maxdepth 1 -mindepth 1 \( -name '*-nc34-rc4*' -o -name '*-nc34-rc7*' \) -print -quit | grep -q .; then
     echo 'Veraltete Release Candidates wurden nicht vollständig entfernt.' >&2
@@ -38,5 +56,14 @@ if "$pruner" --dist-root "$temporary" --keep-label release-1 >/dev/null 2>&1; th
     echo 'Eine nicht nummerierte RC-Kennung wurde akzeptiert.' >&2
     exit 1
 fi
+
+unsafe_target="$temporary-unsafe-target"
+mkdir -p "$unsafe_target"
+ln -s "$unsafe_target" "$temporary/unsafe-dist"
+if "$pruner" --dist-root "$temporary/unsafe-dist" --keep-label nc34-rc8 >/dev/null 2>&1; then
+    echo 'Ein symbolischer Link wurde als Dist-Root akzeptiert.' >&2
+    exit 1
+fi
+rm -rf "$unsafe_target"
 
 echo 'AD-Release-Candidate-Bereinigung: OK'

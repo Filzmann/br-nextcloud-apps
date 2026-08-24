@@ -39,6 +39,16 @@ Folgepakete. Für Dozentinnen- und Bearbeitungsreferenzen ist vor fachlicher
 Fertigstellung ein konkreter PersonalDataProvider- und Retention-Vertrag
 erforderlich.
 
+## Fortschreibung vom 15. August 2026
+
+Nach dem dependency-armen Start wurde der BQ-Planer in den bereits bestehenden
+Kategorie-B-Vertrag von LocalBase aufgenommen. Die Navigation nutzt den
+Produktkatalog; Terminvorschläge konsumieren den versionierten
+Ferien-/Feiertags-Jahresvertrag. Die BQ-App projiziert ihn über ihren lokalen
+Port, verwaltet Brückentage selbst und verweigert automatische Vorschläge bei
+fehlenden oder inkompatiblen Kalenderdaten. Der Recruitment-Vertrag bleibt
+weiterhin ein getrenntes, nicht implementiertes Folgepaket.
+
 ## Rückbaugrenze
 
 Solange keine öffentliche Consumerintegration ausgerollt ist, kann der erste

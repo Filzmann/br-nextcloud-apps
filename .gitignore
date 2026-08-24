@@ -40,13 +40,14 @@ brtop/
 adplaner/
 brstunden/
 localbase/
-br_permission_matrix/
+filzmann_permission_matrix/
 adcalendar/
 adurlaub/
 orgsuite/
 adroom/
 adrecruitment/
 adbqplanung/
+filzmann_data_protection/
 ad-suite/
 
 # DDEV generated/local runtime

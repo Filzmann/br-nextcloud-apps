@@ -21,7 +21,7 @@ installer='/usr/local/libexec/teamcloud-staging/install-staging-app.sh'
 state_dir='/var/lib/teamcloud-staging'
 
 case "$app_id" in
-    brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+    brtop|adplaner|brstunden|localbase|filzmann_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
     *) echo "Nicht freigegebene App-ID: $app_id" >&2; exit 2 ;;
 esac
 if [[ ! "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ || ! "$expected_hash" =~ ^[0-9a-f]{64}$ ]]; then

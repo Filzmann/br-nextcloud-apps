@@ -235,7 +235,7 @@ if "$server_wrapper" /tmp/demoapp.tar.gz demoapp "$commit" "$hash" >/dev/null 2>
     fail 'Server-Wrapper akzeptiert ein Archiv außerhalb des Incoming-Verzeichnisses.'
 fi
 
-for app_id in brtop adplaner brstunden localbase br_permission_matrix adcalendar adurlaub orgsuite adroom adrecruitment; do
+for app_id in brtop adplaner brstunden localbase filzmann_permission_matrix adcalendar adurlaub orgsuite adroom adrecruitment; do
     caller="$workspace/$app_id/.github/workflows/tests.yml"
     assert_contains "$caller" 'deploy-staging:'
     assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main'

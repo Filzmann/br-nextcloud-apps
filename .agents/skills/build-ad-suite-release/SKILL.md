@@ -37,33 +37,41 @@ description: Build or validate AD-Suite and standalone AD-product release bundle
    fast run. `scripts/check-full` is deliberately not a release verdict.
 4. For either authorized build path, keep generated archives under ignored
    build output; do not stage them in Git.
-5. For the private AD-Suite path, validate the generated `manifest.tsv`,
+5. A successful build never removes older release candidates automatically.
+   If the user separately authorizes cleanup, first run
+   `scripts/prune-ad-suite-release-candidates.sh --dist-root <path> --keep-label <label>`
+   without `--execute` and review every printed target. Repeat the identical
+   command with `--execute` only after that preview is accepted. Cleanup is
+   limited to validated local `nc34-rcN` artifacts, preserves the named RC and
+   all final releases, and is not recoverable except from another copy or by
+   rebuilding the exact source commits.
+6. For the private AD-Suite path, validate the generated `manifest.tsv`,
    `SHA256SUMS`, outer `.sha256`, nested archive roots, mandatory documentation,
    and absence of `.git`, tests, `AGENTS.md`, symlinks, secrets, internal paths,
    and foreign products.
-6. For an official App-Store candidate, validate the exact app-local output:
+7. For an official App-Store candidate, validate the exact app-local output:
    one lower-case app root matching `appinfo/info.xml`, no second app root,
    required production files, no Root control/development/secret files, and
    the archive checks implemented by the named app's own Store gate. Do not
    infer a green Store verdict from private-suite manifests or checksums.
-7. For every app, classify each dependency as Quellcode-Abhängigkeit,
+8. For every app, classify each dependency as Quellcode-Abhängigkeit,
    gebundelte Produktionsabhängigkeit, or externe Nextcloud-App-Laufzeitabhängigkeit.
    Verify that production dependencies were built, applicable Lock-Dateien
    are present and consistent, and required runtime
    files are contained below the app's single root. Reject a zweite App-Wurzel
    inside an App-Store archive.
-8. Require an explicit review that documented runtime-app dependencies match
+9. Require an explicit review that documented runtime-app dependencies match
    the code, no direkten Zugriffe auf Datenbanktabellen anderer Apps or other
    private internals exist, Lizenzinformationen for bundled dependencies are
    complete, and the app passed a sauberen Installation with exactly its
    documented prerequisites. Static grep evidence alone is not a complete
    verdict for these review decisions.
-9. The current private AD-Suite product bundles contain `localbase`,
+10. The current private AD-Suite product bundles contain `localbase`,
    `orgsuite`, and exactly one requested AD Fachprodukt; the full suite contains
    all supported products. This multi-app delivery model is not an official
    single-app App-Store archive and must not be reported as one.
-10. If authorized staging acceptance is in scope, use the real hosting configuration: domain CLI-PHP, configured app paths, PHP-FPM/domain user, and Static-Webserver user/group. Apply only minimal permission changes.
-11. A staging installation passes only after `occ` status/app checks, migrations/jobs where relevant, static-server readability, public HTTPS 200 plus correct Content-Type for at least one CSS and JavaScript asset, visible UI, rollback, privacy, and fachliche acceptance checks.
+11. If authorized staging acceptance is in scope, use the real hosting configuration: domain CLI-PHP, configured app paths, PHP-FPM/domain user, and Static-Webserver user/group. Apply only minimal permission changes.
+12. A staging installation passes only after `occ` status/app checks, migrations/jobs where relevant, static-server readability, public HTTPS 200 plus correct Content-Type for at least one CSS and JavaScript asset, visible UI, rollback, privacy, and fachliche acceptance checks.
 
 ## Reporting
 

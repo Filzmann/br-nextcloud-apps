@@ -29,24 +29,26 @@ br-nextcloud-apps/
 |       |-- docker-compose.adplaner.yaml
 |       |-- docker-compose.brstunden.yaml
 |       |-- docker-compose.localbase.yaml
-|       |-- docker-compose.br_permission_matrix.yaml
+|       |-- docker-compose.filzmann_permission_matrix.yaml
 |       |-- docker-compose.adcalendar.yaml
 |       |-- docker-compose.adurlaub.yaml
 |       |-- docker-compose.orgsuite.yaml
 |       |-- docker-compose.adroom.yaml
 |       |-- docker-compose.adrecruitment.yaml
-|       `-- docker-compose.adbqplanung.yaml
+|       |-- docker-compose.adbqplanung.yaml
+|       `-- docker-compose.filzmann_data_protection.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
-|-- br_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
+|-- filzmann_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- adcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
 |-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
 |-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
 |-- adroom/     # eigenes Git-Repo, Raumplanung
 |-- adrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
 |-- adbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
+|-- filzmann_data_protection/ # eigenes Git-Repo, Datenschutz-Center
 `-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -60,15 +62,27 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | AdPlaner | `adplaner` | `adplaner/` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
 | LocalBase | `localbase` | `localbase/` | keine Navigation |
-| Berechtigungsmatrix | `br_permission_matrix` | `br_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/br_permission_matrix/` |
+| Berechtigungsmatrix | `filzmann_permission_matrix` | `filzmann_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/filzmann_permission_matrix/` |
 | AD Kalender | `adcalendar` | `adcalendar/` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
 | AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
 | AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
 | AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
 | AD Recruitment | `adrecruitment` | `adrecruitment/` | `https://nextcloud-dev.ddev.site/apps/adrecruitment/` |
 | AD BQ-Planer | `adbqplanung` | `adbqplanung/` | `https://nextcloud-dev.ddev.site/apps/adbqplanung/` |
+| Datenschutz-Center | `filzmann_data_protection` | `filzmann_data_protection/` | `https://nextcloud-dev.ddev.site/apps/filzmann_data_protection/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
+
+## Lokale Test- und Demokonten
+
+Für alle ausschließlich in der lokalen Entwicklungsumgebung erzeugten Test-
+und Demokonten gilt: Das initiale Passwort entspricht exakt dem Benutzernamen.
+Diese bewusst einfache Vorgabe dient der lokalen manuellen Abnahme und darf
+weder in Produktions-, Staging- oder öffentlich erreichbare Umgebungen noch
+in echte Konten oder externe Benutzer-Backends übernommen werden. Vorhandene
+fremde, produktive oder LDAP-verwaltete Konten werden dafür niemals
+umgewidmet. App-spezifische Demo-Packs verwenden die gemeinsame lokale
+Provisionierung; abweichende lokale Testskripte halten denselben Vertrag ein.
 
 App-spezifische Regeln stehen in der jeweiligen App-`AGENTS.md`. Jede App
 führt außerdem die gemeinsamen Skills `work-in-nextcloud-app` und
@@ -79,10 +93,17 @@ Laufzeitabhängigkeit. Die Parent-Fassungen sind kanonisch, das
 Repositorymanifest benennt beide Pflicht-Skills und die Strukturprüfung
 erzwingt bytegleiche lokale Kopien.
 
+Die Governance-Hierarchie steht kanonisch in
+`docs/parent-governance-contract.md`. Ihr versionierter Block wird zusätzlich
+vollständig in jeder Subrepository-`AGENTS.md` mitgeführt: Repository-lokale Regeln bleiben bei
+einem Einzel-Checkout vollständig, dürfen anwendbare Parent-Verträge aber nur
+konkretisieren oder verschärfen. Der Parent-Contract-Test prüft jede im
+Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
+
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `br_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `filzmann_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/`, `filzmann_data_protection/` und `ad-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -108,13 +129,14 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
-ddev exec -d /var/www/html/html php occ app:list | grep -i br_permission_matrix
+ddev exec -d /var/www/html/html php occ app:list | grep -i filzmann_permission_matrix
 ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
 ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
 ddev exec -d /var/www/html/html php occ app:list | grep -i adrecruitment
 ddev exec -d /var/www/html/html php occ app:list | grep -i adbqplanung
+ddev exec -d /var/www/html/html php occ app:list | grep -i filzmann_data_protection
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -193,14 +215,14 @@ nextcloud-dev/.ddev/docker-compose.localbase.yaml
 Berechtigungsmatrix:
 
 ```text
-${WORKSPACE_ROOT}/br_permission_matrix
--> /var/www/html/html/custom_apps/br_permission_matrix
+${WORKSPACE_ROOT}/filzmann_permission_matrix
+-> /var/www/html/html/custom_apps/filzmann_permission_matrix
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.br_permission_matrix.yaml
+nextcloud-dev/.ddev/docker-compose.filzmann_permission_matrix.yaml
 ```
 
 AD Kalender:
@@ -281,6 +303,19 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.adbqplanung.yaml
 ```
 
+Datenschutz-Center:
+
+```text
+${WORKSPACE_ROOT}/filzmann_data_protection
+-> /var/www/html/html/custom_apps/filzmann_data_protection
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.filzmann_data_protection.yaml
+```
+
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
 Workspace-Roots verwenden. Eine persönliche Home-Verzeichnisstruktur ist kein
 Projektvertrag.
@@ -325,7 +360,31 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 
 `check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
 
-DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+Ein Releasebau löscht keine älteren Release Candidates. Eine Bereinigung ist
+ein eigener Auftrag nach erfolgreichem Neubau. Zuerst wird ausschließlich die
+Vorschau geprüft:
+
+```bash
+scripts/prune-ad-suite-release-candidates.sh \
+  --dist-root <DIST-ROOT> \
+  --keep-label nc34-rcN
+```
+
+Erst die Wiederholung desselben Aufrufs mit `--execute` entfernt die exakt
+ausgegebenen, validierten lokalen `nc34-rcN`-Artefakte. Der benannte RC und
+finale Releases bleiben erhalten. Gelöschte Artefakte sind nur aus einer
+anderen Kopie oder durch einen reproduzierbaren Neubau der exakten
+Quellcommits wiederherstellbar.
+
+DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `scripts/verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+
+Der schnelle Parent-Check prüft eindeutig ausgeschriebene technische Pfade in
+der aktuellen Betriebs-, Architektur- und Vertragsdokumentation gegen den
+Workspace. Nicht mehr vorhandene exakte Pfade blockieren. Bloße technische
+Basenames ohne Repositorykontext bleiben wegen möglicher Mehrdeutigkeit eine
+Warnung. Historische Dateien unter `docs/plans/` sind von diesem laufenden
+Vertrag eng ausgenommen; ihr historischer Stand wird nicht nachträglich auf
+den aktuellen Quellbaum umgeschrieben.
 
 Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln und die lokale `AGENTS.md` samt lokalem Skill lesen. Der Parent startet mit `sandbox_mode = "workspace-write"` und `approval_policy = "on-request"`, damit ausdrücklich beauftragte Änderungen sowie gezieltes Staging und Committen innerhalb des Workspaces möglich sind. Dieser technische Schreibzugriff erteilt keine fachliche Schreibfreigabe und ersetzt weder Repository-Grenzen noch Git-Regeln. Externe Connector-/MCP-Systeme bleiben separat durch Auftrag und Rollenregeln begrenzt. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen. Schreibende Cross-App-Arbeit ist ein ausdrücklich beauftragter Sonderlauf; `.gitignore` ersetzt diese Grenze nicht.
 
