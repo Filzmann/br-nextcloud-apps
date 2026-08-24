@@ -208,6 +208,7 @@ den inzwischen je App nachgewiesenen Stand fest:
 | `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `adrecruitment` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap und eigener Autoload-Contract-Test, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
+| `adbqplanung` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
 
 Der Status wird nur mit dem jeweiligen verifizierten App-Lauf geändert. Eine
 bloße zentrale Dokumentationsänderung erklärt keine App als migriert.
