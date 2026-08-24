@@ -349,7 +349,7 @@ Mit diesem Dokument und dem Pilotstand vom 12. August 2026 umgesetzt:
 Im Pilot umgesetzt sind die PHP-Verträge für Nextcloud-User-Subjects,
 PersonalData- und Retention-Preview-Provider, feste Registry-Snapshots,
 fehlerisolierte Aggregation, Self-Service-/Admin-Grundansichten und die realen
-`adcalendar`- und `adrecruitment`-Provider sowie der LocalBase-eigene Provider für das
+`adrecruitment`-Provider sowie der LocalBase-eigene Provider für das
 Nextcloud-Konto. Der flüchtige Bericht enthält pro Provider
 Zwecke, Kategorien, Empfänger*innen, Herkunft, Aufbewahrung,
 Drittlandübermittlung und automatisierte Entscheidungen sowie zentrale
@@ -452,6 +452,12 @@ Assistenz- und Bearbeiterkennungen sowie freie Tagesnotiztexte werden nicht
 ausgegeben; deren fachlicher Kontext bleibt als geschützte Datenklasse
 sichtbar.
 
+Als fünfter Consumer ist der `PersonalDataProvider` von `adcalendar` auf den
+Standalone-V1-Vertrag migriert. Eigene Dienste und Termine bleiben nach
+fachlicher Organisationszeitzone lesbar. Bei gemeinsamen Terminen wird nur
+das Vorhandensein weiterer Beteiligter ausgewiesen; deren UIDs, Titel und
+fremde Kalendereinträge bleiben geschützt.
+
 Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
 aktiver Aggregator oder zweite kanonische Vertragsquelle betrieben werden.
@@ -506,7 +512,7 @@ bewusst nicht vorweggenommen.
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | Inventar verifiziert; fachliche Einzellöschung vorhanden, keine Retention |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
 | `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs und Audit-UIDs; `include_users` ist konfigurierbar, im aktuellen Snapshotcode sind jedoch keine persistierten Benutzerlisten belegt | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | PersonalDataProvider und öffentlicher Standalone-V1-Preview-Provider implementiert: eigene Art.-15-Bezüge bleiben kontextuell erhalten; Exportmetadaten und Auditprotokolle werden nach getrennt konfigurierbaren, standardmäßig 180-tägigen Fristen ausschließlich als `REVIEW` gemeldet. Inhalte, Dateinamen, freie Auditdetails, UIDs und Drittpersonenangaben bleiben ausgeschlossen. Keine Retention-Ausführung und kein Lifecycle-Provider |
-| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider für eigene Dienste und Termine implementiert; gemeinsame Meetings nennen weitere Beteiligte nur abstrakt. Persönliche Einstellungen, Verbindungen und DAV-Metadaten sowie Retention-Policy bleiben offen |
+| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider für eigene Dienste und Termine auf Standalone V1 migriert; gemeinsame Meetings nennen weitere Beteiligte nur abstrakt. Persönliche Einstellungen, Verbindungen und DAV-Metadaten sowie Retention-Policy bleiben offen |
 | `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider auf Standalone V1 migriert; eigene freiwillige Notizen werden als möglicher Drittpersoneninhalt gekennzeichnet. Der konfigurierbare Retention-REVIEW-Dry-Run verbleibt bis zur Entscheidung über eine globale Adminprüfung im LocalBase-Pilot; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
 | `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter erhält den Buchungskontext ohne möglichen Drittpersonen-Freitext | hoch, Pilot | PersonalDataProvider auf den öffentlichen Standalone-V1-Vertrag migriert und aktiv/deaktiviert lokal in Nextcloud verifiziert; Raum, Zweck und Zeitraum bleiben erhalten, der freie Titel wird neutral ersetzt. LocalBase-Retention-Dry-Run mit `REVIEW` bleibt separat; keine fachliche Frist, Ausführung oder Lifecycle-Quelle |
