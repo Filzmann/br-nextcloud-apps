@@ -4,8 +4,10 @@
 - Entscheidung: 2026-08-23
 - Geltungsbereich: Produktzuordnung, Navigation und künftige Integration der
   App `filzmann_permission_matrix`
-- Umsetzung: abgeschlossen für Identität, Standalone-Navigation und
-  OrgSuite-Entkopplung; Privacy-Provider und Retention bleiben offen
+- Umsetzung: abgeschlossen für Identität, Standalone-Navigation,
+  OrgSuite-Entkopplung, Privacy-Provider, Retention-Preview und den
+  versionsgebundenen Groupfolders-22.x-Adapter; fachliche
+  Retentionmaßnahmen bleiben offen
 
 ## Kontext und verifizierter Stand
 
@@ -29,8 +31,14 @@ Im aktuellen Repository ist verifiziert:
   `orgsuite`, das Template lädt OrgSuite-Assets und verwendet
   `data-suite="br"`;
 - inzwischen eigener berechtigungsgeprüfter Nextcloud-Hauptnavigationseintrag;
-- personenbezogene Snapshot-, Export- und Auditbezüge, für die noch ein
-  `PersonalDataProvider` und fachliche Retentionentscheidungen fehlen.
+- personenbezogene Snapshot-, Export- und Auditbezüge, die ein
+  subjectgebundener `PersonalDataProvider` aus app-eigenen Tabellen ausweist;
+- ein read-only Retention-Preview ohne Ausführungspfad; fachliche
+  Retentionentscheidungen und Maßnahmen fehlen weiterhin;
+- ein app-lokaler, versionsgebundener Groupfolders-Adapter für die belegte
+  22.x-Struktur auf Nextcloud 34, der Root-Rechte ohne Mount-Pfade oder
+  Dateiinhalte projiziert und alle inkompatiblen oder unvollständigen Zustände
+  als `UNKNOWN` behandelt.
 
 ## Entscheidung
 
@@ -74,6 +82,38 @@ aus.
 | Retention von Snapshots, Exportmetadaten und Audit | Berechtigungsmatrix | eigener `RetentionProvider`; fachliche Beweis- und Aufbewahrungswerte vor Maßnahmen entscheiden |
 | Art.-15-Aggregation und Coverage | Privacy-App | nur öffentlicher Providervertrag, kein Fremddatenzugriff |
 | Portfolioauffindbarkeit | perspektivisch IKT/Datenschutz | unabhängige Navigation oder kleiner optionaler, versionierter Adapter |
+
+## Groupfolders-Kompatibilitätsgrenze
+
+`groupfolders` bleibt eine eigenständige fremde Nextcloud-Laufzeit-App. Der
+Adaptercode ist bewusst app-lokal in der Berechtigungsmatrix und wird weder in
+LocalBase noch in eine gemeinsame Bibliothek verschoben. Die offizielle App
+stellt für die benötigte vollständige Ordnerliste derzeit keinen öffentlichen
+OCP-Vertrag bereit. Deshalb ist der Zugriff auf
+`OCA\GroupFolders\Folder\FolderManager::getAllFolders()` eine eng begrenzte,
+read-only Ausnahme und kein allgemein freigegebener Cross-App-Zugriff.
+
+Die Ausnahme gilt nur gemeinsam mit diesen Schutzgrenzen:
+
+- ausschließlich Groupfolders 22.x auf Nextcloud 34;
+- keine fremden Tabellen, Controller, Reflection, AppConfig-, Datei- oder
+  Migrator-Fallbacks und keinerlei Schreiboperation;
+- nur pseudonyme Ordnerreferenz, Nextcloud-Gruppen-ID, Root-Permission-Maske
+  und ACL-Vollständigkeitsstatus verlassen den Adapter; Mount-Pfade,
+  Datei-/Ordnernamen und Dateiinhalte bleiben ausgeschlossen;
+- erweiterte ACLs, Team-/Circle-Zuordnungen, die historische App-ID
+  `files_groupfolders`, abweichende Versionen und Quellfehler führen sichtbar
+  zu `UNKNOWN` beziehungsweise `PARTIAL`;
+- vor jedem Release mit diesem Adapter prüft
+  `filzmann_permission_matrix/scripts/check-groupfolders-source-compatibility`
+  einen
+  frischen offiziellen Groupfolders-Checkout. Änderungen an Version,
+  Ziel-Nextcloud, DTO-Feldern oder Methode blockieren die Freigabe, bis
+  Adapter, Tests und Gate bewusst gemeinsam aktualisiert wurden.
+
+Damit wird die vom fremden Projekt gewählte Vorgehensweise bei künftigen
+Releases reproduzierbar erneut geprüft. Das Gate lädt selbst keinen Quellcode
+und erhält den zu prüfenden offiziellen Checkout als expliziten Parameter.
 
 ## Navigation und aufgehobene BR-Kopplung
 
@@ -141,11 +181,13 @@ Portfoliozuordnung allein erteilt niemandem Zugriff.
    Erhaltungsbedarf und Referenzen bestätigt; umgesetzt.
 4. **Standalone-Navigation:** Erreichbarkeit ohne OrgSuite test-first
    hergestellt; vorhandene Rechte blieben unverändert.
-5. **Privacy-Provider:** personenbezogene Snapshot-, Export-, Audit- und
-   optionale Benutzerlistenbezüge vollständig inventarisieren und einen
-   subjectgebundenen Provider implementieren.
-6. **Retention:** Beweiswert, gesetzliche/fachliche Aufbewahrung, Audit und
-   mengenbasierte Snapshot-Retention trennen; zunächst nur Dry Run.
+5. **Privacy-Provider:** personenbezogene Snapshot-, Export- und Auditbezüge
+   vollständig inventarisiert und subjectgebundenen Provider implementiert;
+   optionale Benutzerlisten bleiben im Standardmodus deaktiviert und werden
+   nicht als eigene Persistenz der Matrix ausgegeben.
+6. **Retention:** technische Fristen und read-only Preview umgesetzt;
+   Beweiswert, gesetzliche/fachliche Aufbewahrung und konkrete Maßnahmen
+   bleiben vor einem Ausführungspfad zu entscheiden.
 7. **Optionaler Portfolioadapter:** erst nach stabiler Standalone-App und
    Privacy-Vertragsversion einen kleinen Link-/Capability-Vertrag prüfen.
 8. **Releaseprüfung:** Installation mit und ohne OrgSuite sowie mit und ohne
@@ -165,5 +207,6 @@ migriert oder verändert.
   nicht migrierten Vorgängerstands erhalten.
 - Noch zu entscheiden sind das öffentliche Store-Ziel und der konkrete
   optionale Portfolioadapter.
-- Art.-15-, Audit- und Retentionlücken bleiben sichtbar und werden nicht durch
-  die bloße thematische Zuordnung als gelöst dargestellt.
+- Die Art.-15-Providerlücke ist geschlossen. Fachliche Retention- und
+  Maßnahmenentscheidungen bleiben sichtbar und werden nicht durch die bloße
+  thematische Zuordnung als gelöst dargestellt.
