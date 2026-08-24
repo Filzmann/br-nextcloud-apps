@@ -207,7 +207,7 @@ den inzwischen je App nachgewiesenen Stand fest:
 | `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
 | `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
-| `adrecruitment` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adrecruitment` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap und eigener Autoload-Contract-Test, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
 
 Der Status wird nur mit dem jeweiligen verifizierten App-Lauf geändert. Eine
 bloße zentrale Dokumentationsänderung erklärt keine App als migriert.
