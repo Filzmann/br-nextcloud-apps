@@ -348,9 +348,10 @@ Mit diesem Dokument und dem Pilotstand vom 12. August 2026 umgesetzt:
 
 Im Pilot umgesetzt sind die PHP-Verträge für Nextcloud-User-Subjects,
 PersonalData- und Retention-Preview-Provider, feste Registry-Snapshots,
-fehlerisolierte Aggregation, Self-Service-/Admin-Grundansichten und die realen
-`adrecruitment`-Provider sowie der LocalBase-eigene Provider für das
-Nextcloud-Konto. Der flüchtige Bericht enthält pro Provider
+fehlerisolierte Aggregation, Self-Service-/Admin-Grundansichten und der
+LocalBase-eigene Provider für das Nextcloud-Konto. Der frühere reale
+`adrecruitment`-Pilot ist inzwischen auf den Standalone-Vertrag migriert.
+Der flüchtige Bericht enthält pro Provider
 Zwecke, Kategorien, Empfänger*innen, Herkunft, Aufbewahrung,
 Drittlandübermittlung und automatisierte Entscheidungen sowie zentrale
 Betroffenenrechte. Die Rechte erscheinen einmal im Berichtskopf; Datensätze
@@ -457,6 +458,15 @@ Standalone-V1-Vertrag migriert. Eigene Dienste und Termine bleiben nach
 fachlicher Organisationszeitzone lesbar. Bei gemeinsamen Terminen wird nur
 das Vorhandensein weiterer Beteiligter ausgewiesen; deren UIDs, Titel und
 fremde Kalendereinträge bleiben geschützt.
+
+Als sechster Consumer ist der interne `PersonalDataProvider` von
+`adrecruitment` auf den Standalone-V1-Vertrag migriert. Er weist ausschließlich
+die in fachlichen Bearbeitungs- und Auditfeldern gespeicherten Bezüge zur
+angefragten Nextcloud-UID aus. Bewerberstammdaten, Nachrichten, Interviews,
+Dateinamen und Inhalte der privaten AppData-Anhänge bleiben ausgeschlossen.
+Eine Bewerber-Selbstauskunft setzt einen getrennten, sicher authentifizierten
+Subject-Vertrag voraus; eine bloße Zuordnung über die E-Mail-Adresse findet
+nicht statt.
 
 Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
