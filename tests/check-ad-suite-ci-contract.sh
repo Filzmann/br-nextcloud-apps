@@ -30,6 +30,10 @@ require_text() {
     fi
 }
 
+require_text "$workspace/scripts/check-apps" \
+    'php tests/permission-provider-v1-contract.php' \
+    'App-übergreifender Permission-Provider-V1-Vertrag'
+
 for app in "${apps[@]}"; do
     workflow="$workspace/$app/.github/workflows/tests.yml"
     if [[ ! -f "$workflow" ]]; then
