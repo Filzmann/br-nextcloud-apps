@@ -156,6 +156,14 @@ interface PersonalDataProvider {
 }
 ```
 
+Dieser Vertrag beschreibt weiterhin das spätere Zielbild einschließlich
+einer ausdrücklich freizugebenden Ausführung. Der aktuell implementierte
+öffentliche V1-Vertrag endet bewusst nach `descriptor()`, `policies()` und
+`preview()`: Er unterstützt ausschließlich `REVIEW` und besitzt keine
+`execute()`-Methode. Eine Ausführung wird nicht nachträglich still in V1
+ergänzt, sondern benötigt eine neue freigegebene Vertragsversion samt
+Policy-, Lifecycle-, Nebenläufigkeits- und Rückbauentscheidung.
+
 `PersonalDataRequest` enthält ausschließlich die typisierte betroffene Person,
 Sprache, Ausgabezweck, technische Begrenzungen und einen opaken Cursor.
 `PersonalDataPage` liefert eine eindeutige Endmarke oder den nächsten Cursor.
@@ -369,12 +377,24 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 2. den LocalBase-Pilot als rückwärtskompatiblen Ausgangsvertrag
    charakterisieren;
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
-   Cursor-Paging und Versionshandshake festlegen;
+   providergebundenem Cursor-Paging und Versionshandshake festlegen; der
+   technische Contract-Kern, das Test-Kit und der erste reale Consumer
+   `adroom` sind umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
-   modellieren;
-5. Contract-Test-Kit und neutrale Referenzfixtures bereitstellen;
+   modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
+   eines konkreten Coverage-Profils bleibt offen;
+5. Contract-Test-Kit und neutrale Referenzfixtures bereitstellen; das
+   technische Test-Kit ist umgesetzt, vollständige Referenzfixtures folgen
+   mit dem synthetischen Referenzprovider;
 6. saubere Installation mit fehlender, deaktivierter, kompatibler und
-   inkompatibler Privacy-App planen und später automatisieren.
+   inkompatibler Privacy-App prüfen: kompatibel aktiv und deaktiviert sind im
+   lokalen DDEV verifiziert. Der opt-in Check
+   `scripts/check-privacy-app-compatibility` automatisiert am
+   Matrix-Consumer zusätzlich den physisch fehlenden Zustand und eine von
+   Nextcloud real als inkompatibel abgewiesene Installation mit vollständigem
+   Rückbau. Die Versionsablehnung eines registrierten Providers bleibt
+   ergänzend im Contract-Test belegt; weitere Consumer benötigen weiterhin
+   ihren eigenen Start- und Vertragsnachweis.
 
 Die App wird mit `create-nextcloud-app` erst nach der ausdrücklichen
 Namens-/App-ID- und Repositoryfreigabe angelegt. Es gibt keine automatische
@@ -383,15 +403,39 @@ App-zu-App-Installation und kein Daten-Fallback.
 ### Etappe 3 – Standalone-Runtime und erster Provider
 
 1. Registry, Aggregator, Self-Service und getrennte Adminberechtigung in der
-   neutralen Standalone-App test-first implementieren.
+   neutralen Standalone-App test-first implementieren. Registry, Aggregator
+   sowie die ausschließlich an `OCP\IUserSession` gebundene Self-Service-API
+   und die flüchtige zugängliche Report-UI sind umgesetzt; die
+   Self-Service-Integration ist in lokaler Nextcloud-Laufzeit verifiziert,
+   Die getrennte REVIEW-Berechtigung ist umgesetzt: native Nextcloud-Admins
+   dürfen nach Neuinstallation standardmäßig lesen, das fachliche Leserecht
+   ist unabhängig vom technischen Konfigurationsrecht abschaltbar und um
+   dedizierte Prüfgruppen ergänzbar.
 2. Zunächst einen synthetischen Referenzprovider anbinden, damit keine
    Fachdatenmigration die Runtimegrenze verdeckt.
-3. Danach genau einen vorhandenen realen Provider mit Aktivierungs- und
-   Versionsprüfung aus LocalBase migrieren; `adroom` bleibt wegen der klaren
-   UID- und Repositorygrenze der bevorzugte Consumer.
+3. Genau einen vorhandenen realen Provider mit Aktivierungs- und
+   Versionsprüfung aus LocalBase migrieren: `adroom` ist als erster Consumer
+   auf den öffentlichen V1-Vertrag umgestellt. Der freie Buchungstitel wird
+   wegen möglicher Drittpersonenangaben durch einen neutralen Platzhalter
+   ersetzt; Raum, Zweck und Zeitraum erhalten den fachlichen Kontext.
 4. Installation mit und ohne Privacy-App, Providerfehler, Cursor-Grenzen,
    Teilantwort, Audit und Rückbau zum charakterisierten Pilotstand prüfen.
-5. Erst nach grünem Consumerlauf die nächste App freigeben.
+5. Der Consumerlauf ist in den Repository-Tests und in lokaler
+   Nextcloud-Laufzeit grün. Die nächste App benötigt weiterhin ein eigenes
+   Cross-Repository-Gate.
+
+Als zweiter ausdrücklich freigegebener Consumer ist
+`filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
+Nextcloud verifiziert. Die App projiziert ausschließlich eigene
+Snapshot-Ersteller-, Exportmetadaten- und Auditbezüge. Snapshot- und
+Exportinhalte, freie Dateinamen, freie Auditdetails sowie Angaben anderer
+Personen bleiben ausgeschlossen. Bestehende Matrixberechtigungen und das
+Tabellenschema wurden dadurch nicht verändert. Zusätzlich liefert die App als
+erster Standalone-Retention-Consumer zwei reine `REVIEW`-Policies für
+Exportmetadaten und Auditprotokolle. Beide Fristen sind app-lokal getrennt
+konfigurierbar und standardmäßig 180 Tage; UIDs, Dateinamen, Inhalte und freie
+Auditdetails werden nicht an die Vorschau übergeben. Der öffentliche
+V1-Vertrag besitzt keinen Ausführungspfad.
 
 Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
@@ -446,11 +490,11 @@ bewusst nicht vorweggenommen.
 | `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider für Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen implementiert; freie Tagesnotiztexte werden wegen möglicher Drittpersonendaten nicht automatisch ausgegeben; keine Retention-Policy |
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | Inventar verifiziert; fachliche Einzellöschung vorhanden, keine Retention |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
-| `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs, Audit-UIDs und optional Benutzerlisten bei `include_users=true` | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | neutrale App-ID und eigenständige Navigation gemäß ADR 0003 umgesetzt; mengenbasierte Snapshot-Retention vorhanden, kein Privacy-Provider |
+| `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs und Audit-UIDs; `include_users` ist konfigurierbar, im aktuellen Snapshotcode sind jedoch keine persistierten Benutzerlisten belegt | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | PersonalDataProvider und öffentlicher Standalone-V1-Preview-Provider implementiert: eigene Art.-15-Bezüge bleiben kontextuell erhalten; Exportmetadaten und Auditprotokolle werden nach getrennt konfigurierbaren, standardmäßig 180-tägigen Fristen ausschließlich als `REVIEW` gemeldet. Inhalte, Dateinamen, freie Auditdetails, UIDs und Drittpersonenangaben bleiben ausgeschlossen. Keine Retention-Ausführung und kein Lifecycle-Provider |
 | `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider für eigene Dienste und Termine implementiert; gemeinsame Meetings nennen weitere Beteiligte nur abstrakt. Persönliche Einstellungen, Verbindungen und DAV-Metadaten sowie Retention-Policy bleiben offen |
 | `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider und konfigurierbarer Retention-REVIEW-Dry-Run implementiert; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
-| `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter oder entfernte Buchungsreferenz gut als Pilot prüfbar | hoch, Pilot | PersonalDataProvider und Retention-Dry-Run mit `REVIEW` implementiert; keine Frist, Ausführung oder Lifecycle-Quelle |
+| `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter erhält den Buchungskontext ohne möglichen Drittpersonen-Freitext | hoch, Pilot | PersonalDataProvider auf den öffentlichen Standalone-V1-Vertrag migriert und aktiv/deaktiviert lokal in Nextcloud verifiziert; Raum, Zweck und Zeitraum bleiben erhalten, der freie Titel wird neutral ersetzt. LocalBase-Retention-Dry-Run mit `REVIEW` bleibt separat; keine fachliche Frist, Ausführung oder Lifecycle-Quelle |
 | `adrecruitment` | interne Bewerber-ID, Namen/Kontakt, Bewerbung und Statushistorie, Interviews/Antworten, BQ-Bewertung, Einstellungsdaten, Nachrichten, Anhänge in AppData, Kommentare, Feldnachweise sowie Beschäftigten-UIDs in Bearbeitung/Audit | ja, getrennte Subject-Typen | ja | Prozessabschluss für Bewerbungen; Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen; keine Beschäftigungsquelle | nur differenziert: Akteur*innenreferenzen eventuell, Bewerbungsakte überwiegend löschen/sperren nach Fachentscheidung | sehr hoch | PersonalDataProvider für alle internen Nextcloud-UID-Bezüge implementiert; Bewerber-Selbstauskunft bleibt bis zu einem sicheren authentifizierten Subject-Vertrag offen; `retention_state` ohne ausführende Policy |
 | `adbqplanung` | interne PFK-UIDs, minimale externe Dozentinnenprofile mit Name und E-Mail, Lehranfragen und Bearbeitungsreferenzen; keine Bewerbungsakten oder Teilnehmerkopien | ja | ja | Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen sowie fachlicher Abschluss externer Lehranfragen; derzeit keine belastbare Quelle | Entfernen oder Anonymisieren abgeschlossener externer Kontakte und Bearbeitungsreferenzen fachlich zu prüfen | sehr hoch | Personenbezogene Daten inventarisiert; PersonalDataProvider, Drittpersonensicht, Retention-Trigger und Maßnahmen sind vor fachlicher Fertigstellung offen |
 

@@ -42,8 +42,10 @@ Vertragsversion, Anzeigename, unterstützte Subject-Typen, Fähigkeiten und
 Paginggrenzen. Der Versionshandshake erfolgt vor dem ersten Datenabruf.
 
 `PersonalDataRequest` enthält eine von der Privacy-App serverseitig gebundene
-`DataSubjectRef`, Sprache, Auskunftszweck, Seitenlimit und einen opaken Cursor.
-Ein Self-Service-Provider akzeptiert keine frei vom Browser gewählte UID.
+`DataSubjectRef`, Sprache, Auskunftszweck, Seitenlimit und je Provider einen
+opaken Cursor. Vor dem Provideraufruf wird ausschließlich dessen eigener
+Cursor aktiviert und dessen deklarierte maximale Seitengröße angewandt. Ein
+Self-Service-Provider akzeptiert keine frei vom Browser gewählte UID.
 
 `PersonalDataPage` enthält verständliche Dateneinträge, Einschränkungen,
 Status und entweder einen nächsten opaken Cursor oder eine eindeutige
@@ -51,6 +53,11 @@ Endmarke. Cursor-Paging darf Datensätze weder überspringen noch doppelt
 ausgeben; ein Provider muss Änderungen während eines längeren Exports
 kontrolliert als `partial` kenntlich machen oder einen stabilen Snapshot
 verwenden.
+
+Jeder Dateneintrag besitzt außerdem eine stabile technische `reference`. Sie
+dient der nachvollziehbaren Zuordnung innerhalb der Providerprojektion, ist
+kein direkter Zugriffsschlüssel auf eine fremde Tabelle und enthält keine
+Geheimnisse.
 
 ## Erforderliche Art.-15-Angaben
 
@@ -127,10 +134,29 @@ bleiben verschieden.
 Verträge. Eine Auskunft löst niemals nebenbei Löschung, Anonymisierung oder
 Statusänderungen aus.
 
+Der aktuelle öffentliche V1-`RetentionProvider` ist absichtlich ein reiner
+Preview-Vertrag: `descriptor()`, `policies()` und `preview()` stehen zur
+Verfügung, `execute()` nicht. Jede Policy ist versioniert und benennt
+Datenklasse, Zweck, Trigger, Frist und ausschließlich die Maßnahme `REVIEW`.
+Die Fachapp berechnet Cutoff und Kandidaten selbst; die zentrale App erhält
+weder SQL noch fremde Tabellenkenntnis. Fehlerhafte, doppelte oder
+inkompatible Provider werden isoliert sichtbar.
+
+Das operative Dashboard ist serverseitig geschützt. Native
+Nextcloud-Admins besitzen nach Neuinstallation standardmäßig Leserechte, weil
+diese Gruppe für die Erstprüfung zuverlässig verfügbar ist. Dieses
+fachliche Leserecht ist unabhängig vom technischen Konfigurationsrecht
+abschaltbar; nach Einrichtung dedizierter Datenschutz-Prüfgruppen soll seine
+Notwendigkeit ausdrücklich neu bewertet werden.
+
 ## Contract-Test-Kit
 
-Die Standalone-App soll ein neutrales Contract-Test-Kit veröffentlichen. Ein
-Providerrelease belegt mindestens:
+Die Standalone-App enthält im öffentlichen V1-Namespace das technische
+`PersonalDataProviderContractTestKit`. Es prüft je synthetischem Szenario den
+Versionshandshake, den unterstützten Subject-Typ, die providergebundene
+Cursorübergabe, die maximale Seitengröße und den Cursorfortschritt. Die
+Consumer-App ergänzt damit mindestens folgende eigene Sicherheits-, Daten-
+und Betriebsszenarien:
 
 - eigene Person erfolgreich, fremde oder manipulierte Person abgewiesen;
 - keine Nebenwirkung einer Auskunft;
@@ -145,6 +171,12 @@ Providerrelease belegt mindestens:
 Das Test-Kit prüft den technischen Vertrag, nicht die rechtliche
 Vollständigkeit der konkreten Dateninventur. Diese bleibt Reviewaufgabe der
 datenbesitzenden App und der verantwortlichen Stelle.
+
+Verifizierte Workspace-Beispiele sind `adroom` für kontextbewahrend ersetzten
+Drittpersonen-Freitext und `filzmann_permission_matrix` für eine
+subjectgebundene Projektion mehrerer eigener Nachweistabellen. Letztere zeigt
+nur freigegebene Snapshot-, Export- und Auditmetadaten; freie Dateinamen,
+Inhalte, Auditdetails und fremde Benutzerbezüge bleiben in der Fachapp.
 
 ## Reviewfragen vor Veröffentlichung
 

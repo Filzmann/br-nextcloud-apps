@@ -35,6 +35,13 @@ description: Select and run the established fast or full verification path for P
 7. Do not enable those checks unless the user authorized the required local/external state and credentials. Never print secret values.
 8. `scripts/check-fast` runs `git diff --check` and rejects tracked backup, dump, coverage, cache, build, clearly forbidden secret, and obvious private-key files except explicitly reviewed allowlist entries.
 9. Finish with complete status/diff lists and a manual content review for secrets; the filename check is intentionally not presented as a comprehensive secret scanner.
+10. The Teamcloud staging ACL contract intentionally verifies a named ACL for
+    a second Unix UID. A managed UID sandbox can reject that otherwise valid
+    `setfacl` operation with `Invalid argument` on both tmpfs and ext4. When
+    this exact failure is reproduced and the ACL contract is relevant, rerun
+    the focused contract or `scripts/check-full` with narrowly scoped
+    escalation. Do not skip the contract, substitute the current UID, weaken
+    its two-user assertions, or classify the sandbox result as an app defect.
 
 ## Reporting
 

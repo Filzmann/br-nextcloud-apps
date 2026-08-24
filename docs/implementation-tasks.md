@@ -10,8 +10,11 @@ Repositories dem Skill `test-driven-change`.
 
 ## PARENT-PRIVACY-ROLLOUT – Datenschutzmigration koordinieren
 
-Status: Standalone-Zielarchitektur festgelegt; Name/App-ID und
-Cross-Repository-Migration noch nicht freigegeben
+Status: Standalone-Zielarchitektur, Name/App-ID, AGPL-Lizenz und Repository
+festgelegt; erster Contract-Kern in `filzmann_data_protection` umgesetzt;
+LocalBase charakterisiert und erster realer Cross-Repository-Pilot mit
+`adroom` implementiert sowie lokal in Nextcloud verifiziert; weitere
+Provider-Migrationen und das Vollständigkeits-/Release-Gate bleiben offen
 
 Normative Quelle:
 
@@ -29,9 +32,9 @@ Umfang im Parent:
   realistisch erfüllbaren Migration der bestehenden Apps aktivieren.
 - Keine App durch eine leere Providerregistrierung oder reine Checkliste als
   integriert ausweisen.
-- Neutralen Namen, freie App-ID, Governance, Lizenz und Repository der
-  Kategorie-B-Standalone-App als eigene Entscheidung vorbereiten. Vor dieser
-  Freigabe wird keine neue App angelegt.
+- Governance, Maintainerkreis und nachzuweisenden Nextcloud-Zielkorridor der
+  angelegten Kategorie-B-Standalone-App als eigene Entscheidungen
+  vorbereiten.
 - Version 1 des öffentlichen Providervertrags mit Descriptor,
   Versionshandshake, Cursor-Paging, Coverage-Profil und Contract-Test-Kit aus
   dem verifizierten LocalBase-Pilot ableiten.
@@ -57,16 +60,28 @@ Abnahmekriterien:
 
 Umsetzungsreihenfolge und Freigabegates:
 
-1. **Sofort planbar, Parent-only:** öffentliche Vertragsversion,
-   Coverage-Modell, Contract-Test-Kit und neutrale Namens-/App-ID-Kandidaten
-   ausarbeiten.
-2. **Entscheidungsgate:** Name, App-ID, Repository, Lizenz, Governance und
-   Nextcloud-Minimalversion ausdrücklich freigeben.
-3. **Danach neuer App-Auftrag:** Standalone-App ausschließlich mit
-   `create-nextcloud-app` anlegen; noch keine Fachapp migrieren.
-4. **Cross-Repository-Gate:** Risiko, Dateien, Tests und Rückbau für
-   Standalone-App, LocalBase und genau einen Pilotconsumer freigeben.
-5. **Appweise Folgeaufträge:** weitere Provider einzeln migrieren; spätere
+1. **Umgesetzt:** Produktname `Data Protection Center`/`Datenschutz-Center`,
+   App-ID `filzmann_data_protection`, AGPL-Lizenz und eigenes Repository sind
+   entschieden; die App wurde mit `create-nextcloud-app` angelegt.
+2. **Umgesetzt:** Vertragsversion, Coverage-Modell,
+   Contract-Test-Kit, lazy Event-Registrierung und sitzungsgebundene
+   Self-Service-API im Standalone-Repository sowie der erste reale
+   `adroom`-Consumer. Der aktive und deaktivierte Stand wurde in lokaler
+   Nextcloud-Laufzeit geprüft. Der opt-in DDEV-Check
+   `scripts/check-privacy-app-compatibility` belegt am unabhängigen
+   Matrix-Consumer zusätzlich eine physisch fehlende sowie eine von
+   Nextcloud real als inkompatibel abgewiesene Privacy-App samt Rückbau. Jeder
+   weitere Consumer behält seinen eigenen Vertrags- und Startnachweis.
+3. **Offenes Entscheidungsgate:** Governance, Maintainerkreis und
+   Nextcloud-Minimalversion vor einem öffentlichen Release freigeben.
+4. **Umgesetzt:** Cross-Repository-Pilot für Standalone-App, unveränderten
+   LocalBase-Regressionspfad und genau einen Pilotconsumer (`adroom`).
+5. **Umgesetzt:** `filzmann_permission_matrix` als zweiten Provider mit
+   subjectgebundener, datensparsamer Projektion und optionaler Runtimegrenze
+   angebunden sowie lokal in Nextcloud verifiziert.
+6. **Nächstes Cross-Repository-Gate:** genau eine weitere Fachapp auswählen
+   und deren Provider einzeln freigeben.
+7. **Appweise Folgeaufträge:** weitere Provider einzeln migrieren; spätere
    Retention-Ausführung und Lifecycle bleiben getrennt genehmigungspflichtig.
 
 ## PARENT-IKT-PRIVACY-PORTFOLIO – Berechtigungsmatrix neu zuordnen
