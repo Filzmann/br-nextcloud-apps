@@ -89,12 +89,18 @@ Umsetzungsreihenfolge und Freigabegates:
    `filzmann_data_protection` die Nichtpersistenz eigener Subjectdaten sowie
    den erforderlichen Berechtigungsprovider belegen; begründete
    Nichtanwendbarkeit von OrgSuite bei Scopeänderungen neu prüfen.
-8. **Danach – Fremd-App-Coverage:** installierte fremde Apps und ihre
-   offiziellen Schnittstellen read-only inventarisieren. Adapter,
+8. **Danach – native Nextcloud-Rechte:** Files einschließlich Shares,
+   Groupfolders, Files Access Control und externen Speichern sowie Calendar
+   zuerst über öffentliche Schnittstellen vervollständigen. Eine aktivierte
+   App ohne Gruppenbeschränkung wird für alle erfassten Gruppen als verfügbar
+   ausgewiesen; App-Verfügbarkeit und Detailabdeckung bleiben getrennt.
+   Dateiinhalte und Kalender-/Termininhalte bleiben ausgeschlossen.
+9. **Anschließend – Fremd-App-Coverage:** weitere installierte fremde Apps und
+   ihre offiziellen Schnittstellen read-only inventarisieren. Adapter,
    Upstream-Anfragen und versionsgebundene Ausnahmen bleiben je App eigene
    Entscheidungen. Fehlende oder inkompatible Verträge bleiben sichtbar;
    unsichere Fallbacks sind ausgeschlossen.
-9. Retention-Ausführung, Lifecycle und das Runtime-Coverage-/Release-Gate
+10. Retention-Ausführung, Lifecycle und das Runtime-Coverage-/Release-Gate
    bleiben getrennt genehmigungspflichtig.
 
 ## PARENT-PROVIDER-CONTINUITY – Provider bei Eigen-App-Änderungen mitpflegen
