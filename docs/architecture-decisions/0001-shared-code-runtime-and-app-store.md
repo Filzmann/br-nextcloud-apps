@@ -198,7 +198,7 @@ den inzwischen je App nachgewiesenen Stand fest:
 
 | App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
 | --- | --- | --- | --- |
-| `brtop` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `brtop` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
 | `adplaner` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap; Einzeltests laden nur diesen Bootstrap, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
