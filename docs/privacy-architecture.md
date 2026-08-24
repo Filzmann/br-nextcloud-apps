@@ -475,6 +475,14 @@ liefert der Provider einen neutralen Bearbeitungsnachweis ohne fremde UID,
 Stundenwerte oder Notiz. Die App erzeugt Abrechnungs-PDFs nur auf Anforderung
 im Response und speichert sie nicht selbst in Files oder Team Folders.
 
+Als achter Consumer stellt `brtop` ausschließlich explizit per Nextcloud-UID
+zuordenbare Mitgliedschafts-, Ladungs-, Sitzungsverantwortungs-, Dokumentart-
+und Bearbeitungsmetadaten bereit. Datei- und Anhangpfade, Dateiinhalte sowie
+TOP-, Protokoll- und Beschlussinhalte bleiben vorerst ausgeschlossen. Weil
+unstrukturierte Inhalte dennoch Erwähnungen enthalten können, meldet der
+Provider diese Grenze stets als Teilantwort; eine spätere sichere
+Inhaltsanalyse bleibt ausdrücklich vorbehalten.
+
 Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
 aktiver Aggregator oder zweite kanonische Vertragsquelle betrieben werden.
@@ -524,7 +532,7 @@ bewusst nicht vorweggenommen.
 
 | App | personenbezogene Daten laut aktuellem Code | PersonalDataProvider nötig | RetentionProvider nötig | Lifecycle-Abhängigkeit | Anonymisierung sinnvoll | Priorität | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `brtop` | Nextcloud-UIDs, Namen und E-Mails von Mitgliedern/Empfänger*innen, Vertretungen, Abwesenheiten, personenbezogene TOP-/Protokollinhalte, Dokument- und Anhangspfade | ja | ja | Konto, Mitgliedschaft und später Beschäftigungsende; Legislaturende ist ein eigener Fachtrigger | für einzelne historische Referenzen möglich; Ladungs- und Dokumentnachweise brauchen Fachentscheidung | hoch | Inventar verifiziert; kein Provider, keine Policy |
+| `brtop` | Nextcloud-UIDs, Namen und E-Mails von Mitgliedern/Empfänger*innen, Vertretungen, Abwesenheiten, personenbezogene TOP-/Protokollinhalte, Dokument- und Anhangspfade sowie erzeugte Dateien im persönlichen Files-Bereich; keine gezielte Team-Folder-API | ja | ja | Konto, Mitgliedschaft und später Beschäftigungsende; Legislaturende ist ein eigener Fachtrigger | für einzelne historische Referenzen möglich; Ladungs- und Dokumentnachweise brauchen Fachentscheidung | hoch | Standalone-V1-Metadatenprovider umgesetzt: explizite UID-Bezüge werden subjectgebunden projiziert. Datei-/Anhangpfade, Dateiinhalte und Gremieninhalte bleiben ausgeschlossen und als Teilantwort sichtbar; eine spätere sichere Inhaltslösung bleibt offen. Keine Retention-Policy |
 | `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider auf Standalone V1 migriert; Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen werden subjectgebunden projiziert. Fremde UIDs und freie Tagesnotiztexte werden nicht ausgegeben; keine Retention-Policy |
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen; Abrechnungs-PDFs werden nur im Response erzeugt und nicht appseitig in Files/Team Folders gespeichert | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | PersonalDataProvider auf Standalone V1 umgesetzt: eigene Stunden, Fortbildungszeiten und Notizen werden vollständig ausgewiesen; reine Bearbeitungsbezüge auf fremden Sätzen bleiben neutral und geben keine Drittpersonendaten preis. Fachliche Einzellöschung vorhanden, keine Retention-Policy |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
