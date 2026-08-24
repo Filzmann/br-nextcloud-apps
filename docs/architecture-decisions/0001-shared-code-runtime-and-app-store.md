@@ -199,7 +199,7 @@ den inzwischen je App nachgewiesenen Stand fest:
 | App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
 | --- | --- | --- | --- |
 | `brtop` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
-| `adplaner` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `adplaner` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap; Einzeltests laden nur diesen Bootstrap, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | ausstehend | nächste schreibende PHP-Arbeit | lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
 | `filzmann_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
