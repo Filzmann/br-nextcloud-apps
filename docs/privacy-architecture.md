@@ -493,7 +493,7 @@ Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
 aktiver Aggregator oder zweite kanonische Vertragsquelle betrieben werden.
 
-### Etappe 4 – Appweise Provider-Migration
+### Etappe 4 – Appweise Provider-Migration und laufende Vollständigkeit
 
 Jede App erhält einen einzelnen Auftrag in ihrem Repository:
 
@@ -509,6 +509,17 @@ Jede App erhält einen einzelnen Auftrag in ihrem Repository:
 8. Matrixstatus aktualisieren; erst danach die nächste App beginnen.
 
 Kein Big-Bang und keine leeren Provider.
+
+Nach der Erstimplementierung ist ein Provider kein abgeschlossener
+Einmalbaustein. Dateninventar und Providerprojektion werden bei jeder relevanten Weiterentwicklung der datenbesitzenden
+App zusammen mit Subject-Typen, Drittpersonenschutz, AppConfig,
+UserConfig, AppData, Dateien, Shares, Exporte, Caches und sonstige
+Nebenspeicher gegen den tatsächlichen Code neu geprüft. Neue oder geänderte
+relevante Daten werden bei derselben fachlichen Änderung in die zulässige
+Providerprojektion und deren Provider-/Consumer-/Negativtests aufgenommen.
+Bewusst noch nicht sicher lieferbare Bestände bleiben mit Grund sichtbar
+`partial`; sie dürfen nicht durch einen zu engen Providerumfang als
+`complete` erscheinen.
 
 ### Etappe 5 – Lifecycle-Ereignisse
 
@@ -531,6 +542,31 @@ Provider und Datenschutzmetadaten besitzen. Bis dahin meldet der Root-Check
 nur Planungs- und Dokumentkonsistenz; er behauptet keine
 Runtime-Vollständigkeit.
 
+### Etappe 7 – Fremd-App-Coverage
+
+Erst nachdem die eigenen Nextcloud-Apps nach dem laufenden Providervertrag
+klassifiziert und ihre bekannten Lücken geschlossen oder ehrlich als
+Teilabdeckung markiert sind, folgt die Fremd-App-Coverage als getrennte
+Etappe:
+
+1. aktivierte fremde Apps nach Zweck, personenbezogenen Daten,
+   Nebenspeichern und eigener Berechtigungslogik inventarisieren;
+2. offizielle öffentliche Provider-, OCP-, Capability- oder Exportverträge
+   bevorzugen und eine Unterstützung des Providervertrags upstream anregen;
+3. fehlende oder inkompatible Verträge sichtbar als `missing`, `UNKNOWN` oder
+   `UNSUPPORTED` behandeln, ohne daraus Freigaben oder Vollständigkeit
+   abzuleiten;
+4. einen versionsgebundenen read-only Adapter nur je konkreter App, Version
+   und belegter Quelle nach eigener Risiko-, Datenschutz-, Update- und
+   Releaseentscheidung zulassen;
+5. keine SQL-, Reflection-, Fremd-AppConfig-, Volltext-, Datei- oder
+   Migrator-Fallbacks einführen. Die Groupfolders-Ausnahme ist kein
+   allgemeiner Präzedenzfall.
+
+Die erste Aufgabe dieser Etappe ist eine read-only Bestands- und
+Schnittstellenanalyse. Sie autorisiert noch keinen Adapter und keine Änderung
+an einer fremden App.
+
 ## Migrationsmatrix
 
 `nötig` bedeutet geplant, nicht implementiert. Fristen und Maßnahmen sind
@@ -543,6 +579,7 @@ bewusst nicht vorweggenommen.
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen; Abrechnungs-PDFs werden nur im Response erzeugt und nicht appseitig in Files/Team Folders gespeichert | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | PersonalDataProvider auf Standalone V1 umgesetzt: eigene Stunden, Fortbildungszeiten und Notizen werden vollständig ausgewiesen; reine Bearbeitungsbezüge auf fremden Sätzen bleiben neutral und geben keine Drittpersonendaten preis. Fachliche Einzellöschung vorhanden, keine Retention-Policy |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
 | `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs und Audit-UIDs; `include_users` ist konfigurierbar, im aktuellen Snapshotcode sind jedoch keine persistierten Benutzerlisten belegt | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | PersonalDataProvider und öffentlicher Standalone-V1-Preview-Provider implementiert: eigene Art.-15-Bezüge bleiben kontextuell erhalten; Exportmetadaten und Auditprotokolle werden nach getrennt konfigurierbaren, standardmäßig 180-tägigen Fristen ausschließlich als `REVIEW` gemeldet. Inhalte, Dateinamen, freie Auditdetails, UIDs und Drittpersonenangaben bleiben ausgeschlossen. Keine Retention-Ausführung und kein Lifecycle-Provider |
+| `filzmann_data_protection` | angefragte Nextcloud-UID nur sitzungsgebunden und transient; aggregierte Berichte werden nicht gespeichert. Reviewer-Gruppen sind Rollen-Konfiguration, keine Mitgliedskopie | derzeit nein; bei eigener Audit-, Export- oder Berichtspersistenz sofort neu bewerten | derzeit nein für eigene Bestände | derzeit keine eigene persistierte Subjectreferenz | nicht anwendbar | hoch, IKT/Datenschutz | Begründete Nichtanwendbarkeit eines eigenen PersonalDataProviders im aktuellen Stand; eigenes Dateninventar bei jeder Persistenzänderung neu prüfen. Der separate PermissionProvider für Reviewer-/Adminrechte ist als nächste Eigen-App-Aufgabe offen |
 | `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider auf Standalone V1 für eigene Dienste und Termine sowie tatsächlich gespeicherte persönliche Filter-, Standarddienst- und Sync-Werte vervollständigt. Gemeinsame Meetings nennen weitere Beteiligte nur abstrakt; Filter nennen ausgewählte Personen nur als Anzahl. Externe Verbindungen werden ohne Entschlüsselung ausschließlich als Anbieter-/OAuth-Vorhandenseinsmetadaten ausgewiesen. Serveradressen, Kontonamen, technische Kennungen, Passwörter, Tokens und OAuth-State bleiben ausgeschlossen. Native DAV- und externe Kalenderobjekte sind abgeleitete Darstellungen der führenden AD-/Urlaubsdaten und werden nicht als zweite Quelle gelesen. Keine Files-/Team-Folder-Ablage, keine Retention-Policy |
 | `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider auf Standalone V1 migriert; eigene freiwillige Notizen werden als möglicher Drittpersoneninhalt gekennzeichnet. Der konfigurierbare Retention-REVIEW-Dry-Run verbleibt bis zur Entscheidung über eine globale Adminprüfung im LocalBase-Pilot; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
@@ -563,11 +600,15 @@ die App-Planung vor fachlicher Fertigstellung beantworten:
 6. Welche Triggerdaten oder Lifecycle-Ereignisse werden benötigt?
 7. Welche Datenklassen unterstützen `DELETE`, `ANONYMIZE`,
    `REMOVE_PERSON_REFERENCE` oder `REVIEW`?
-8. Welche Provider-, Rechte-, Negativ- und Grenztests belegen den Vertrag?
+8. Welche `PersonalDataProvider`-, `PermissionProvider`-, Rechte-, Negativ-
+   und Grenztests belegen den Vertrag?
 
-Die Antworten müssen beim ersten Scaffold noch nicht implementiert sein. Eine
-konkrete App-Aufgabe wird aber aufgenommen, sobald personenbezogene Daten zum
-Scope gehören.
+Sind personenbezogene Daten oder eigene Fachberechtigungen bereits Teil des
+ersten Scopes, gehören der jeweils anwendbare Provider und sein Contract-Test
+zum ersten betroffenen Feature. Ein bloßer Planungseintrag genügt nicht für
+dessen fachliche Fertigstellung oder den ersten Release. Sind beide Provider
+nach dem Zweck der App nicht anwendbar, wird diese Entscheidung begründet und
+bei jeder Scopeänderung neu geprüft.
 
 ## Test- und Reviewvertrag für spätere Umsetzung
 

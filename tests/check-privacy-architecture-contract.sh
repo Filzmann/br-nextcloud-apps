@@ -43,6 +43,8 @@ for contract in \
     'kein Daten-Fallback' \
     'Cursor-Paging' \
     'Versionshandshake' \
+    'bei jeder relevanten Weiterentwicklung' \
+    'Fremd-App-Coverage' \
     'keinen direkten SQL-Zugriff'; do
     [[ "$privacy_text" == *"$contract"* ]] \
         || fail "Normative Quelle enthält den Vertrag nicht: $contract"

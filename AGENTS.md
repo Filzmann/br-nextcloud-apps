@@ -110,6 +110,19 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   Dateien einer Fachapp direkt. Neue oder wesentlich erweiterte Datenklassen
   erhalten spätestens vor fachlicher Fertigstellung eine konkrete
   Provider-, Retention-, Drittpersonen- und Testaufgabe.
+- Jede von Simon verantwortete Nextcloud-App hält ihre anwendbaren
+  `PersonalDataProvider` und `PermissionProvider` während der gesamten
+  Weiterentwicklung vollständig. Neue oder geänderte personenbezogene
+  Datenklassen, Identifier, AppConfig-/UserConfig-Werte, AppData-, Datei-,
+  Share-, Export-, Cache- oder sonstige Nebenspeicher sowie neue oder
+  geänderte Berechtigungen und Scopes werden im Daten-/Rechteinventar und im
+  zuständigen Provider bei derselben fachlichen Änderung mitgepflegt und
+  durch Provider-/Consumer- sowie relevante Negativtests belegt. Eine App
+  ohne eigene persistierte Personenwerte beziehungsweise ohne eigene
+  Fachberechtigungen dokumentiert die begründete Nichtanwendbarkeit und
+  bewertet sie bei jeder Scopeänderung neu. Bekannte Auslassungen werden
+  sichtbar als `partial`, `UNKNOWN` oder `UNSUPPORTED` ausgewiesen und nie als
+  vollständig oder erlaubt behauptet.
 - Zielruntime des öffentlichen Datenschutzvertrags ist die Standalone-App
   `filzmann_data_protection` der Kategorie B aus
   `docs/architecture-decisions/0002-standalone-privacy-platform.md`.

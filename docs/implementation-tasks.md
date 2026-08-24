@@ -10,11 +10,11 @@ Repositories dem Skill `test-driven-change`.
 
 ## PARENT-PRIVACY-ROLLOUT – Datenschutzmigration koordinieren
 
-Status: Standalone-Zielarchitektur, Name/App-ID, AGPL-Lizenz und Repository
-festgelegt; erster Contract-Kern in `filzmann_data_protection` umgesetzt;
-LocalBase charakterisiert und erster realer Cross-Repository-Pilot mit
-`adroom` implementiert sowie lokal in Nextcloud verifiziert; weitere
-Provider-Migrationen und das Vollständigkeits-/Release-Gate bleiben offen
+Status: Standalone-Zielarchitektur und Runtime umgesetzt; alle sechs
+AD-Fachapps und beide BR-Apps besitzen app-lokal getestete
+`PersonalDataProvider` und `PermissionProvider`; die laufende
+Vollständigkeit, bekannte Eigen-App-Lücken, Retention und das
+Vollständigkeits-/Release-Gate bleiben offen
 
 Normative Quelle:
 
@@ -79,10 +79,41 @@ Umsetzungsreihenfolge und Freigabegates:
 5. **Umgesetzt:** `filzmann_permission_matrix` als zweiten Provider mit
    subjectgebundener, datensparsamer Projektion und optionaler Runtimegrenze
    angebunden sowie lokal in Nextcloud verifiziert.
-6. **Nächstes Cross-Repository-Gate:** genau eine weitere Fachapp auswählen
-   und deren Provider einzeln freigeben.
-7. **Appweise Folgeaufträge:** weitere Provider einzeln migrieren; spätere
-   Retention-Ausführung und Lifecycle bleiben getrennt genehmigungspflichtig.
+6. **Umgesetzt:** Die sechs AD-Fachapps und zwei BR-Apps liefern ihre
+   personenbezogenen Nextcloud-UID-Bezüge über den Privacy-V1-Vertrag und
+   ihre kanonischen Fachberechtigungen über den Permission-V1-Vertrag. Der
+   Parent-Vertragstest lädt alle acht Berechtigungsprovider gegen die echten
+   öffentlichen V1-Klassen.
+7. **Nächste Eigen-App-Aufgaben:** LocalBase-eigene persönliche UI-Werte und
+   Demo-Registry vollständig inventarisieren; für
+   `filzmann_data_protection` die Nichtpersistenz eigener Subjectdaten sowie
+   den erforderlichen Berechtigungsprovider belegen; begründete
+   Nichtanwendbarkeit von OrgSuite bei Scopeänderungen neu prüfen.
+8. **Danach – Fremd-App-Coverage:** installierte fremde Apps und ihre
+   offiziellen Schnittstellen read-only inventarisieren. Adapter,
+   Upstream-Anfragen und versionsgebundene Ausnahmen bleiben je App eigene
+   Entscheidungen. Fehlende oder inkompatible Verträge bleiben sichtbar;
+   unsichere Fallbacks sind ausgeschlossen.
+9. Retention-Ausführung, Lifecycle und das Runtime-Coverage-/Release-Gate
+   bleiben getrennt genehmigungspflichtig.
+
+## PARENT-PROVIDER-CONTINUITY – Provider bei Eigen-App-Änderungen mitpflegen
+
+Status: als dauerhafte Cross-App-Regel freigegeben; AD-/BR-Ausgangsstand und
+Permission-V1-Integrationsvertrag sind grün, übrige Eigen-App-Lücken bleiben
+in der vorstehenden Reihenfolge offen
+
+- Jede Änderung an personenbezogenen Daten, Subject-Typen, Nebenspeichern,
+  Fachberechtigungen oder Scopes aktualisiert im selben App-Auftrag das
+  Inventar, den anwendbaren Provider und seine Vertrags-/Negativtests.
+- Neue Apps treffen die Providerentscheidung beim Scaffold und liefern den
+  Provider spätestens mit dem ersten betroffenen Feature; ein bloßer
+  Roadmap-Eintrag ist kein Fertigstellungsnachweis.
+- Begründete Nichtanwendbarkeit ist zulässig, wird aber aus dem App-Zweck
+  hergeleitet und bei Scopeänderungen erneut geprüft.
+- Bekannte Auslassungen bleiben `partial`, `UNKNOWN`, `UNSUPPORTED` oder
+  `missing`; sie werden nicht als vollständige Daten- oder Rechteabdeckung
+  ausgegeben.
 
 ## PARENT-IKT-PRIVACY-PORTFOLIO – Berechtigungsmatrix neu zuordnen
 

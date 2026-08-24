@@ -389,6 +389,7 @@ required_parent_contracts = (
     'vollständige Ablauf steht ausschließlich im Skill',
     '`test-driven-change`',
     '`verify-nextcloud-future-compatibility`',
+    'bei derselben fachlichen Änderung mitgepflegt',
     '`min-version` wird niemals automatisch angehoben',
     'nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung',
 )
@@ -404,6 +405,8 @@ for contract in (
     'work-in-nextcloud-app,test-driven-change',
     'byte-for-byte',
     'REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure',
+    'PersonalDataProvider',
+    'PermissionProvider',
     'Do not report a new app as complete',
 ):
     if contract not in create_skill_text:
