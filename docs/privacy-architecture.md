@@ -483,6 +483,12 @@ unstrukturierte Inhalte dennoch Erwähnungen enthalten können, meldet der
 Provider diese Grenze stets als Teilantwort; eine spätere sichere
 Inhaltsanalyse bleibt ausdrücklich vorbehalten.
 
+Als neunter Consumer stellt `adbqplanung` interne PFK-Profile,
+Hauptdozentinnen- und Modulzuordnungen sowie eigene Bearbeitungsnachweise über
+die geprüfte Nextcloud-UID bereit. Externe Dozentinnenprofile bleiben bis zu
+einem sicher authentifizierten externen Subject-Vertrag ausgeschlossen; Name
+und E-Mail werden weder als Ersatzidentität noch als Suchschlüssel verwendet.
+
 Der vorhandene LocalBase-Pilot bleibt bis zur vollständigen Umstellung der
 Oberflächen und Provider rückbaufähig, darf aber nicht parallel als zweiter
 aktiver Aggregator oder zweite kanonische Vertragsquelle betrieben werden.
@@ -542,7 +548,7 @@ bewusst nicht vorweggenommen.
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
 | `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter erhält den Buchungskontext ohne möglichen Drittpersonen-Freitext | hoch, Pilot | PersonalDataProvider auf den öffentlichen Standalone-V1-Vertrag migriert und aktiv/deaktiviert lokal in Nextcloud verifiziert; Raum, Zweck und Zeitraum bleiben erhalten, der freie Titel wird neutral ersetzt. LocalBase-Retention-Dry-Run mit `REVIEW` bleibt separat; keine fachliche Frist, Ausführung oder Lifecycle-Quelle |
 | `adrecruitment` | interne Bewerber-ID, Namen/Kontakt, Bewerbung und Statushistorie, Interviews/Antworten, BQ-Bewertung, Einstellungsdaten, Nachrichten, Anhänge in AppData, Kommentare, Feldnachweise sowie Beschäftigten-UIDs in Bearbeitung/Audit | ja, getrennte Subject-Typen | ja | Prozessabschluss für Bewerbungen; Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen; keine Beschäftigungsquelle | nur differenziert: Akteur*innenreferenzen eventuell, Bewerbungsakte überwiegend löschen/sperren nach Fachentscheidung | sehr hoch | PersonalDataProvider für alle internen Nextcloud-UID-Bezüge implementiert; Bewerber-Selbstauskunft bleibt bis zu einem sicheren authentifizierten Subject-Vertrag offen; `retention_state` ohne ausführende Policy |
-| `adbqplanung` | interne PFK-UIDs, minimale externe Dozentinnenprofile mit Name und E-Mail, Lehranfragen und Bearbeitungsreferenzen; keine Bewerbungsakten oder Teilnehmerkopien | ja | ja | Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen sowie fachlicher Abschluss externer Lehranfragen; derzeit keine belastbare Quelle | Entfernen oder Anonymisieren abgeschlossener externer Kontakte und Bearbeitungsreferenzen fachlich zu prüfen | sehr hoch | Personenbezogene Daten inventarisiert; PersonalDataProvider, Drittpersonensicht, Retention-Trigger und Maßnahmen sind vor fachlicher Fertigstellung offen |
+| `adbqplanung` | interne PFK-UIDs, minimale externe Dozentinnenprofile mit Name und E-Mail, Lehranfragen und Bearbeitungsreferenzen; keine Bewerbungsakten oder Teilnehmerkopien | ja | ja | Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen sowie fachlicher Abschluss externer Lehranfragen; derzeit keine belastbare Quelle | Entfernen oder Anonymisieren abgeschlossener externer Kontakte und Bearbeitungsreferenzen fachlich zu prüfen | sehr hoch | Standalone-V1-Provider für interne Nextcloud-PFKs umgesetzt: Profil, Hauptleitung, Modulzuordnung und subjectgebundene Bearbeitungsnachweise werden ausgegeben. Externe Profile bleiben bis zu einem authentifizierten externen Subject-Vertrag ausgeschlossen; keine E-Mail-Identifikation. Retention-Trigger und Maßnahmen offen |
 
 ## Neue Apps
 
