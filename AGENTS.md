@@ -134,6 +134,14 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   Privacy-App verschmolzen; Produktzuordnung, Navigation, Datenownership und
   Berechtigungen bleiben getrennte Verträge gemäß
   `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`.
+- Native Nextcloud-Administration erteilt in eigenen Apps nicht automatisch
+  fachlichen Vollzugriff. Der app-lokale, pro Admin und App höchstens 24
+  Stunden gültige Freigabe-, Audit-, Provider- und Testvertrag steht
+  ausschließlich in
+  `docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md`.
+  Technischer Zugriff auf den jeweiligen Nextcloud-Adminbereich bleibt davon
+  getrennt. Apps ohne fachlichen Admin-Vollzugriff dokumentieren die
+  begründete Nichtanwendbarkeit und prüfen sie bei Scopeänderungen neu.
 
 ## Suite- und Produktverträge
 

@@ -64,6 +64,11 @@ Die Root-relative Quelle ist
 `docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`;
 diese Datei wiederholt das dortige Entscheidungs- und Release-Gate nicht.
 
+Native Nextcloud-Administration ist keine app-übergreifende fachliche
+Superrolle. Eigene Apps behandeln einen notwendigen Vollzugriff app-lokal,
+pro Admin und höchstens 24 Stunden gemäß
+[`ADR 0004`](architecture-decisions/0004-app-local-temporary-admin-full-access.md).
+
 ## Schichten und Modelle
 
 Controller bleiben dünn. Fachlogik, Datenzugriff, Darstellung,

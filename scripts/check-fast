@@ -68,6 +68,7 @@ scripts/check-document-references
 bash tests/check-parent-governance-contract.sh
 bash tests/check-privacy-architecture-contract.sh
 bash tests/check-ikt-privacy-portfolio-contract.sh
+bash tests/check-app-local-admin-full-access-contract.sh
 bash tests/check-ad-suite-coverage-baseline.sh
 bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh

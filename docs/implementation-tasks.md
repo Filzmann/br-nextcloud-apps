@@ -121,6 +121,20 @@ in der vorstehenden Reihenfolge offen
   `missing`; sie werden nicht als vollständige Daten- oder Rechteabdeckung
   ausgegeben.
 
+## PARENT-APP-LOCAL-ADMIN-ACCESS – Temporären Vollzugriff appweise einführen
+
+Status: Architektur und 24-Stunden-Grenze freigegeben; appweise Umsetzung
+offen beziehungsweise nach den jeweiligen Repositorynachweisen fortzuschreiben
+
+- Jede App entfernt native Nextcloud-Administration als automatische
+  fachliche Superrolle und ersetzt sie bei tatsächlichem Bedarf durch den
+  app-lokalen Vertrag aus ADR 0004.
+- Umsetzung erfolgt einzeln mit additiver Auditmigration, Adminoberfläche,
+  serverseitiger Freigabeprüfung sowie PersonalDataProvider- und
+  PermissionProvider-Projektion.
+- LocalBase, OrgSuite und künftige Apps ohne fachlichen Admin-Vollzugriff
+  dokumentieren Nichtanwendbarkeit und prüfen sie bei Scopeänderungen neu.
+
 ## PARENT-IKT-PRIVACY-PORTFOLIO – Berechtigungsmatrix neu zuordnen
 
 Status: Produktdomäne, Ziel-ID `filzmann_permission_matrix`, technische
