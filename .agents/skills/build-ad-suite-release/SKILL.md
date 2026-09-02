@@ -42,7 +42,8 @@ description: Build or validate AD-Suite and standalone AD-product release bundle
    `scripts/prune-ad-suite-release-candidates.sh --dist-root <path> --keep-label <label>`
    without `--execute` and review every printed target. Repeat the identical
    command with `--execute` only after that preview is accepted. Cleanup is
-   limited to validated local `nc34-rcN` artifacts, preserves the named RC and
+   limited to validated local `nc<major>-rcN` artifacts from the selected
+   major series, preserves the named RC and
    all final releases, and is not recoverable except from another copy or by
    rebuilding the exact source commits.
 6. For the private AD-Suite path, validate the generated `manifest.tsv`,

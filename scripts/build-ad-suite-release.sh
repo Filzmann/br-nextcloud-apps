@@ -2,13 +2,15 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-release_label="${RELEASE_LABEL:-nc34-rc1}"
+nextcloud_target_major="${NEXTCLOUD_TARGET_MAJOR:-34}"
+release_label="${RELEASE_LABEL:-nc${nextcloud_target_major}-rc1}"
 dist_root="${DIST_ROOT:-$workspace/dist}"
 release_dir="$dist_root/ad-suite-$release_label"
 bundle="$dist_root/ad-suite-$release_label.tar.gz"
 catalog="$workspace/localbase/resources/ad-product-catalog.json"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
 reproducible_archiver="$workspace/scripts/create-reproducible-tar-gz.sh"
+support_range_checker="$workspace/scripts/validate-nextcloud-support-range.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
 mapfile -t products < <(php "$catalog_reader" bundle-products)
@@ -54,11 +56,10 @@ for app in "${apps[@]}"; do
         exit 1
     fi
 
+    php "$support_range_checker" "$info" "$app" 33 "$nextcloud_target_major"
     php -r '
         $xml = simplexml_load_file($argv[1]);
         if ($xml === false || (string)$xml->id !== $argv[2]) exit(1);
-        if ((string)$xml->dependencies->nextcloud["min-version"] !== "34") exit(2);
-        if ((string)$xml->dependencies->nextcloud["max-version"] !== "34") exit(3);
         if (version_compare((string)$xml->dependencies->php["min-version"], "8.3", "<")) exit(4);
     ' "$info" "$app"
 

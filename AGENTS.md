@@ -9,14 +9,14 @@ Es enthält keinen deploybaren App-Code.
 - Menschlicher Einstieg: `README.md`
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
+- Kanonischer systemweiter Zukunftsplan:
+  `docs/zukunftsplan.md`
 - Governance-Hierarchie für Subrepositories:
   `docs/parent-governance-contract.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
 - Öffentlicher Privacy-Providervertrag: `docs/privacy-provider-guide.md`
 - IKT-/Datenschutz-Zuordnung der Berechtigungsmatrix:
   `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`
-- Nicht freigegebene AD-Suite-Zukunftsplanung:
-  `docs/ad-suite-zukunftsplanung.md`
 - Wiederholbare Abläufe: `.agents/skills/`
 - Repositoryinventar: `config/workspace-repositories.tsv`
 - Unverbindliche Beobachtungen: `docs/learning-candidates.md`
@@ -38,6 +38,12 @@ keine fachliche Schreibfreigabe.
   einzeln genannten Repositories, lokalen Regeln, Statusprüfungen und Tests.
 - Vor Arbeit in einem App-Repository werden dessen vollständige `AGENTS.md`,
   lokal referenzierte Skills und `git status --short` gelesen.
+- Vor jeder App-Änderung werden die für diese App und die berührten
+  Architekturgrenzen anwendbaren Punkte aus
+  `docs/zukunftsplan.md` geprüft. Nach dem Prinzip
+  „Improve what you touch“ werden kleine passende Lücken mitgeschlossen;
+  isolierte Änderungen ohne betroffene Plattformgrenze lösen keinen
+  künstlichen Gesamtaudit aus.
 - Jede deploybare App besitzt ein eigenes Git-Repository, eine eigene
   `AGENTS.md`, `.gitignore` und lokal auflösbare Steuerung. Neue Apps werden
   ausschließlich mit dem Skill `create-nextcloud-app` registriert.

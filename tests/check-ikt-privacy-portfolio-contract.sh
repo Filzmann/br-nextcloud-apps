@@ -38,7 +38,7 @@ fi
 for source in \
     AGENTS.md \
     docs/privacy-architecture.md \
-    docs/implementation-tasks.md; do
+    docs/zukunftsplan.md; do
     rg -Fq "$decision" "$workspace/$source" \
         || fail "$source verweist nicht auf $decision"
 done

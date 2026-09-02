@@ -37,6 +37,25 @@ grep -Fq 'scripts/removed-job.sh' <<< "$stale_output" || {
     exit 1
 }
 
+mkdir -p "$fixture_root/docs/plans"
+cat > "$fixture_root/docs/plans/stale-plan.md" <<'EOF'
+Der abgelöste Plan nennt weiterhin `scripts/removed-plan-job.sh`.
+EOF
+
+set +e
+plan_output="$($checker --workspace "$fixture_root" 2>&1)"
+plan_status=$?
+set -e
+
+(( plan_status != 0 )) || {
+    echo "Eine exakte Referenz unter docs/plans wurde von der Vollprüfung ausgelassen." >&2
+    exit 1
+}
+grep -Fq 'scripts/removed-plan-job.sh' <<< "$plan_output" || {
+    echo "Der Fehler nennt die veraltete Planreferenz nicht." >&2
+    exit 1
+}
+
 cat > "$fixture_root/docs/heuristic.md" <<'EOF'
 Der historische Text nennt `LegacyBackgroundJob.php` ohne Repositorypfad.
 EOF

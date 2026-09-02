@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: prune-ad-suite-release-candidates.sh --dist-root <Pfad> --keep-label nc34-rcN [--execute]' >&2
+    echo 'Aufruf: prune-ad-suite-release-candidates.sh --dist-root <Pfad> --keep-label nc<major>-rcN [--execute]' >&2
 }
 
 dist_root=''
@@ -25,10 +25,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ ! "$keep_label" =~ ^nc34-rc[0-9]+$ ]]; then
+if [[ ! "$keep_label" =~ ^(nc[0-9]+)-rc[0-9]+$ ]]; then
     echo "Ungültige Release-Candidate-Kennung: $keep_label" >&2
     exit 2
 fi
+release_series="${BASH_REMATCH[1]}"
 if [[ ! -d "$dist_root" || -L "$dist_root" || "$dist_root" == '/' ]]; then
     echo "Release-Verzeichnis fehlt oder ist als Bereinigungsziel unsicher: $dist_root" >&2
     exit 2
@@ -36,14 +37,14 @@ fi
 
 targets=()
 shopt -s nullglob
-candidates=("$dist_root"/ad-suite-nc34-rc* "$dist_root"/ad-product-*-nc34-rc*)
+candidates=("$dist_root"/ad-suite-"$release_series"-rc* "$dist_root"/ad-product-*-"$release_series"-rc*)
 shopt -u nullglob
 for candidate in "${candidates[@]}"; do
     name="$(basename "$candidate")"
     valid_candidate=0
-    if [[ "$name" =~ ^ad-suite-nc34-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
+    if [[ "$name" =~ ^ad-suite-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
         valid_candidate=1
-    elif [[ "$name" =~ ^ad-product-([a-z0-9_]+)-nc34-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]] \
+    elif [[ "$name" =~ ^ad-product-([a-z0-9_]+)-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]] \
         && [[ -n "${allowed_products[${BASH_REMATCH[1]}]:-}" ]]; then
         valid_candidate=1
     fi

@@ -5,6 +5,7 @@ declare(strict_types=1);
 $workspace = dirname(__DIR__);
 
 require_once $workspace . '/filzmann_permission_matrix/tests/bootstrap.php';
+require_once $workspace . '/filzmann_data_protection/tests/bootstrap.php';
 
 $apps = [
     'OCA\\AdCalendar\\' => $workspace . '/adcalendar/lib/',
@@ -15,6 +16,7 @@ $apps = [
     'OCA\\BrStunden\\' => $workspace . '/brstunden/lib/',
     'OCA\\Recruitment\\' => $workspace . '/adrecruitment/lib/',
     'OCA\\AdBqPlanning\\' => $workspace . '/adbqplanung/lib/',
+    'OCA\\FilzmannDataProtection\\' => $workspace . '/filzmann_data_protection/lib/',
 ];
 
 spl_autoload_register(static function (string $class) use ($apps): void {
@@ -44,13 +46,34 @@ use OCA\BrStunden\Permission\BrStundenPermissionProvider;
 use OCA\BrStunden\Permission\BrStundenPermissionSourceInterface;
 use OCA\BrTop\Permission\BrTopPermissionProvider;
 use OCA\BrTop\Permission\BrTopPermissionSourceInterface;
+use OCA\FilzmannDataProtection\Permission\DataProtectionPermissionProvider;
+use OCA\FilzmannDataProtection\Service\RetentionSettingsService;
 use OCA\FilzmannPermissionMatrix\PublicApi\V1\PermissionProvider;
 use OCA\LocalBase\Organization\AdOrganizationDefinition;
 use OCA\LocalBase\Organization\AdOrganizationSnapshot;
 use OCA\Recruitment\Permission\RecruitmentPermissionProvider;
 use OCA\Recruitment\Permission\RecruitmentPermissionSourceInterface;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 
 $definition = AdOrganizationDefinition::defaults();
+$retentionSettings = new RetentionSettingsService(
+    new class implements IAppConfig {
+        public function getValueArray(string $appId, string $key, array $default = [], bool $lazy = false): array {
+            return ['Datenschutzbeauftragte'];
+        }
+        public function getValueBool(string $appId, string $key, bool $default = false, bool $lazy = false): bool {
+            return $default;
+        }
+        public function setValueArray(string $appId, string $key, array $value, bool $lazy = false): void {}
+        public function setValueBool(string $appId, string $key, bool $value, bool $lazy = false): void {}
+    },
+    new class implements IGroupManager {
+        public function isAdmin(string $uid): bool { return false; }
+        public function isInGroup(string $uid, string $gid): bool { return false; }
+        public function groupExists(string $gid): bool { return true; }
+    },
+);
 $providers = [
     new CalendarPermissionProvider(new class($definition) implements CalendarPermissionSourceInterface {
         public function __construct(private AdOrganizationDefinition $definition) {}
@@ -98,6 +121,7 @@ $providers = [
             ];
         }
     }),
+    new DataProtectionPermissionProvider($retentionSettings),
 ];
 
 $verified = [];

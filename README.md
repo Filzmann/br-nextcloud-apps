@@ -8,22 +8,26 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 
 - Repository- und DDEV-Überblick: [`docs/workspace.md`](docs/workspace.md)
 - App-übergreifende Architektur: [`docs/architecture.md`](docs/architecture.md)
+- Kanonischer systemweiter Zukunftsplan für openDesk-/Nextcloud-
+  Future-Readiness, Cross-App-Rollouts und Suite-Module:
+  [`docs/zukunftsplan.md`](docs/zukunftsplan.md)
 - Datenschutzarchitektur und schrittweiser Rollout:
   [`docs/privacy-architecture.md`](docs/privacy-architecture.md)
 - Öffentlicher Leitfaden für Privacy-Provider:
   [`docs/privacy-provider-guide.md`](docs/privacy-provider-guide.md)
 - Portfolioentscheidung zur Berechtigungsmatrix:
   [`ADR 0003`](docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
-- Vorgemerkte, noch nicht freigegebene AD-Suite-Zukunftsmodule:
-  [`docs/ad-suite-zukunftsplanung.md`](docs/ad-suite-zukunftsplanung.md)
 - Verbindliche Codex-Grenzen: [`AGENTS.md`](AGENTS.md)
 - Wiederholbare Arbeitsabläufe: [`.agents/skills/`](.agents/skills/)
 - Kanonisches Repositoryinventar:
   [`config/workspace-repositories.tsv`](config/workspace-repositories.tsv)
 - Offene, unverbindliche Learning Candidates:
   [`docs/learning-candidates.md`](docs/learning-candidates.md)
-- Freigegebene Parent-Umsetzungsaufgaben:
-  [`docs/implementation-tasks.md`](docs/implementation-tasks.md)
+
+Abgeschlossene Planstände werden nicht als zweite Dokumentwahrheit gepflegt.
+Ihr Nachweis liegt in Code, Tests, ADRs und der Git-Historie; offene Arbeit
+steht ausschließlich im systemweiten Zukunftsplan oder in der zuständigen
+App-Roadmap.
 
 Normale App-Arbeit beginnt im Root des betroffenen App-Repositories. Dort
 gelten die lokale `AGENTS.md` und die lokal mitgeführten Skills

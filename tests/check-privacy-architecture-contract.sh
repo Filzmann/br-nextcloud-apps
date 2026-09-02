@@ -18,7 +18,7 @@ fail() {
 for source in \
     AGENTS.md \
     docs/architecture.md \
-    docs/implementation-tasks.md \
+    docs/zukunftsplan.md \
     .agents/skills/create-nextcloud-app/SKILL.md \
     .agents/skills/verify-workspace/SKILL.md; do
     rg -Fq "$privacy_contract" "$workspace/$source" \

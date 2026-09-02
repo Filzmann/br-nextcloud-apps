@@ -63,8 +63,10 @@ if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETR
 fi
 
 echo '== Parent-Contract-Tests =='
+bash tests/check-worktree-markdown-inventory.sh
 bash tests/check-document-references.sh
 scripts/check-document-references
+bash tests/check-nextcloud-support-range.sh
 bash tests/check-parent-governance-contract.sh
 bash tests/check-privacy-architecture-contract.sh
 bash tests/check-ikt-privacy-portfolio-contract.sh

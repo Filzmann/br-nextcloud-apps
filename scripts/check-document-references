@@ -33,7 +33,7 @@ if (( ${#documents[@]} == 0 )); then
     [[ -f "$workspace/README.md" ]] && documents+=("$workspace/README.md")
     while IFS= read -r document; do
         documents+=("$document")
-    done < <(find "$workspace/docs" -path "$workspace/docs/plans" -prune -o -type f -name '*.md' -print | sort)
+    done < <(find "$workspace/docs" -type f -name '*.md' -print | sort)
 fi
 
 repo_roots=()

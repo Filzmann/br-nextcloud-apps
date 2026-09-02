@@ -143,11 +143,11 @@ weder SQL noch fremde Tabellenkenntnis. Fehlerhafte, doppelte oder
 inkompatible Provider werden isoliert sichtbar.
 
 Das operative Dashboard ist serverseitig geschützt. Native
-Nextcloud-Admins besitzen nach Neuinstallation standardmäßig Leserechte, weil
-diese Gruppe für die Erstprüfung zuverlässig verfügbar ist. Dieses
-fachliche Leserecht ist unabhängig vom technischen Konfigurationsrecht
-abschaltbar; nach Einrichtung dedizierter Datenschutz-Prüfgruppen soll seine
-Notwendigkeit ausdrücklich neu bewertet werden.
+Nextcloud-Admins besitzen nach Neuinstallation kein automatisches fachliches
+Leserecht. Konfigurierte Datenschutz-Prüfgruppen erhalten es ausdrücklich;
+ein einzelnes Administrationskonto kann nur über die app-lokale,
+auditierbare Freigabe für höchstens 24 Stunden zugreifen. Das technische
+Konfigurationsrecht bleibt davon getrennt und erteilt kein REVIEW-Recht.
 
 ## Contract-Test-Kit
 

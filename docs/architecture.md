@@ -30,7 +30,7 @@ eigenständigen Fachprodukte.
 
 Noch nicht freigegebene künftige AD-Suite-Module, insbesondere DPA-
 Fallsteuerung und Schichtvermittlung, stehen ausschließlich in der
-[`AD-Suite-Zukunftsplanung`](ad-suite-zukunftsplanung.md). Diese Vormerkung
+[`systemweiten Zukunftsplanung`](zukunftsplan.md). Diese Vormerkung
 ändert weder den geltenden Produktkatalog noch Repositoryinventar,
 Laufzeitverträge oder app-lokale Roadmaps und erteilt keine
 Implementierungsfreigabe.

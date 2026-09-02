@@ -334,7 +334,12 @@ nur mit der minimal freigegebenen Personeninformation oder einem neutralen
 Platzhalter bestehen. Referenzintegrität darf nicht durch das bloße Fehlen
 eines Nextcloud-Kontos zusammenbrechen.
 
-## Ausbauetappen
+## Architektur- und Migrationsstand
+
+Dieser Abschnitt dokumentiert Architekturgrenzen und den erreichten
+Migrationsstand. Verbleibende systemweite Aufgaben und ihre Priorität stehen
+ausschließlich in `docs/zukunftsplan.md`; dieser Abschnitt ist keine zweite
+Planungsquelle.
 
 ### Etappe 1 – Architekturvertrag
 
@@ -365,8 +370,10 @@ Einstiege führen auf denselben Bericht. Retention bleibt ausschließlich ein Dr
 bearbeitbar. Admin-Karten sind zugänglich klapp- und per Tastatur oder
 Drag-and-drop verschiebbar; ihre persönliche Anordnung ist keine fachliche
 Konfiguration.
-nicht umgesetzt sind Ausführung, automatische Maßnahmen, Lifecycle-Provider,
-Jobs, allgemeine Providerabdeckung oder ein Vollständigkeits-/Release-Gate.
+Nicht umgesetzt sind Ausführung, automatische Maßnahmen, Lifecycle-Provider,
+Jobs oder ein Vollständigkeits-/Release-Gate. Alle eigenen AD-/BR-Apps
+besitzen inzwischen eine erste Providerprojektion; bekannte Teilabdeckung und
+Retention-Lücken bleiben in der Migrationsmatrix sichtbar.
 
 ### Etappe 2 – Standalone-Vertrag und App-Identität
 
@@ -407,11 +414,12 @@ App-zu-App-Installation und kein Daten-Fallback.
    neutralen Standalone-App test-first implementieren. Registry, Aggregator
    sowie die ausschließlich an `OCP\IUserSession` gebundene Self-Service-API
    und die flüchtige zugängliche Report-UI sind umgesetzt; die
-   Self-Service-Integration ist in lokaler Nextcloud-Laufzeit verifiziert,
-   Die getrennte REVIEW-Berechtigung ist umgesetzt: native Nextcloud-Admins
-   dürfen nach Neuinstallation standardmäßig lesen, das fachliche Leserecht
-   ist unabhängig vom technischen Konfigurationsrecht abschaltbar und um
-   dedizierte Prüfgruppen ergänzbar.
+   Self-Service-Integration ist in lokaler Nextcloud-Laufzeit verifiziert.
+   Die getrennte REVIEW-Berechtigung ist umgesetzt: konfigurierte
+   Prüfgruppen besitzen das fachliche Leserecht; native Nextcloud-Admins
+   erhalten es nicht automatisch und benötigen eine app-lokale, auditierbare
+   Freigabe von höchstens 24 Stunden. Technisches Konfigurationsrecht bleibt
+   davon getrennt.
 2. Zunächst einen synthetischen Referenzprovider anbinden, damit keine
    Fachdatenmigration die Runtimegrenze verdeckt.
 3. Genau einen vorhandenen realen Provider mit Aktivierungs- und
@@ -421,9 +429,10 @@ App-zu-App-Installation und kein Daten-Fallback.
    ersetzt; Raum, Zweck und Zeitraum erhalten den fachlichen Kontext.
 4. Installation mit und ohne Privacy-App, Providerfehler, Cursor-Grenzen,
    Teilantwort, Audit und Rückbau zum charakterisierten Pilotstand prüfen.
-5. Der Consumerlauf ist in den Repository-Tests und in lokaler
-   Nextcloud-Laufzeit grün. Die nächste App benötigt weiterhin ein eigenes
-   Cross-Repository-Gate.
+5. Der erste Consumerlauf ist in den Repository-Tests und in lokaler
+   Nextcloud-Laufzeit grün. Alle später hinzugekommenen Provider behalten
+   app-lokale Vertragsnachweise; der Root behauptet daraus keine automatisch
+   vollständige Datenabdeckung.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
@@ -579,7 +588,7 @@ bewusst nicht vorweggenommen.
 | `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen; Abrechnungs-PDFs werden nur im Response erzeugt und nicht appseitig in Files/Team Folders gespeichert | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | PersonalDataProvider auf Standalone V1 umgesetzt: eigene Stunden, Fortbildungszeiten und Notizen werden vollständig ausgewiesen; reine Bearbeitungsbezüge auf fremden Sätzen bleiben neutral und geben keine Drittpersonendaten preis. Fachliche Einzellöschung vorhanden, keine Retention-Policy |
 | `localbase` | Nextcloud-Kontoprofil sowie persönliche Adminlayout-/Zoomwerte und Registry synthetischer Demokonten; Organisationssnapshot selbst enthält keine Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Öffentliche Privacy-Verträge, Registry, Aggregation und UI sowie Nextcloud-Kontoprovider implementiert; persönliche LocalBase-UI-Werte und Demo-Registry noch nicht abgedeckt |
 | `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs und Audit-UIDs; `include_users` ist konfigurierbar, im aktuellen Snapshotcode sind jedoch keine persistierten Benutzerlisten belegt | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | PersonalDataProvider und öffentlicher Standalone-V1-Preview-Provider implementiert: eigene Art.-15-Bezüge bleiben kontextuell erhalten; Exportmetadaten und Auditprotokolle werden nach getrennt konfigurierbaren, standardmäßig 180-tägigen Fristen ausschließlich als `REVIEW` gemeldet. Inhalte, Dateinamen, freie Auditdetails, UIDs und Drittpersonenangaben bleiben ausgeschlossen. Keine Retention-Ausführung und kein Lifecycle-Provider |
-| `filzmann_data_protection` | angefragte Nextcloud-UID nur sitzungsgebunden und transient; aggregierte Berichte werden nicht gespeichert. Reviewer-Gruppen sind Rollen-Konfiguration, keine Mitgliedskopie | derzeit nein; bei eigener Audit-, Export- oder Berichtspersistenz sofort neu bewerten | derzeit nein für eigene Bestände | derzeit keine eigene persistierte Subjectreferenz | nicht anwendbar | hoch, IKT/Datenschutz | Begründete Nichtanwendbarkeit eines eigenen PersonalDataProviders im aktuellen Stand; eigenes Dateninventar bei jeder Persistenzänderung neu prüfen. Der separate PermissionProvider für Reviewer-/Adminrechte ist als nächste Eigen-App-Aufgabe offen |
+| `filzmann_data_protection` | angefragte Nextcloud-UID und aggregierte Berichte bleiben transient; die app-lokale Historie zeitlich begrenzter Adminfreigaben persistiert Ziel-, Freigabe- und Widerrufs-UIDs samt Zeitpunkten. Reviewer-Gruppen sind Rollen-Konfiguration, keine Mitgliedskopie | ja | ja, für die eigene Adminfreigabehistorie zu entscheiden | Kontolebenszyklus und noch offene Aufbewahrungsentscheidung für den sicherheitsrelevanten Freigabenachweis | erst nach fachlicher Aufbewahrungsentscheidung; der Beweiswert ist zu erhalten | hoch, IKT/Datenschutz | Eigener PersonalDataProvider auf Standalone V1 und eigener PermissionProvider auf Matrix V1 umgesetzt. Der Provider projiziert nur die Rolle der betroffenen Person und neutralisiert fremde Administrator*innen; eine Retention-Policy für die Adminfreigabehistorie fehlt noch |
 | `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider auf Standalone V1 für eigene Dienste und Termine sowie tatsächlich gespeicherte persönliche Filter-, Standarddienst- und Sync-Werte vervollständigt. Gemeinsame Meetings nennen weitere Beteiligte nur abstrakt; Filter nennen ausgewählte Personen nur als Anzahl. Externe Verbindungen werden ohne Entschlüsselung ausschließlich als Anbieter-/OAuth-Vorhandenseinsmetadaten ausgewiesen. Serveradressen, Kontonamen, technische Kennungen, Passwörter, Tokens und OAuth-State bleiben ausgeschlossen. Native DAV- und externe Kalenderobjekte sind abgeleitete Darstellungen der führenden AD-/Urlaubsdaten und werden nicht als zweite Quelle gelesen. Keine Files-/Team-Folder-Ablage, keine Retention-Policy |
 | `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider auf Standalone V1 migriert; eigene freiwillige Notizen werden als möglicher Drittpersoneninhalt gekennzeichnet. Der konfigurierbare Retention-REVIEW-Dry-Run verbleibt bis zur Entscheidung über eine globale Adminprüfung im LocalBase-Pilot; Admin-UI der Regel noch offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
@@ -625,24 +634,23 @@ bei jeder Scopeänderung neu geprüft.
 - Lifecycle-Tests behandeln unbekannte, fehlende, korrigierte und
   widersprüchliche Ereignisse ohne unkontrollierte Löschung.
 
-## Offene Architekturfragen
+## Unentschiedene Architekturgrenzen
 
-Vor Etappe 2 zu entscheiden:
+Die folgenden Grenzen bleiben offen; konkrete Aufgaben, Reihenfolge und
+Freigabegates stehen ausschließlich in `docs/zukunftsplan.md`:
 
 1. Welche Organisation und welcher Maintainerkreis verantworten den
    öffentlichen Vertrag, Releases und Sicherheitsmeldungen?
 2. Welche kleinste Nextcloud-Version und welche Vertragsversionen werden im
    ersten Release unterstützt?
-3. Dürfen Nextcloud-Admins Admin-Auskunft automatisch lesen oder benötigen
-   auch sie die dedizierte Datenschutzrolle?
-4. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
+3. Wie wird eine erwartete Providerabdeckung zur Laufzeit deklariert, bevor
    das spätere Release-Gate aktiv ist?
-5. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
+4. Welche Stelle liefert künftig Beschäftigungsende und Korrekturen mit
    belastbarer Semantik?
-6. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
+5. Wie werden externe Bewerber*innen identifiziert und Auskünfte sicher
    zugestellt, ohne sie künstlich zu Nextcloud-Konten zu machen?
-7. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
-8. Wann ist der Vertrag stabil genug, um eine implementierbare OCP-
+6. Welche Aufbewahrung benötigt das Audit der Admin-Auskunft selbst?
+7. Wann ist der Vertrag stabil genug, um eine implementierbare OCP-
    Schnittstelle bei Nextcloud vorzuschlagen?
 
 ### Pilotentscheidungen vom 12. August 2026

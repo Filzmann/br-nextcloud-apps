@@ -3,6 +3,8 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+support_range_checker="$workspace/scripts/validate-nextcloud-support-range.php"
+nextcloud_target_major="${NEXTCLOUD_TARGET_MAJOR:-34}"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
 mapfile -t products < <(php "$catalog_reader" bundle-products)
@@ -58,6 +60,7 @@ for app in "${apps[@]}"; do
         exit 1
     fi
 
+    php "$support_range_checker" "$info" "$app" 33 "$nextcloud_target_major"
     php -r '
         $xml = simplexml_load_file($argv[1]);
         if ($xml === false) throw new RuntimeException("info.xml ist ungültig");
@@ -68,8 +71,6 @@ for app in "${apps[@]}"; do
         }
         if ((string)$xml->id !== $expectedId) throw new RuntimeException("App-ID stimmt nicht mit dem Ordner überein");
         if (strtolower((string)$xml->licence) !== "agpl") throw new RuntimeException("Lizenzmetadatum ist nicht AGPL");
-        if ((string)$xml->dependencies->nextcloud["min-version"] !== "34") throw new RuntimeException("Nextcloud-Minimum ist nicht 34");
-        if ((string)$xml->dependencies->nextcloud["max-version"] !== "34") throw new RuntimeException("Nextcloud-Maximum ist nicht 34");
         if (version_compare((string)$xml->dependencies->php["min-version"], "8.3", "<")) throw new RuntimeException("PHP-Minimum liegt unter 8.3");
         if ((string)$xml->website !== "https://github.com/Filzmann/ad-suite") throw new RuntimeException("Zentrale Projektseite fehlt");
         if (!str_starts_with((string)$xml->bugs, "https://github.com/Filzmann/nextcloud-") || !str_ends_with((string)$xml->bugs, "/issues")) throw new RuntimeException("Öffentlicher Fehlerkanal ist ungültig");
@@ -157,7 +158,7 @@ if [[ "${RUN_INTEGRATION_SMOKES:-0}" == '1' ]]; then
 fi
 
 echo '== Reproduzierbarer Paketbau =='
-DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
+DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 NEXTCLOUD_TARGET_MAJOR="$nextcloud_target_major" \
     "$workspace/scripts/build-ad-suite-release.sh"
 (cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
 (cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)

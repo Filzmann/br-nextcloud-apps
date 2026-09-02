@@ -25,28 +25,31 @@ required_parent_files=(
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
     docs/architecture.md
+    docs/zukunftsplan.md
     docs/privacy-architecture.md
     docs/privacy-provider-guide.md
     docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md
     docs/architecture-decisions/0002-standalone-privacy-platform.md
     docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md
-    docs/plans/codex-structure-correction.md
-    docs/plans/codex-structure-migration.md
     docs/workspace.md
     scripts/check-fast
     scripts/check-full
     scripts/check-workspace-structure
+    scripts/list-worktree-markdown-files
+    scripts/validate-nextcloud-support-range.php
     scripts/check-apps
     scripts/check-ad-suite-delivery
     scripts/verify-ad-suite-delivery.sh
     tests/check-codex-structure.sh
     tests/check-privacy-architecture-contract.sh
     tests/check-ikt-privacy-portfolio-contract.sh
+    tests/check-nextcloud-support-range.sh
 )
 required_executables=(
     scripts/check-fast
     scripts/check-full
     scripts/check-workspace-structure
+    scripts/list-worktree-markdown-files
     scripts/check-apps
     scripts/check-ad-suite-delivery
     scripts/verify-ad-suite-delivery.sh
@@ -175,23 +178,18 @@ if any(row['path'] == 'recruitment' or row['app_id'] == 'recruitment' for row in
 
 
 def markdown_files() -> list[tuple[Path, Path]]:
-    commands = (
-        ('git', 'ls-files', '*.md'),
-        ('git', 'ls-files', '--others', '--exclude-standard', '*.md'),
-    )
     files: set[tuple[Path, Path]] = set()
     for row in rows:
         repository = workspace if row['path'] == '.' else workspace / str(row['path'])
-        for command in commands:
-            result = subprocess.run(
-                ('git', '-C', str(repository), *command[1:]),
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            for line in result.stdout.splitlines():
-                if line:
-                    files.add((repository / line, repository))
+        result = subprocess.run(
+            (str(workspace / 'scripts/list-worktree-markdown-files'), str(repository)),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        for line in result.stdout.splitlines():
+            if line:
+                files.add((repository / line, repository))
     return sorted(files)
 
 
@@ -536,6 +534,7 @@ parent_contract_scripts = (
     'check-ad-suite-ci-contract.sh',
     'check-ad-suite-standalone-contract.sh',
     'check-ad-product-installer.sh',
+    'check-nextcloud-support-range.sh',
     'check-ad-release-pruning.sh',
 )
 for script in parent_contract_scripts:
@@ -689,7 +688,7 @@ fi
 while IFS= read -r markdown; do
     fences="$(grep -c '^```' "$markdown" || true)"
     (( fences % 2 == 0 )) || fail "Nicht geschlossenes Markdown-Codefence: $markdown"
-done < <({ git ls-files '*.md'; git ls-files --others --exclude-standard '*.md'; } | sort -u)
+done < <(scripts/list-worktree-markdown-files .)
 
 if (( tracking_warning )); then
     echo 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETRACKT'
