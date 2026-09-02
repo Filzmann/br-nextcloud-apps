@@ -30,14 +30,18 @@ Installations- oder Releasekandidaten geprüft.
 | app-spezifische Produktarbeit | `ROADMAP.md` der zuständigen App | ja |
 | dauerhafte Architekturentscheidung | `docs/architecture-decisions/` oder app-lokale Architekturquelle | nein; sie begründet Aufgaben, ersetzt sie aber nicht |
 | dauerhaft geltende Arbeits- und Sicherheitsregel | `AGENTS.md`, Architekturdokument oder Skill | nein |
-| abgeschlossene Umsetzung oder abgelöster Planstand | Code, Tests, ADRs und Git-Historie; keine zweite Plan-Datei | nein |
+| aktueller implementierter App-Umfang | app-lokale `README.md` | nein |
+| abgeschlossene App-Änderung | app-lokale `CHANGELOG.md`, Code, Tests und Git-Historie | nein |
+| abgelöster systemweiter Planstand | ADR, geltende Dokumentation und Git-Historie; keine zweite Plan-Datei | nein |
 | noch nicht bewertete Beobachtung | `docs/learning-candidates.md` | nein |
 
 `offen` bedeutet planbar, aber nicht automatisch freigegeben. `freigegeben`
 benötigt weiterhin einen konkreten Auftrag für jedes betroffene Repository.
 `blockiert` benennt ein noch fehlendes Entscheidungs- oder Nachweisgate.
-Erledigte Details werden aus diesem Plan entfernt und durch Code, Tests,
-ADRs oder die Git-Historie belegt.
+Erledigte Details werden aus diesem Plan entfernt. App-lokal werden der
+aktuelle Umfang in `README.md` und Änderungen in `CHANGELOG.md` dokumentiert;
+systemweit belegen Code, Tests, ADRs, geltende Dokumentation und Git-Historie
+den Abschluss.
 
 ## Zielzustand
 

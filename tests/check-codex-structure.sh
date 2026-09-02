@@ -25,6 +25,7 @@ required_parent_files=(
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
     docs/architecture.md
+    docs/app-repository-structure.md
     docs/zukunftsplan.md
     docs/privacy-architecture.md
     docs/privacy-provider-guide.md
@@ -269,6 +270,22 @@ for row in rows:
         fail(f'AGENTS.md referenziert nicht lokale Skills in {row["path"]}: {sorted(missing_references)}')
 
     if row['kind'] == 'app':
+        required_app_files = (
+            'AGENTS.md',
+            'README.md',
+            'ROADMAP.md',
+            'CHANGELOG.md',
+            'LICENSE',
+            '.gitignore',
+            'appinfo/info.xml',
+            'docs/architecture.md',
+            'docs/manual-acceptance.md',
+        )
+        for required_file in required_app_files:
+            candidate = repo / required_file
+            if not candidate.is_file() or candidate.is_symlink():
+                fail(f'App-Pflichtdatei fehlt oder ist ein Symlink: {row["path"]}/{required_file}')
+
         for required in row['required_skills']:
             local_skill = skill_root / required / 'SKILL.md'
             if required not in skill_names or not local_skill.is_file():
@@ -278,9 +295,24 @@ for row in rows:
                 fail(f'Lokale Skill-Kopie weicht von der kanonischen Fassung ab: {row["path"]}/{required}')
         if 'vollständige Repository-Steuerung' not in agents_text:
             fail(f'Direkte Standalone-Steuerung ist nicht erklärt: {row["path"]}/AGENTS.md')
+        if '## Dokumentenverantwortung' not in agents_text:
+            fail(f'Dokumentenverantwortung fehlt: {row["path"]}/AGENTS.md')
         forbidden = ('Parent-Skill', 'Parent-`AGENTS.md` gilt ergaenzend', 'Parent-`AGENTS.md` gilt ergänzend')
         if any(fragment in agents_text for fragment in forbidden):
             fail(f'Unwirksame Parent-Laufzeitabhängigkeit in {row["path"]}/AGENTS.md')
+
+        readme_text = (repo / 'README.md').read_text(encoding='utf-8')
+        if '## Dokumentation' not in readme_text:
+            fail(f'Dokumentationsindex fehlt: {row["path"]}/README.md')
+
+        roadmap_text = (repo / 'ROADMAP.md').read_text(encoding='utf-8')
+        completed_patterns = (
+            r'(?im)^## .*umgesetz',
+            r'(?im)^\s*-\s*Umgesetzt:',
+            r'(?im)^Status:.*\b(?:umgesetzt|implementiert|abgeschlossen)\b',
+        )
+        if any(re.search(pattern, roadmap_text) for pattern in completed_patterns):
+            fail(f'ROADMAP.md enthält erledigte statt ausschließlich offener Arbeit: {row["path"]}')
 
 canonical_text = (workspace / '.agents/skills/work-in-nextcloud-app/SKILL.md').read_text(encoding='utf-8')
 required_contracts = (
@@ -632,6 +664,7 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
 
     control_files=(AGENTS.md)
     if [[ "$kind" == 'app' ]]; then
+        control_files+=(README.md ROADMAP.md CHANGELOG.md LICENSE .gitignore appinfo/info.xml docs/architecture.md docs/manual-acceptance.md)
         IFS=',' read -r -a skills <<< "$required_skills"
         for required_skill in "${skills[@]}"; do
             control_files+=(".agents/skills/$required_skill/SKILL.md")

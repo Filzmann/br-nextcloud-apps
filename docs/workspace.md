@@ -328,8 +328,11 @@ zweite Schrittquelle.
 
 Unverzichtbare Ergebnisse des Skills sind:
 
-- eigenes Repository, lokale `AGENTS.md`, `.gitignore` und reguläre lokale
-  Kopien von `.agents/skills/work-in-nextcloud-app/SKILL.md` sowie
+- eigenes Repository und die Pflichtquellen aus
+  `docs/app-repository-structure.md`: `README.md`, `ROADMAP.md`,
+  `CHANGELOG.md`, `LICENSE`, `AGENTS.md`, `.gitignore`, `appinfo/info.xml`, das lokale
+  Architekturdokument und das lokale manuelle Abnahmeformular;
+- reguläre lokale Kopien von `.agents/skills/work-in-nextcloud-app/SKILL.md` sowie
   `.agents/skills/test-driven-change/SKILL.md`;
 - genau ein neuer Eintrag in `config/workspace-repositories.tsv` sowie daraus
   abgeleitete oder dagegen geprüfte Parent-Inventare;
@@ -348,6 +351,8 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 ## Codex-Steuerung und Verifikation
 
 - Dauerhafte Regeln und Abbruchbedingungen: `AGENTS.md`
+- Einheitliche App-Dokument- und Steuerungsstruktur:
+  `docs/app-repository-structure.md`
 - Einzige aktive systemweite Aufgabenquelle: `docs/zukunftsplan.md`
 - Wiederkehrende Workflows: `.agents/skills/`
 - Vollständige technische Repository-Liste: `config/workspace-repositories.tsv`

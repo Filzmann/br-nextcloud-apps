@@ -13,6 +13,8 @@ Es enthält keinen deploybaren App-Code.
   `docs/zukunftsplan.md`
 - Governance-Hierarchie für Subrepositories:
   `docs/parent-governance-contract.md`
+- Verbindliche App-Dokument- und Steuerungsstruktur:
+  `docs/app-repository-structure.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
 - Öffentlicher Privacy-Providervertrag: `docs/privacy-provider-guide.md`
 - IKT-/Datenschutz-Zuordnung der Berechtigungsmatrix:
@@ -47,6 +49,10 @@ keine fachliche Schreibfreigabe.
 - Jede deploybare App besitzt ein eigenes Git-Repository, eine eigene
   `AGENTS.md`, `.gitignore` und lokal auflösbare Steuerung. Neue Apps werden
   ausschließlich mit dem Skill `create-nextcloud-app` registriert.
+- Jede App erfüllt die einheitliche Datei- und Quellenverantwortung aus
+  `docs/app-repository-structure.md`. App-lokale Planung steht ausschließlich
+  in `ROADMAP.md`; aktueller Stand und Historie stehen in `README.md` und
+  `CHANGELOG.md`.
 - `config/workspace-repositories.tsv` ist die einzige manuell gepflegte
   Repositoryliste. Andere Inventare werden daraus erzeugt oder dagegen
   geprüft.

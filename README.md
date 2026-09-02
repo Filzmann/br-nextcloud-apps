@@ -18,6 +18,8 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 - Portfolioentscheidung zur Berechtigungsmatrix:
   [`ADR 0003`](docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
 - Verbindliche Codex-Grenzen: [`AGENTS.md`](AGENTS.md)
+- Einheitliche App-Repository-Struktur:
+  [`docs/app-repository-structure.md`](docs/app-repository-structure.md)
 - Wiederholbare Arbeitsabläufe: [`.agents/skills/`](.agents/skills/)
 - Kanonisches Repositoryinventar:
   [`config/workspace-repositories.tsv`](config/workspace-repositories.tsv)
