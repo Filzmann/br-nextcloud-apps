@@ -116,11 +116,23 @@ requirements.
    required infrastructure, place the exact release-candidate app revision in
    the custom app path, enable it, and verify status, dependency injection,
    background-job/command/settings registration, and database setup.
+   This is the primary Fresh-Install/Reinstall proof. Record the actual
+   executable invocation and show that server configuration, database and
+   app data were empty or deliberately recreated from the selected sources;
+   disabling/re-enabling an app or reading `occ status` is not that proof.
+   Reuse this stage for development-reset verification instead of creating
+   an identical second reinstall suite. A documented requirement without an
+   executed, reproducible command remains unverified.
 4. Exercise the app's relevant authenticated API, permission, file, job,
    integration, UI, and static-asset smokes. A page load alone is insufficient.
 5. When the app has persistent state or migrations, test an upgrade from the
    immediately preceding supported major with synthetic existing data and
    verify integrity, repeatability, and failure behavior.
+   This checks supported Nextcloud platform transitions. Preservation of an
+   older internal app development revision is a separate decision governed
+   by `docs/architecture.md`, section "Entwicklungsphase und
+   Kompatibilitätsbedarf"; do not manufacture historical app compatibility
+   solely because an earlier development schema exists.
 6. For infrastructure or suite apps, test required standalone combinations
    and the complete release combination. Record the suite ceiling as the
    lowest proven maximum of all included apps.

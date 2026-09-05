@@ -5,6 +5,67 @@ kurzen Arbeits- und Stop-Regeln stehen in `AGENTS.md`; wiederholbare Abläufe
 stehen unter `.agents/skills/`. App-spezifische Fach- und Rechteverträge
 bleiben im jeweiligen App-Repository.
 
+## Entwicklungsphase und Kompatibilitätsbedarf
+
+Entscheidung vom 5. September 2026: Das Gesamtprojekt befindet sich vollständig
+in der Entwicklung. Es gibt kein PROD, keinen produktiven Datenbestand und
+keinen bereits betriebenen Bestand mit zu erhaltendem Upgradepfad. STAGING
+ist eine wegwerfbare Entwicklungs- und Integrationsumgebung und darf im
+konkret beauftragten Reinstall vollständig neu aufgebaut werden. Wenige
+externe Testnutzer ändern diese Einordnung nicht.
+
+Vor einer Datenmigration, Legacy-Unterstützung, Compatibility Layer,
+Deprecated API, Dual-Read/Dual-Write, einem Altschema-Fallback, Übergangsformat
+oder der Unterstützung historischer Entwicklungsstände wird geprüft:
+
+1. Wurde der betroffene Zustand jemals produktiv eingesetzt?
+2. Benötigen reale Daten oder Nutzer seine Erhaltung?
+3. Gibt es einen anderen konkreten technischen Erhaltungsgrund, insbesondere
+   einen geltenden Plattform- oder externen API-Vertrag?
+
+Sind alle relevanten Antworten nein, ist die saubere Breaking-Change-/
+Reinstall-Lösung der Standard. Frühere rein interne Entwicklungsstände
+begründen weder Abwärtskompatibilität noch eine Deprecationfrist.
+Entwicklungsschemata dürfen durch ein kanonisches Installationsschema ersetzt,
+alte interne APIs und Konfigurationsformate samt ausschließlich dafür
+benötigten Adaptern und Tests entfernt werden. Architekturqualität und der
+saubere Zielzustand haben Vorrang. Nextclouds nötige Installationsmigrationen
+bleiben erhalten; ein Verzeichnisname `Migration` beweist keine Altlast.
+
+Breaking Changes werden im selben Änderungskontext vollständig durchgezogen:
+betroffene Provider, Consumer, standardisierte APIs, Vertragsversionen,
+Metadaten, Tests und Dokumentation müssen zusammenpassen. Unterstützte
+Nextcloud-/openDesk-Plattformverträge, externe Standards, Autorisierung und
+Datenschutz gelten unverändert. Fehlende oder inkompatible optionale Provider
+bleiben kontrolliert sichtbar. Ein Reinstall erlaubt keine privaten
+Fremdtabellenzugriffe oder parallel erfundenen Plattformmechanismen.
+
+Vor destruktiver Arbeit werden die tatsächlich benötigten externen
+Testidentitäten, Gruppen, Rollen und nicht reproduzierbaren Testdaten gezielt
+gesichert oder über bestehende native Setup-Strukturen reproduzierbar gemacht.
+Echte Personen- und Zugangsdaten bleiben außerhalb von Git. Diese begrenzte
+Sicherung begründet keine allgemeine Legacy-Unterstützung. Ein Reinstall
+bleibt ein normaler unterstützter Entwicklungsweg; der vorhandene
+Compatibility-Workflow besitzt den Fresh-Install-Nachweis, dessen aktueller
+Belegstatus in `docs/workspace.md` beschrieben ist.
+
+Diese Phase endet ausschließlich durch einen ausdrücklich dokumentierten,
+von Simon freigegebenen **Production-Readiness-/Production-Freeze-Entscheid**.
+Ein Release Candidate, eine Versionsnummer, ein Staging-Deployment oder ein
+externer Testzugang lösen den Wechsel nicht aus. Der Entscheid wird in dieser
+kanonischen Lifecycle-Quelle mit Datum, Geltungsbereich und betroffenem
+Versions-/Datenstand festgehalten und in die lokale Steuerung projiziert.
+Dann werden Upgradepfade, Datenbankmigrationen, Persistenz, Backup/Restore,
+Rollback, Release-/API-Kompatibilitätszusagen, Deployment-/Freigabeprozess und
+PROD→STAGING/COPY-Strategie neu bewertet. Eine vollständige PROD-Governance
+wird jetzt nicht vorweggenommen.
+
+Diese Regel entscheidet den Kompatibilitätsbedarf, erweitert aber keinen
+Repository-Schreibauftrag und ersetzt keine Freigabe für eine konkrete
+destruktive Aktion. Lokale Regelprojektionen folgen dem bestehenden
+`docs/parent-governance-contract.md`; ein unsynchronisierter Einzel-Checkout
+darf keinen abweichenden Phasenstand stillschweigend annehmen.
+
 ## Repository- und Produktgrenzen
 
 Der Parent ist Meta-, DDEV-, Dokumentations- und Prüfkontext. Jede deploybare
@@ -177,7 +238,13 @@ verwendbare allgemeine Setter. Erlaubte Übergänge werden im Fachmodell oder
 einem eindeutig zuständigen Anwendungsservice gekapselt und positiv, negativ
 und im Fehlerfall getestet.
 
-Bei Datenbankänderungen mit möglichen Bestandsdaten werden altes und neues
+Zuerst wird nach der Entwicklungsphasenregel oben entschieden, ob überhaupt
+ein zu erhaltender Zustand vorliegt. Nur für diesen Fall gelten die folgenden
+Erhaltungs- und Upgradepflichten; bei einem erlaubten Entwicklungsreset werden
+stattdessen das kanonische Zielschema, notwendige Testdatensicherung,
+Fresh Install/Reinstall, Integrität und Anwendung auf dem neuen Schema geprüft.
+
+Bei Datenbankänderungen mit zu erhaltenden Bestandsdaten werden altes und neues
 Schema, Transformationsregeln, Bestandsvarianten, Integritätsbedingungen,
 Transaktionsgrenze, Fortsetzbarkeit und Rollbackgrenzen dokumentiert. Erforderlich
 sind mindestens ein Test der frischen Installation, ein Upgrade-Test aus der
@@ -185,8 +252,11 @@ relevanten Vorversion mit synthetischen Bestandsdaten, Integritätsprüfungen,
 eine Behandlung ungültiger oder widersprüchlicher Altdaten und ein
 Anwendungstest auf dem migrierten Schema.
 
-Veröffentlichte Migrationen werden nicht nachträglich verändert. Korrekturen
-erfolgen durch eine neue Migration.
+Migrationen für produktiv eingesetzte oder anderweitig konkret zu erhaltende
+Stände werden nicht nachträglich verändert. Korrekturen erfolgen durch eine
+neue Migration. Rein interne Entwicklungsrevisionen fallen unter die
+Entwicklungsphasenregel; eine bloße RC-Veröffentlichung erzeugt keinen
+fiktiven Produktionsbestand.
 
 ## Test- und Liefermodell
 

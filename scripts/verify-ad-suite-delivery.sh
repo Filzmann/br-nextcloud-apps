@@ -113,8 +113,9 @@ done
 if [[ "${RUN_DDEV_CHECKS:-0}" == '1' ]]; then
     echo '== DDEV: Nextcloud- und App-Status =='
     (cd "$workspace/nextcloud-dev" && ddev exec -d /var/www/html/html php occ status)
+    app_inventory="$(cd "$workspace/nextcloud-dev" && ddev exec -d /var/www/html/html php occ app:list)"
     for app in "${apps[@]}"; do
-        (cd "$workspace/nextcloud-dev" && ddev exec -d /var/www/html/html php occ app:list | grep -i "$app")
+        grep -i "$app" <<< "$app_inventory"
     done
 fi
 

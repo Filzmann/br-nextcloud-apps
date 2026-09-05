@@ -4,6 +4,7 @@
 - Entscheidung: 2026-08-08
 - Ergänzung PHP-Autoloading: 2026-08-09
 - Ergänzung Standalone-Privacy-Verweis: 2026-08-23
+- Ergänzung Entwicklungsphase: 2026-09-05
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Noch nicht umgesetzt: die in dieser Datei beschriebene LocalBase-Migration
@@ -414,6 +415,12 @@ Privacy-Runtime dauerhaft in LocalBase zu belassen.
 
 ## Migrationsplan in prüfbaren Schritten
 
+Für Erhaltungsaufwand und Übergangsfristen gilt die kanonische
+[Entwicklungsphasenregel](../architecture.md#entwicklungsphase-und-kompatibilitätsbedarf).
+Die folgenden Schritte schützen aktuelle Consumer- und Plattformgrenzen;
+historische Entwicklungsstände allein erfordern weder Datenübernahme noch
+einen zusätzlichen Deprecation-Releasezyklus.
+
 1. **Releaseblocker sichtbar machen.** Pro Store-Kandidat eine
    Abhängigkeitsmanifestation erstellen: alle PHP-Klassen, Assets, Templates,
    Routen, AppConfig-/Datenquellen und dokumentierte Voraussetzungen. Saubere
@@ -436,8 +443,8 @@ Privacy-Runtime dauerhaft in LocalBase zu belassen.
    Jobs und Eventbus als schmale, versionierte Laufzeit-API festlegen.
    Bestands-AppConfig, Gültigkeitszustände, Upgrade, Downgradegrenze,
    Deinstallation und Fehler bei inkompatibler Version dokumentieren. Name und
-   App-ID werden erst danach entschieden; historische Migrationen bleiben
-   unverändert.
+   App-ID werden erst danach entschieden. Die Phasenregel entscheidet, welche
+   historischen Zustände und Migrationen tatsächlich erhalten werden müssen.
 6. **B-Consumer mit Versionshandshake migrieren.** Wieder nur eine Fachapp pro
    Schritt. Consumer prüft App-Aktivierung und API-/Capability-Version vor
    Klassenauflösung und meldet verständlich. Provider- und Consumer-Contract-
@@ -448,10 +455,11 @@ Privacy-Runtime dauerhaft in LocalBase zu belassen.
    Arbeitgeberannahmen sowie Lizenzen separat freigeben. Halb migrierte Apps
    bleiben unveröffentlichbar.
 8. **Alte Oberflächen entfernen.** Erst wenn alle betroffenen Consumer auf
-   stabilen A-/B-Verträgen stehen, unbenutzte LocalBase-Klassen und Globals in
-   einem eigenen Releasezyklus deprecaten und später entfernen. Bestandsdaten
-   werden nicht durch Codekopie oder Tabellenzugriff migriert; Rückbaugrenzen
-   bleiben pro Schritt dokumentiert.
+   stabilen A-/B-Verträgen stehen, unbenutzte LocalBase-Klassen und Globals
+   entfernen. Eine Deprecationfrist ist nur mit konkretem Erhaltungsgrund nach
+   der Phasenregel erforderlich. Zu erhaltende Daten werden nicht durch
+   Codekopie oder Fremdtabellenzugriff migriert; Rückbaugrenzen bleiben pro
+   Schritt dokumentiert.
 
 Jeder Schritt besitzt eine einzelne Eigentümerschaft, kleine Commitgrenze,
 Consumerliste und Rückbauentscheidung. Kein Schritt verlangt einen

@@ -37,9 +37,12 @@ gelten die lokale `AGENTS.md` und die lokal mitgeführten Skills
 
 ## Schnelle Prüfungen
 
+Je nach Umfang einen Einstieg wählen:
+
 ```bash
-scripts/check-fast
-scripts/check-full
+scripts/check-fast  # Parent
+# oder einschließlich aller registrierten App-Tests:
+scripts/check-full  # enthält check-fast bereits
 ```
 
 `check-full` ist kein Releaseurteil. Das saubere AD-Suite-Delivery-Gate ist

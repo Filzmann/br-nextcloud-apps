@@ -174,6 +174,15 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 ## Test-, UI- und Datenqualität
 
+- Vor einem neuen Test, Scan, Linter, Architektur- oder Systemcheck wird
+  geprüft, welcher bestehende Check dieselbe Eigenschaft bereits nachweist.
+  Diesen erweitern oder sein nachweislich passendes Ergebnis wiederverwenden;
+  ein zusätzlicher Check braucht eine benannte zusätzliche Fehlerklasse oder
+  Vertrauensgrenze. Gleicher Input, gleiche Prüfung, gleiche Fehlerklasse und
+  gleiche Phase begründen keinen zweiten Lauf. Gestaffelte Unit-, Contract-
+  und Runtime-Nachweise bleiben erhalten. Die dokumentierten lokalen
+  Prüfeinstiege bestimmen Umfang und Ergebnisgültigkeit.
+
 ### Testgetriebene Funktionserweiterungen und Verhaltensänderungen
 
 Bei jeder neuen Funktion, Fehlerkorrektur oder sonstigen Änderung des
@@ -224,6 +233,12 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 
 ## Zustandsmodelle und Migrationen
 
+- Vor Kompatibilitäts- oder Migrationsarbeit gilt die kanonische
+  Entwicklungsphasenregel in `docs/architecture.md`, Abschnitt
+  „Entwicklungsphase und Kompatibilitätsbedarf“. Sie bestimmt zuerst, ob ein
+  Zustand überhaupt erhalten werden muss. Die folgenden Erhaltungs- und
+  Upgradepflichten gelten nur bei einem dort belegten Erhaltungsgrund;
+  andernfalls wird das kanonische Ziel über Fresh Install/Reinstall geprüft.
 - Vor Funktionen, die persistente Fachobjekte verändern, werden erlaubte und
   verbotene Ausgangszustände, Vorbedingungen, Zielzustand, Nebenwirkungen,
   Fehlerzustände, Wiederholungsverhalten und Nebenläufigkeitskonflikte
@@ -245,8 +260,10 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   relevanten Vorversion mit synthetischen Bestandsdaten, der fachlichen Daten-
   und Beziehungsintegrität, ungültiger beziehungsweise widersprüchlicher
   Altdaten und der Anwendung auf dem migrierten Schema.
-- Veröffentlichte Migrationen werden nicht nachträglich verändert.
-  Korrekturen erfolgen durch eine neue Migration.
+- Migrationen zu produktiv eingesetzten oder anderweitig konkret zu
+  erhaltenden Ständen werden nicht nachträglich verändert. Korrekturen erfolgen
+  durch eine neue Migration; rein interne Entwicklungsstände folgen der
+  genannten Phasenregel.
 
 ## DDEV, Hosting und Delivery
 

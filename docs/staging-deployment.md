@@ -13,6 +13,13 @@ bleiben dadurch zentral gepflegt.
 
 ## Sicherheits- und Betriebsvertrag
 
+Für den Lebenszyklus gilt die
+[Entwicklungsphasenregel](architecture.md#entwicklungsphase-und-kompatibilitätsbedarf).
+Dieses Deployment beschreibt die Entwicklungs-/Integrationsinstanz. Ein
+Schema-Break ohne Upgradepfad wird als gezielter Reinstall ausgeführt und darf
+nicht über den gewöhnlichen Codeaustausch unten als Upgrade ausgegeben werden.
+Die Fehler- und Rückbaugrenzen des Installers bleiben auch auf STAGING nötig.
+
 - SSH läuft ausschließlich als Hosting-/Domainbenutzer `filzmann`.
 - Es wird weder ein Root-Passwort noch ein anderes Serverpasswort in GitHub
   gespeichert.
@@ -155,7 +162,7 @@ Der letzte Befehl muss ohne Passwortabfrage mit der Usage-Meldung und Exit 2
 enden. Ein Root-Aufruf von `occ`, `chmod 777`, ein schreibbarer Core-App-Pfad
 oder zusätzliche Rechte von `filzmann` am vHost sind nicht zulässig.
 
-Vor dem ersten produktiven Gate-Lauf wird die tatsächliche ACL-Wirkung mit
+Vor dem ersten realen Staging-Gate-Lauf wird die tatsächliche ACL-Wirkung mit
 einem synthetischen Upload geprüft. `<UNBETEILIGTER-BENUTZER>` wird durch ein
 vorhandenes, weder an Upload noch Installation beteiligtes Konto ersetzt:
 
