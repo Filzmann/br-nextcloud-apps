@@ -57,6 +57,9 @@ done < "$manifest"
 echo '== Öffentlicher Berechtigungsprovider-V1-Vertrag =='
 (cd "$workspace" && php tests/permission-provider-v1-contract.php)
 
+echo '== Öffentlicher Datenschutzprovider-V1-Vertrag =='
+(cd "$workspace" && php tests/privacy-provider-v1-contract.php)
+
 if (( structure_tracking_warning )); then
     echo 'App-Prüfung aller registrierten App-Repositories: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'
 else

@@ -89,6 +89,10 @@ Bereits sauber beziehungsweise als belastbare Grundlage vorhanden:
 - Wiederkehrende Arbeit ist über Nextcloud-Background-Jobs registriert. Es
   wurde keine fachliche Abhängigkeit von eigenem Host-Cron, systemd oder
   einem lokalen Prozesszustand gefunden.
+- Die optionale PDF-Textextraktion von `adrecruitment` erkennt Poppler oder
+  Ghostscript ausschließlich über den tatsächlichen PHP-`PATH`, installiert
+  keine Systempakete und fällt bei fehlender Engine, Fehler, Timeout oder
+  Größenüberschreitung ohne Verlust des Mail-/Originalimports aus.
 - Externe HTTP-Zugriffe verwenden den Nextcloud-HTTP-Client. App- und
   Benutzerkonfiguration verwenden Nextclouds AppConfig/UserConfig; sensible
   Kalenderzugänge werden zusätzlich über den Nextcloud-Kryptodienst
@@ -99,9 +103,9 @@ Bereits sauber beziehungsweise als belastbare Grundlage vorhanden:
   optionale Listener liefern leere, `missing`, `partial`, `failed`, `stale`
   oder `unavailable` Zustände statt fremder Datenfallbacks.
 - `filzmann_data_protection` und `filzmann_permission_matrix` besitzen
-  ausdrücklich öffentliche `PublicApi/V1`-Verträge. Der zentrale
-  Permission-Contract-Test lädt alle neun realen Provider; für Privacy fehlt
-  noch eine entsprechende Root-Matrix mit allen realen Providern (FR-11).
+  ausdrücklich öffentliche `PublicApi/V1`-Verträge. Die zentralen Privacy-
+  und Permission-Contract-Tests laden jeweils alle neun realen Provider gegen
+  die echten öffentlichen V1-Klassen.
 - Der AD-Suite-Build, das Repositoryinventar und die Prüfung künftiger
   Nextcloud-Hauptversionen besitzen bereits reproduzierbare Root-Gates.
 
@@ -126,14 +130,14 @@ Abstraktionen. Maßgebliche Quellen:
 | Owner / Quelle | Nutzer / Ziel | Zweck | Mechanismus und Nextcloud-Standard | Öffentlicher Vertrag / Version | Autorisierung und Ausfall | Contract-Nachweis | Bewertung |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `adurlaub` | `adcalendar`, `adplaner` | begrenzte read-only Abwesenheitsabfrage | typisierte LocalBase-Events über OCP Event Dispatcher | fachlich als Kalendervertrag V1 dokumentiert, aber noch kein eigener `PublicApi/V1`-Namespace | der aufrufende Fachservice prüft seinen Scope; ohne Listener leer | LocalBase-Eventtests, Provider- und Consumer-Tests vorhanden | F2, FR-02 |
-| `adcalendar`, `adplaner` | `adurlaub`; außerdem interne Planerabfragen | read-only Planungskonflikte vor Genehmigung | `ScheduleConflictQueryEvent` über OCP Event Dispatcher | kleiner expliziter LocalBase-Vertrag, noch ohne unabhängigen Versionshandshake | keine Mutation; fehlender Provider bleibt zulässiger Standalone-Zustand | LocalBase-, Provider- und Consumer-Tests vorhanden; aktueller uncommitteter Planerstand bleibt Fremdarbeit | F2, FR-02 |
+| `adcalendar`, `adplaner` | `adurlaub`; außerdem interne Planerabfragen | read-only Planungskonflikte vor Genehmigung | `ScheduleConflictQueryEvent` über OCP Event Dispatcher | kleiner expliziter LocalBase-Vertrag, noch ohne unabhängigen Versionshandshake | keine Mutation; fehlender Provider bleibt zulässiger Standalone-Zustand | LocalBase-, Provider- und Consumer-Tests sowie NC-33/34-Standalone-Nachweise vorhanden | F2, FR-02 |
 | AD-Fachapps | LocalBase-Consumer | optionale Integrationsfähigkeiten | `IntegrationCapabilityQueryEvent` über OCP Event Dispatcher | explizite Capability-Schlüssel, leerer Snapshot zulässig, aber kein unabhängiger Versionshandshake | Capability erweitert niemals Rechte | LocalBase- und Listenertests vorhanden | F2, FR-02 |
-| `filzmann_data_protection` als API-Owner und Aggregator | Fachapps als registrierte Provider; Self-Service und Retention-Review als Consumer | Art.-15-Daten und Retention-Vorschau | OCP Event Dispatcher mit app-eigener öffentlicher Provider-API | `OCA\FilzmannDataProtection\PublicApi\V1`, Descriptor-Version `1.0` | Session-Subject, providerweise Fehlerisolation, kein Datenfallback | app-lokale Provider-/Consumer-Tests und synthetisches API-Kit; zentrale reale Provider-Matrix fehlt | F1, FR-11 |
+| `filzmann_data_protection` als API-Owner und Aggregator | Fachapps als registrierte Provider; Self-Service und Retention-Review als Consumer | Art.-15-Daten und Retention-Vorschau | OCP Event Dispatcher mit app-eigener öffentlicher Provider-API | `OCA\FilzmannDataProtection\PublicApi\V1`, Descriptor-Version `1.0` | Session-Subject, providerweise Fehlerisolation, kein Datenfallback | app-lokale Provider-/Consumer-Tests, synthetisches API-Kit und zentraler Root-Contract-Test gegen alle neun realen Provider | F0 |
 | `filzmann_permission_matrix` als API-Owner und Aggregator | Fachapps als registrierte Provider; Matrixscanner als Consumer | read-only Berechtigungsbeschreibung | OCP Event Dispatcher mit app-eigener öffentlicher Provider-API | `OCA\FilzmannPermissionMatrix\PublicApi\V1`, Descriptor-Version `1.0` | Matrixrechte bleiben lokal; unbekannte/inkompatible Provider werden nicht als erlaubt gewertet | zentraler Contract-Test gegen alle neun realen Provider und app-lokale Tests | F0 |
-| `localbase` | AD-Apps, OrgSuite, BR-Apps und Matrix | Organisation, Kalenderkontext, Produktkatalog, Navigation und technische Hilfen | direkte DI-/PHP-Verträge, OCP-Events sowie heute noch LocalBase-Assets/Template | einzelne Payloadversionen vorhanden, aber keine einheitliche öffentliche Kategorie-B-Grenze | viele Consumer behandeln fehlende optionale Provider sauber; fehlende LocalBase kann vor einem kontrollierten Handshake scheitern | zahlreiche Provider-/Consumer-Smokes, aber keine vollständige Installations-/Versionsmatrix | F2/F3, FR-01 und FR-02 |
+| `localbase` | AD-Apps, OrgSuite, BR-Apps und Matrix | Organisation, Kalenderkontext, Produktkatalog, Navigation und technische Hilfen | direkte DI-/PHP-Verträge, OCP-Events sowie heute noch LocalBase-Assets/Template | einzelne Payloadversionen vorhanden, aber keine einheitliche öffentliche Kategorie-B-Grenze | viele Consumer behandeln fehlende optionale Provider sauber; fehlende LocalBase kann vor einem kontrollierten Handshake scheitern | Nextcloud-33-Fresh-Install, Upgrade auf 34 und repräsentative OrgSuite-, Kalender-, Planungs-, Urlaubs-, Privacy- und Matrixkombination grün; vollständige Kategorie-B-Migrationsmatrix bleibt offen | F2/F3, FR-01 und FR-02 |
 | `localbase` als Pilot-Registry und Aggregator | `adroom`, `adurlaub` als Retention-Provider | read-only Retention-`REVIEW`-Vorschau | `RetentionProviderRegistryEvent` über OCP Event Dispatcher | LocalBase-Pilot ohne eigenständige öffentliche Versionsgrenze | keine Ausführung oder Mutation; fehlende Provider ergeben keine Löschfreigabe | app-lokale Provider-/Aggregator-Tests, aber keine Standalone-Migrationsmatrix | F2, FR-10 |
 | `orgsuite` | AD-/BR-Fachapps | gemeinsame Navigation und AD-Administration | Nextcloud-Navigation, Template-Event, `IAppManager` und LocalBase-Katalog | kein fachlicher Datenvertrag; OrgSuite ist alleiniger Menüowner | Zielapp prüft Rechte selbst; Einzelproduktzustand ist vorgesehen | Navigations-, Asset- und Entkopplungstests | F0; Kataloganteil Teil von FR-01 |
-| Nextcloud DAV-App | `adcalendar` | persönlicher Nextcloud-CalDAV-Kalender | app-eigener Port mit Adapter auf `OCA\DAV\CalDAV\CalDavBackend` | bewusst begrenzter, aber privater Nextcloud-Runtimevertrag | Providerfehler isoliert; führende AD-Daten werden nicht zurückgerollt | Adapter- und Synchronisationstests | F2, FR-05 |
+| Nextcloud DAV-App | `adcalendar` | persönlicher Nextcloud-CalDAV-Kalender | app-eigener Port mit Adapter auf `OCA\DAV\CalDAV\CalDavBackend` | bewusst begrenzter, aber privater Nextcloud-Runtimevertrag; öffentliche OCP-Verträge decken den benötigten Kalender-Lifecycle nicht vollständig ab | Providerfehler isoliert; führende AD-Daten werden nicht zurückgerollt | Adapter- und Synchronisationstests einschließlich `PropPatch`; eigener Source-/Runtime-Nachweis vor jeder Plattformfreigabe | kontrolliertes F2 |
 | Nextcloud Groupfolders-App | `filzmann_permission_matrix` | read-only Team-Folder-Rechte | app-eigener Port auf private `FolderManager`-Runtime | bewusst auf Groupfolders 22.x/Nextcloud 34 begrenzte ADR-Ausnahme | inkompatibel/unvollständig ergibt `UNKNOWN`/`PARTIAL` | Unit-, Negativ- und Source-Compatibility-Gate | kontrolliertes F2, FR-06 |
 
 Es wurden keine Inter-App-HTTP-Endpunkte gefunden. Die vorhandenen
@@ -144,11 +148,11 @@ OCS-/OpenAPI-Regel unten.
 
 ## Mindestversion Nextcloud 33
 
-### Ergebnis der Vorprüfung
+### Ergebnis des Kompatibilitätsgates
 
-Eine Absenkung von Nextcloud 34 auf 33 erscheint ohne große
-Architekturänderung möglich, ist im aktuellen Stand aber noch nicht
-freigabefähig. [openDesk 1.18.0](https://www.opendesk.eu/de/blog/opendesk-1-18)
+Der ursprünglich auf Nextcloud 34 begrenzte App-Bereich ist nach realen
+Fresh-Install-, Upgrade- und Runtime-Nachweisen für die lückenlosen Majors 33
+bis 34 freigegeben. [openDesk 1.18.0](https://www.opendesk.eu/de/blog/opendesk-1-18)
 und die [aktuelle Komponententabelle](https://docs.opendesk.eu/operations/introduction/)
 weisen Nextcloud 33.0.7 aus. Der dazu gepinnte
 [offizielle Nextcloud-Quellstand `v33.0.7`](https://github.com/nextcloud/server/tree/v33.0.7)
@@ -159,21 +163,24 @@ unterstützt laut
 PHP 8.3; die PHP-Mindestversion der betroffenen Apps muss daher nicht
 abgesenkt werden.
 
-Alle von den ursprünglich acht auf 34/34 begrenzten Apps importierten öffentlichen
-OCP-Klassen sind in Nextcloud 33.0.7 vorhanden. Das ist ein positives
-statisches Indiz, aber kein Installations-, DI-, Migrations-, Job-, HTTP-,
-Asset- oder UI-Nachweis.
+Die statische Vorprüfung gegen 33.0.7 wurde durch die vollständige
+Abschlussmatrix gegen die offiziellen Tags 33.0.8 und 34.0.3, das Upgrade
+33→34 sowie die unmittelbar zuvor aktualisierten `stable33`- und
+`stable34`-Commits ersetzt. Die kompakten Manifeste, Resultate und Logs liegen
+unter `build/compatibility-min33-2026-09-06-final-tags`,
+`build/compatibility-min33-2026-09-06-final-stable33` und
+`build/compatibility-min33-2026-09-06-final-stable34`.
 
-| App | Vorprüfung gegen 33.0.7 | Vor einer Absenkung zwingend |
+| App | Abschlussnachweis | Ergebnis |
 | --- | --- | --- |
-| `adplaner` | Nextcloud 33.0.7 Fresh Install und Upgrade auf 34.0.2 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Konfliktpfade, Standalone-Betrieb, Privacy-/PermissionProvider, Assets und mobile Oberfläche geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adplaner` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Konfliktpfade, Standalone-Betrieb, Privacy-/PermissionProvider, API, Assets und mobile Oberfläche sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 | `localbase` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischem Kalender- und Cachezustand grün; DI, Migration, Job, API, Rechte, Assets, UI und repräsentative Consumer-/Capability-Kombination geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 | `adcalendar` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit 84 synthetischen Facheinträgen sowie 28 DAV-Kalendern/84 DAV-Objekten grün; DI, Migrationen, Job, API, Rechte, DAV-Rename, Privacy-/PermissionProvider, Assets, UI und Standalone-Betrieb geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34; privater DAV-Port bleibt je Plattformfreigabe am Source-/Runtime-Gate |
 | `adurlaub` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 | `orgsuite` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, Navigation, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 | `adroom` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 | `adrecruitment` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, Jobs, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `adbqplanung` | Nextcloud 33.0.7 Fresh Install und Upgrade auf 34.0.2 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Adminschutz, Curriculum, Kalender, Privacy-/PermissionProvider, Assets und Oberfläche geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adbqplanung` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Adminschutz, Curriculum, Kalender, Privacy-/PermissionProvider, API, Assets und Oberfläche sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 
 Vier Apps deklarieren bereits `min-version="29"` und brauchen für dieses Ziel
 keine Absenkung: `brtop`, `brstunden`, `filzmann_permission_matrix` und
@@ -192,7 +199,8 @@ auf 34/34 begrenzten Apps haben das app-lokale MIN-33-Gate abgeschlossen.
 ### Freigabegate MIN-33
 
 1. Statisch gefundene Quellprobleme app-lokal testgetrieben korrigieren.
-2. Einen isolierten Nextcloud-33.0.7-Pfad mit PHP 8.3 oder 8.4 bereitstellen;
+2. Einen isolierten Pfad für die aktuelle Nextcloud-33-Patchversion mit PHP
+   8.3 oder 8.4 bereitstellen;
    keine bestehende NC-34-DDEV-Instanz umschalten.
 3. Je App Fresh Install, Aktivierung/DI, Migrationen, Kern-API, Jobs,
    mindestens ein JavaScript- und CSS-Asset sowie die sichtbare Oberfläche
@@ -217,15 +225,12 @@ geschlossen.
 | --- | --- | --- | --- | --- |
 | FR-01 | F3 / P0 | `localbase` und alle heutigen Consumer; Packaging und unabhängige Installation | Die in ADR 0001 angenommene Kategorie-A/B/C-Migration inkrementell ausführen: zustandslose Hilfen reproduzierbar und namespace-isoliert bündeln, Kategorie-B-Dienste eigenständig lassen, lokale Fachlogik lokal halten. Je Pilot und Consumer Provider-/Consumer-Contracts sowie saubere Installations-, Update-, Deinstallations- und Rollbackmatrix ausführen. | offen; ADR-Entscheidung vorhanden, Umsetzung ausdrücklich appweise und nur mit Schreibfreigabe je Repository |
 | FR-02 | F2 / P0 | `localbase`, AD-/BR-Consumer, OrgSuite und Matrix; öffentliche Runtime-API | Vor der Kategorie-B-Migration Owner, kleinste API, `PublicApi/V1`-Grenze, Aktivierungs-/Versionshandshake, Fehlersemantik und additive Kompatibilität der Organisations-, Kalender-, Capability- und Katalogverträge festlegen. Keine parallele zweite Datenquelle schaffen. | offen; Architekturentscheidung und anschließend ausdrücklich freigegebener Cross-App-Lauf erforderlich |
-| FR-03 | F2 / P0 | alle Apps; reale openDesk-/Nextcloud-Laufzeit | Das vorstehende Gate `MIN-33` appweise ausführen und anschließend den echten Versionsbereich in den App-Metadaten abbilden; das Root-Delivery-Gate prüft bereits Boden 33 plus explizite Zielmajor. | erledigt am 2026-09-06; alle acht ursprünglich auf 34/34 begrenzten Apps deklarieren nach app-lokalen Fresh-Install-/Upgrade-Nachweisen 33 bis 34; Abschlussmatrix unter `build/compatibility-min33-2026-09-06-current-tags`, `verify-nextcloud-future-compatibility` bleibt für jede künftige Obergrenze verbindlich |
+| FR-03 | F2 / P0 | alle Apps; reale openDesk-/Nextcloud-Laufzeit | Das vorstehende Gate `MIN-33` appweise ausführen und anschließend den echten Versionsbereich in den App-Metadaten abbilden; das Root-Delivery-Gate prüft bereits Boden 33 plus explizite Zielmajor. | erledigt am 2026-09-06; alle acht ursprünglich auf 34/34 begrenzten Apps deklarieren nach app-lokalen Fresh-Install-/Upgrade-Nachweisen 33 bis 34; Abschlussmatrix und Stable-Nachweise liegen unter den drei vorstehend genannten `final-*`-Verzeichnissen, `verify-nextcloud-future-compatibility` bleibt für jede künftige Obergrenze verbindlich |
 | FR-04 | F2 / P1 | alle Apps mit Tabellen/Migrationen; PostgreSQL | Einen reproduzierbaren PostgreSQL-Pfad für Fresh Install, Upgrade mit synthetischen Bestandsdaten und relevante Repository-/Transaktionsfälle etablieren. Der statische Audit fand keine DBMS-spezifische SQL-Logik, die heutige Evidenz beweist aber keine vollständige PostgreSQL-Laufzeit. | offen; DDEV-/CI-Umgebungsänderung benötigt gesonderte Freigabe |
-| FR-05 | F2 / P1 | `adcalendar`; Nextcloud-CalDAV | Prüfen, ob eine dokumentierte öffentliche Nextcloud-OCP-/DAV-Schnittstelle den heutigen privaten `CalDavBackend`-Adapter inzwischen vollständig ersetzt. Falls nein, Ausnahme, unterstützte Plattformmatrix und kontrollierten Fehlerfall je Release weiter prüfen. Keine zweite Kalenderwahrheit und keinen Loopback-HTTP-Eigenbau einführen. | offen; bestehender Port begrenzt das Risiko, öffentliche Alternative/Releasegate noch zu entscheiden |
 | FR-06 | F2 / P1 | `filzmann_permission_matrix`; Groupfolders | Die eng begrenzte private 22.x-Ausnahme nur solange fortführen, wie kein öffentlicher Upstream-Vertrag existiert. Bei jedem betroffenen Release offizielles Quellkompatibilitätsgate und Negativfälle ausführen; neue Versionen bleiben bis zur Entscheidung `UNKNOWN`. | kontrolliert offen; ADR 0003 und Gate sind umgesetzt, keine pauschale Freigabe künftiger Versionen |
-| FR-07 | F2 / P1 | `adrecruitment`; Container-/Packaginggrenze | Für die optionale PDF-Textextraktion entscheiden, ob `pdftotext`/Ghostscript eine dokumentierte Image-/Deploymentvoraussetzung bleibt oder durch einen reproduzierbar gebauten Adapter ersetzt wird. Harte Suchpfade und `proc_open` dürfen keine stillschweigende Funktionszusage erzeugen. Tests müssen „verfügbar“, „nicht verfügbar“, Timeout, Größenlimit und unveränderte Fachfunktion ohne Engine belegen. | offen; aktuelle Implementierung fällt kontrolliert auf „nicht verfügbar“ zurück, Packagingentscheidung fehlt |
 | FR-08 | F2 / P1 | `brtop`, `adrecruitment`, `adcalendar`; Object Storage und horizontale Ausführung | Die bereits verwendeten Nextcloud-Datei-/AppData-/DAV-Abstraktionen in einer S3/Object-Storage-Zielmatrix und, soweit zustandsrelevant, mit getrennten Web-/Jobprozessen prüfen. Belegen, dass Dateiexport, Importanlage und Kalenderabgleich keine lokalen Pfade oder Prozessspeicher als Wahrheit voraussetzen. | offen; statisch sauber, reale openDesk-artige Integration noch nicht nachgewiesen |
 | FR-09 | F2 / P2 | künftige öffentliche HTTP- oder externe Inter-App-APIs | Vor Veröffentlichung prüfen, ob ein vorhandener Nextcloud-Standard genügt. Eigene Daten-APIs bevorzugt als versionierte OCS-Endpunkte mit expliziten Typen, Fehlern, Authentifizierung/Autorisierung und OpenAPI-Schema bereitstellen. Provider-/Consumer-Tests müssen alte/neue Kombinationen und unbekannte additive Felder abdecken. | ereignisgetriggert; aktuell kein solcher Inter-App-HTTP-Vertrag gefunden |
 | FR-10 | F2 / P0 | `localbase`, `adroom`, `adurlaub`, `filzmann_data_protection`; Retention-API | Den LocalBase-Piloten `RetentionProviderRegistryEvent` kontrolliert auf den bereits vorhandenen Standalone-Vertrag `OCA\FilzmannDataProtection\PublicApi\V1\RegisterRetentionProvidersEvent` migrieren. Owner, Descriptor-/Versionsprüfung, `REVIEW`-Semantik und fehlende beziehungsweise inkompatible Provider festlegen; alte/neue Kombinationen, Update, Deinstallation und Rollback testen. | offen; ADR 0002 bestimmt die Standalone-Privacy-App als Zielowner, Cross-App-Umsetzung benötigt Schreibfreigabe je Repository |
-| FR-11 | F1 / P1 | Parent-Test gegen alle Privacy-V1-Provider | Einen Root-Contract-Test ergänzen, der alle realen PersonalDataProvider gegen die echten Standalone-V1-Klassen lädt und mindestens Descriptor, unterstützten Subject-Typ, Ergebnisstatus, Cursorfortschritt und Registrierungsfehler prüft. App-lokale Tests mit vereinfachten Stubs bleiben ergänzend, aber kein Ersatz. | offen; klein und ohne Architekturentscheidung, wegen app-spezifischer Konstruktoren nicht in diesem Dokumentationslauf improvisiert |
 | FR-12 | F2 / P2 | Parent-Governance und alle getrennten App-Repositories | Die Root-Regel „Improve what you touch“ bei der nächsten ausdrücklich freigegebenen Governance-Projektion in den lokal vollständigen App-Regelblock übernehmen und die Parent-Projektionschecks entsprechend erweitern. App-lokale Arbeit darf nicht vom Vorhandensein des Parent-Workspaces abhängen. | erledigt am 2026-09-05; Governance-Vertrag V2 ist in alle registrierten App-Repositories projiziert und der Parent-Projektionscheck prüft Entwicklungsphase sowie Prüfaufwand gegen die kanonischen Root-Quellen |
 
 ## Datenschutz, Berechtigungen und Adminzugriff
@@ -233,7 +238,6 @@ geschlossen.
 | ID | Priorität | Systemweite Aufgabe | Status / Gate |
 | --- | --- | --- | --- |
 | DP-01 | P0 | Den LocalBase-Retention-Piloten kontrolliert auf `filzmann_data_protection` migrieren und LocalBase erst nach grüner Installations-, Update-, Deinstallations- und Rückbaumatrix abbauen. | offen; fachliche Ownerentscheidung und Cross-App-Auftrag für jeden Provider erforderlich; deckt FR-10 ab |
-| DP-02 | P1 | Einen Root-Contract-Test gegen alle realen Privacy-V1-Provider ergänzen; Descriptor, Subject-Typ, Status, Cursorfortschritt und Registrierungsfehler gegen die echten Standalone-V1-Klassen prüfen. | offen; deckt FR-11 ab |
 | DP-03 | P1 | LocalBase-eigene persönliche UI-Werte und Demo-Registry vollständig inventarisieren; OrgSuite-Nichtanwendbarkeit bei Scopeänderungen neu bewerten. | offen; Umsetzung bleibt app-lokal |
 | DP-04 | P1 | Für die Adminfreigabehistorie des Datenschutz-Centers Aufbewahrung, Sperren und eine reine Preview-Policy entscheiden, bevor Retention-Ausführung erwogen wird. | Entscheidung offen; keine automatische Löschung |
 | DP-05 | P0 | ADR 0004 appweise umsetzen: Nextcloud-Adminstatus erteilt keinen fachlichen Vollzugriff; notwendige Freigaben bleiben app-lokal, auditierbar und höchstens 24 Stunden gültig. | Architektur angenommen; App-Roadmaps und tatsächliche Nachweise sind einzeln maßgeblich |
