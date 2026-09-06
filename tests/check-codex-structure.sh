@@ -470,6 +470,9 @@ for contract in (
     'lower-bound review',
     'outside the declared range',
     'already declared or is an explicit release target',
+    'one concrete action matrix',
+    'separate columns for file changes',
+    'once explicitly granted, retain it for the whole run',
 ):
     if contract not in future_compatibility_skill_text:
         fail(f'Verbindlicher Zukunftskompatibilitäts-Workflow fehlt: {contract}')

@@ -1,0 +1,370 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+fail() {
+    echo "FEHLER: $*" >&2
+    exit 1
+}
+
+(($# >= 5)) || fail 'Ungültiger Driver-Aufruf.'
+mode="$1"
+shift
+
+case "$mode" in
+    fresh)
+        (($# == 4)) || fail 'fresh erwartet MAJOR SERVER_ROOT APPS_ROOT RESULT_DIR.'
+        major="$1"
+        initial_server="$2"
+        apps_root="$3"
+        result_dir="$4"
+        target_server=''
+        ;;
+    upgrade)
+        (($# == 6)) || fail 'upgrade erwartet FROM TO FROM_SERVER TO_SERVER APPS_ROOT RESULT_DIR.'
+        major="$1"
+        target_major="$2"
+        initial_server="$3"
+        target_server="$4"
+        apps_root="$5"
+        result_dir="$6"
+        [[ "$target_major" =~ ^[0-9]+$ && "$target_major" -eq $((major + 1)) ]] \
+            || fail 'Upgrade-Majors sind nicht benachbart.'
+        ;;
+    *)
+        fail "Unbekannter Modus: $mode"
+        ;;
+esac
+
+command -v ddev >/dev/null || fail 'ddev fehlt.'
+command -v curl >/dev/null || fail 'curl fehlt.'
+[[ ! -e "$result_dir" ]] || fail "Ergebnisverzeichnis existiert bereits: $result_dir"
+mkdir -p "$result_dir"
+project="$(mktemp -d /tmp/nextcloud-compatibility.XXXXXX)"
+project_name="${NC_COMPAT_PROJECT_NAME:-nccompat${major}$(basename "$project" | tr -cd 'a-z0-9' | tail -c 7)}"
+project_tld="${NC_COMPAT_PROJECT_TLD:-ddev.site}"
+admin_user='compat-admin'
+admin_password='compat-admin-development-only'
+
+cleanup() {
+    (cd "$project" && ddev stop --unlist) >/dev/null 2>&1 || true
+    rm -rf "$project"
+}
+trap cleanup EXIT
+
+copy_server() {
+    local source="$1"
+    mkdir -p "$project/html"
+    tar -C "$source" --exclude='./config/config.php' --exclude='./data' --exclude='./custom_apps' -cf - . \
+        | tar -C "$project/html" -xf -
+    mkdir -p "$project/html/config" "$project/html/custom_apps"
+    cat > "$project/html/config/compatibility.config.php" <<'PHP'
+<?php
+$CONFIG = [
+    'appstoreenabled' => false,
+    'apps_paths' => [
+        ['path' => __DIR__ . '/../apps', 'url' => '/apps', 'writable' => false],
+        ['path' => __DIR__ . '/../custom_apps', 'url' => '/custom_apps', 'writable' => true],
+    ],
+];
+PHP
+}
+
+copy_app_snapshots() {
+    local source destination
+    mkdir -p "$project/html/.compatibility-app-tests"
+    while IFS= read -r source; do
+        destination="$project/html/.compatibility-app-tests/$(basename "$source")"
+        mkdir -p "$destination"
+        tar -C "$source" -cf - . | tar -C "$destination" -xf -
+    done < <(find "$apps_root" -mindepth 1 -maxdepth 1 -type d -print | sort)
+}
+
+validate_app_smoke_contracts() {
+    local app contract
+    while IFS= read -r app; do
+        [[ "$app" == localbase ]] && continue
+        contract="$project/html/.compatibility-app-tests/$app/tests/nextcloud-compatibility-smoke.php"
+        [[ -f "$contract" ]] || fail "App-lokaler Compatibility-Smoke fehlt: $app"
+        php -l "$contract" >/dev/null
+    done < <(find "$project/html/.compatibility-app-tests" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+}
+
+install_app_snapshots() {
+    local effective_major="$1"
+    local app source destination
+    while IFS= read -r source; do
+        app="$(basename "$source")"
+        destination="$project/html/custom_apps/$app"
+        mkdir -p "$destination"
+        tar -C "$source" -cf - . | tar -C "$destination" -xf -
+        php -r '
+            $path=$argv[1]; $major=(int)$argv[2];
+            $xml=simplexml_load_file($path);
+            if ($xml === false) throw new RuntimeException("Invalid app XML");
+            $dependency=$xml->dependencies->nextcloud;
+            $min=(int)$dependency["min-version"];
+            $max=(int)$dependency["max-version"];
+            if ($major < $min) $dependency["min-version"]=(string)$major;
+            if ($major > $max) $dependency["max-version"]=(string)$major;
+            $xml->asXML($path);
+        ' "$destination/appinfo/info.xml" "$effective_major"
+    done < <(find "$project/html/.compatibility-app-tests" -mindepth 1 -maxdepth 1 -type d -print | sort)
+    rm -rf "$project/html/.compatibility-app-tests"
+}
+
+write_ddev_config() {
+    mkdir -p "$project/.ddev"
+    cat > "$project/.ddev/config.yaml" <<YAML
+name: $project_name
+type: php
+docroot: html
+php_version: "8.3"
+webserver_type: apache-fpm
+database:
+  type: mariadb
+  version: "10.11"
+omit_containers:
+  - db
+use_dns_when_possible: true
+project_tld: $project_tld
+YAML
+}
+
+start_project() {
+    (cd "$project" && ddev start -y) > "$result_dir/ddev-start.log" 2>&1
+}
+
+occ() {
+    (cd "$project" && ddev exec -d /var/www/html/html php occ "$@") </dev/null
+}
+
+install_core() {
+    local effective_major="$1"
+    OC_PASS="$admin_password" occ maintenance:install \
+        --database=sqlite \
+        --admin-user="$admin_user" --admin-pass="$admin_password" \
+        --no-interaction > "$result_dir/install-$effective_major.log" 2>&1
+    occ config:system:set trusted_domains 1 --value="$project_name.$project_tld" >/dev/null
+}
+
+enable_apps() {
+    local effective_major="$1"
+    find "$project/html/custom_apps" -mindepth 1 -maxdepth 2 -printf '%P\n' | sort \
+        > "$result_dir/custom-apps-host-$effective_major.txt"
+    (cd "$project" && ddev exec -d /var/www/html/html \
+        find custom_apps -mindepth 1 -maxdepth 2 -printf '%P\\n') \
+        > "$result_dir/custom-apps-container-$effective_major.txt"
+    occ config:system:get apps_paths --output=json \
+        > "$result_dir/apps-paths-$effective_major.json"
+    local app
+    if [[ -d "$project/html/custom_apps/localbase" ]]; then
+        occ app:enable localbase >> "$result_dir/enable-$effective_major.log" 2>&1
+    fi
+    while IFS= read -r app; do
+        [[ "$app" == localbase ]] && continue
+        occ app:enable "$app" >> "$result_dir/enable-$effective_major.log" 2>&1
+    done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+}
+
+prepare_runtime_permissions() {
+    local effective_major="$1"
+    local base_url="https://$project_name.$project_tld"
+    runtime_smokes pre "$effective_major" > "$result_dir/runtime-smokes-pre-$effective_major.tsv"
+    local app path expected_statuses status
+    while IFS=$'\t' read -r app path expected_statuses probe; do
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" \
+            --output /dev/null --write-out '%{http_code}' "$base_url$path")"
+        [[ ",$expected_statuses," == *",$status,"* ]] \
+            || fail "$app lieferte vor der App-Freigabe HTTP $status statt einem von $expected_statuses."
+        printf '%s\t%s\t%s\t%s\n' "$app" "$expected_statuses" "$status" "$probe" \
+            >> "$result_dir/permission-pregrant-$effective_major.tsv"
+    done < "$result_dir/runtime-smokes-pre-$effective_major.tsv"
+
+    runtime_smokes grant "$effective_major" > "$result_dir/permission-grants-$effective_major.log"
+}
+
+write_runtime_smoke_runner() {
+    cat > "$project/html/compatibility-grants.php" <<'PHP'
+<?php
+define('OC_CONSOLE', true);
+require __DIR__ . '/lib/base.php';
+$phase = $argv[1] ?? '';
+if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'apis'], true)) {
+    throw new RuntimeException('Unknown compatibility smoke phase.');
+}
+$uid = 'compat-admin';
+$users = \OCP\Server::get(\OCP\IUserManager::class);
+$session = \OCP\Server::get(\OCP\IUserSession::class);
+$user = $users->get($uid);
+if ($user === null) throw new RuntimeException('Compatibility admin is missing.');
+$session->setUser($user);
+
+$appRoots = glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [];
+sort($appRoots);
+foreach ($appRoots as $appRoot) {
+    $app = basename($appRoot);
+    if ($app === 'localbase') continue;
+    $contractPath = $appRoot . '/tests/nextcloud-compatibility-smoke.php';
+    if (!is_file($contractPath)) {
+        throw new RuntimeException('Compatibility smoke contract is missing for ' . $app);
+    }
+    $contract = require $contractPath;
+    foreach (['uiPath', 'preGrantUiStatuses', 'postGrantUiStatuses', 'grantService', 'permissionProbe', 'apiSmokes'] as $key) {
+        if (!array_key_exists($key, $contract)) {
+            throw new RuntimeException('Compatibility smoke key is missing for ' . $app . ': ' . $key);
+        }
+    }
+    $probe = $contract['permissionProbe'];
+    if ($phase === 'registrations') {
+        $info = simplexml_load_file($appRoot . '/appinfo/info.xml');
+        if ($info === false) throw new RuntimeException('Invalid app metadata for ' . $app);
+        foreach (['background-jobs/job', 'commands/command', 'settings/*'] as $expression) {
+            foreach ($info->xpath($expression) ?: [] as $node) {
+                $class = (string)$node;
+                $instance = \OCP\Server::get($class);
+                echo implode("\t", [$app, $expression, $class, get_debug_type($instance)]) . "\n";
+            }
+        }
+        continue;
+    }
+    if ($phase === 'apis') {
+        foreach ($contract['apiSmokes'] as [$path, $statuses]) {
+            echo implode("\t", [$app, $path, implode(',', $statuses)]) . "\n";
+        }
+        continue;
+    }
+    if ($phase === 'pre' && is_callable($probe) && $probe($uid) !== false) {
+        throw new RuntimeException('Protected capability is unexpectedly available before grant for ' . $app);
+    }
+    if ($phase === 'grant' && is_string($contract['grantService'])) {
+        $service = \OCP\Server::get($contract['grantService']);
+        $service->activate($uid, 60);
+        if (!$service->hasActiveGrant($uid)) {
+            throw new RuntimeException('Temporary grant is inactive for ' . $app);
+        }
+    }
+    if ($phase === 'grant' && is_callable($probe) && $probe($uid) !== true) {
+        throw new RuntimeException('Protected capability remains unavailable after grant for ' . $app);
+    }
+    $statuses = $phase === 'pre' ? $contract['preGrantUiStatuses'] : $contract['postGrantUiStatuses'];
+    $probeState = is_callable($probe) ? ($probe($uid) ? 'allowed' : 'denied') : 'not-applicable';
+    echo implode("\t", [$app, $contract['uiPath'], implode(',', $statuses), $probeState]) . "\n";
+}
+PHP
+}
+
+runtime_smokes() {
+    local phase="$1"
+    local effective_major="$2"
+    (cd "$project" && ddev exec -d /var/www/html/html php compatibility-grants.php "$phase") </dev/null
+}
+
+verify_app_tests() {
+    local effective_major="$1"
+    local app app_root
+    while IFS= read -r app; do
+        app_root="/var/www/html/html/.compatibility-app-tests/$app"
+        if [[ -f "$project/html/.compatibility-app-tests/$app/tests/run.php" ]]; then
+            (cd "$project" && ddev exec -d "$app_root" php tests/run.php) </dev/null \
+                > "$result_dir/preflight-$app-php-$effective_major.log" 2>&1
+        fi
+        if [[ -f "$project/html/.compatibility-app-tests/$app/tests/run-js.mjs" ]]; then
+            (cd "$project" && ddev exec -d "$app_root" node tests/run-js.mjs) </dev/null \
+                > "$result_dir/preflight-$app-js-$effective_major.log" 2>&1
+        fi
+    done < <(find "$project/html/.compatibility-app-tests" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+}
+
+verify_runtime() {
+    local effective_major="$1"
+    occ status --output=json > "$result_dir/status-$effective_major.json"
+    occ app:list --output=json > "$result_dir/apps-$effective_major.json"
+    php -r '
+        $status=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+        if (!($status["installed"]??false) || ($status["maintenance"]??true) || ($status["needsDbUpgrade"]??true)) exit(1);
+        $apps=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);
+        foreach (array_slice($argv,3) as $app) if (!isset($apps["enabled"][$app])) throw new RuntimeException("Not enabled: ".$app);
+    ' "$result_dir/status-$effective_major.json" "$result_dir/apps-$effective_major.json" \
+        $(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f ' | sort)
+
+    occ list --raw > "$result_dir/commands-$effective_major.txt"
+    if grep -Fqx 'app:check-code' "$result_dir/commands-$effective_major.txt"; then
+        local app
+        while IFS= read -r app; do
+            occ app:check-code "$app" >> "$result_dir/check-code-$effective_major.log" 2>&1
+        done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+    fi
+    runtime_smokes registrations "$effective_major" > "$result_dir/registrations-$effective_major.tsv"
+    occ background-job:list --output=json > "$result_dir/background-jobs-$effective_major.json"
+    php -r '
+        $jobs=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+        $values=[];
+        $walk=function($value)use(&$walk,&$values):void{if(is_array($value)){foreach($value as $item)$walk($item);}elseif(is_string($value))$values[]=$value;};
+        $walk($jobs);
+        foreach(array_slice($argv,2) as $infoPath){
+            $info=simplexml_load_file($infoPath);
+            foreach($info->xpath("background-jobs/job") ?: [] as $job){
+                $class=(string)$job;
+                if(!in_array($class,$values,true))throw new RuntimeException("Background job is not registered: ".$class);
+            }
+        }
+    ' "$result_dir/background-jobs-$effective_major.json" \
+        $(find "$project/html/custom_apps" -mindepth 3 -maxdepth 3 -path '*/appinfo/info.xml' -print | sort)
+
+    local base_url="https://$project_name.$project_tld"
+    curl --fail --silent --show-error --insecure "$base_url/status.php" > "$result_dir/http-status-$effective_major.json"
+    runtime_smokes describe "$effective_major" > "$result_dir/runtime-smokes-$effective_major.tsv"
+    local app asset content_type path status expected_statuses probe
+    while IFS= read -r app; do
+        asset="$(find "$project/html/custom_apps/$app" -type f \( -path '*/css/*.css' -o -path '*/js/*.js' \) -printf '%P\n' | sort | head -n 1)"
+        if [[ -n "$asset" ]]; then
+            content_type="$(curl --fail --silent --show-error --insecure --output /dev/null --write-out '%{content_type}' "$base_url/custom_apps/$app/$asset")"
+            case "$asset:$content_type" in
+                *.css:text/css*|*.js:application/javascript*|*.js:text/javascript*) ;;
+                *) fail "Falscher Content-Type für $app/$asset: $content_type" ;;
+            esac
+            printf '%s\t%s\t%s\n' "$app" "$asset" "$content_type" >> "$result_dir/assets-$effective_major.tsv"
+        fi
+
+    done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+
+    while IFS=$'\t' read -r app path expected_statuses probe; do
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/ui-$app-$effective_major.html" --write-out '%{http_code}' "$base_url$path")"
+        [[ ",$expected_statuses," == *",$status,"* ]] \
+            || fail "$app UI lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
+    done < "$result_dir/runtime-smokes-$effective_major.tsv"
+
+    runtime_smokes apis "$effective_major" > "$result_dir/api-smokes-$effective_major.tsv"
+    while IFS=$'\t' read -r app path expected_statuses; do
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/api-$app-$effective_major.json" --write-out '%{http_code}' "$base_url$path")"
+        [[ ",$expected_statuses," == *",$status,"* ]] \
+            || fail "$app API lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
+    done < "$result_dir/api-smokes-$effective_major.tsv"
+}
+
+copy_server "$initial_server"
+copy_app_snapshots
+validate_app_smoke_contracts
+write_ddev_config
+start_project
+verify_app_tests "$major"
+install_core "$major"
+install_app_snapshots "$major"
+enable_apps "$major"
+write_runtime_smoke_runner
+prepare_runtime_permissions "$major"
+verify_runtime "$major"
+
+if [[ "$mode" == upgrade ]]; then
+    (cd "$project" && ddev stop) > "$result_dir/ddev-stop-before-upgrade.log" 2>&1
+    find "$project/html" -mindepth 1 -maxdepth 1 \
+        ! -name config ! -name data ! -name custom_apps -exec rm -rf {} +
+    tar -C "$target_server" --exclude='./config' --exclude='./data' --exclude='./custom_apps' -cf - . \
+        | tar -C "$project/html" -xf -
+    write_runtime_smoke_runner
+    start_project
+    occ upgrade > "$result_dir/upgrade-$major-$target_major.log" 2>&1
+    verify_runtime "$target_major"
+fi
+
+printf 'green\n' > "$result_dir/result.txt"

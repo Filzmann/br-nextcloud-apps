@@ -19,14 +19,20 @@ selecting upstream refs or recording a result.
    `git status --short` in each repository.
 2. Identify the exact app commits intended for the release candidate. A dirty
    or moving app revision is not release evidence.
-3. Before changing any app repository, apply the repository stop gate: name
+3. Before requesting authorization, record one concrete action matrix with a
+   row per affected repository and separate columns for file changes,
+   DDEV/`occ`, commits, push/release, and external-state writes. Bundle all
+   predictable rows into one request. A grant applies only to its named rows
+   and actions; once explicitly granted, retain it for the whole run and do
+   not ask for it again.
+4. Before changing any app repository, apply the repository stop gate: name
    the compatibility risk, exact files, tests, and rollback, then obtain
    explicit authorization for every affected repository. Include the Parent
    when its build or delivery contracts contain fixed version assumptions.
-4. Use an isolated temporary test environment. Do not mutate the documented
+5. Use an isolated temporary test environment. Do not mutate the documented
    DDEV instance, run `occ`, install or upgrade Nextcloud, or access staging or
    production without the separate authorization required by local rules.
-5. Keep upstream clones and generated evidence outside tracked app trees.
+6. Keep upstream clones and generated evidence outside tracked app trees.
    Never commit a Nextcloud checkout, credentials, databases, logs, or test
    artifacts.
 

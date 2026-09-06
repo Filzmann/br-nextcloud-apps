@@ -76,6 +76,7 @@ bash tests/check-ad-suite-js-coverage-baseline.sh
 bash tests/check-ad-suite-ci-contract.sh
 bash tests/check-ad-product-catalog.sh
 bash tests/check-ad-suite-standalone-contract.sh
+bash tests/check-nextcloud-compatibility-runner.sh
 bash tests/check-ad-product-installer.sh
 bash tests/check-ad-release-pruning.sh
 bash tests/check-reproducible-release-archive.sh

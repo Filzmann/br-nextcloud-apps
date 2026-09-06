@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'TXT'
+Usage:
+  verify-nextcloud-compatibility \
+    --server MAJOR:ARCHIVE:SHA256:REF:COMMIT [--server ...] \
+    --app APP_ID:REPOSITORY:COMMIT [--app ...] \
+    --driver EXECUTABLE [--reserved-ddev-root DIRECTORY] \
+    --evidence-dir DIRECTORY
+
+The runner extracts verified official server archives and exact Git app
+commits, then executes one fresh stage per contiguous major and one upgrade
+stage per adjacent pair. The driver receives:
+  fresh MAJOR SERVER_ROOT APPS_ROOT RESULT_DIR
+  upgrade FROM_MAJOR TO_MAJOR FROM_SERVER_ROOT TO_SERVER_ROOT APPS_ROOT RESULT_DIR
+TXT
+}
+
+fail() {
+    echo "FEHLER: $*" >&2
+    exit 1
+}
+
+servers=()
+apps=()
+driver=''
+evidence_dir=''
+reserved_ddev_root=''
+
+while (($#)); do
+    case "$1" in
+        --server)
+            (($# >= 2)) || fail '--server benötigt einen Wert.'
+            servers+=("$2")
+            shift 2
+            ;;
+        --app)
+            (($# >= 2)) || fail '--app benötigt einen Wert.'
+            apps+=("$2")
+            shift 2
+            ;;
+        --driver)
+            (($# >= 2)) || fail '--driver benötigt einen Wert.'
+            driver="$2"
+            shift 2
+            ;;
+        --evidence-dir)
+            (($# >= 2)) || fail '--evidence-dir benötigt einen Wert.'
+            evidence_dir="$2"
+            shift 2
+            ;;
+        --reserved-ddev-root)
+            (($# >= 2)) || fail '--reserved-ddev-root benötigt einen Wert.'
+            reserved_ddev_root="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            fail "Unbekanntes Argument: $1"
+            ;;
+    esac
+done
+
+((${#servers[@]} >= 1)) || fail 'Mindestens ein --server fehlt.'
+((${#apps[@]} >= 1)) || fail 'Mindestens eine --app fehlt.'
+[[ -x "$driver" ]] || fail "Driver ist nicht ausführbar: $driver"
+[[ -n "$evidence_dir" ]] || fail '--evidence-dir fehlt.'
+[[ ! -e "$evidence_dir" ]] || fail "Evidenzverzeichnis existiert bereits: $evidence_dir"
+if [[ -n "$reserved_ddev_root" ]]; then
+    [[ -d "$reserved_ddev_root/.ddev" ]] \
+        || fail "Reservierter DDEV-Root ist ungültig: $reserved_ddev_root"
+    command -v ddev >/dev/null || fail 'ddev fehlt für die reservierte Projektübergabe.'
+fi
+
+mkdir -p "$evidence_dir/sources" "$evidence_dir/apps" "$evidence_dir/results"
+manifest="$evidence_dir/manifest.tsv"
+printf 'kind\tid\tref_or_repository\tcommit\tsha256_or_metadata\n' > "$manifest"
+printf 'created_utc\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$manifest"
+
+server_majors=()
+server_roots=()
+previous_major=''
+for specification in "${servers[@]}"; do
+    IFS=: read -r major archive expected_sha ref commit extra <<< "$specification"
+    [[ -z "${extra:-}" && "$major" =~ ^[0-9]+$ && -n "$archive" && "$expected_sha" =~ ^[0-9a-f]{64}$ && -n "$ref" && "$commit" =~ ^[0-9a-f]{40}$ ]] \
+        || fail "Ungültige --server-Angabe: $specification"
+    [[ -f "$archive" ]] || fail "Serverarchiv fehlt: $archive"
+    if [[ -n "$previous_major" ]] && ((major != previous_major + 1)); then
+        fail "Servermajors sind nicht lückenlos aufsteigend: $previous_major, $major"
+    fi
+    actual_sha="$(sha256sum "$archive" | cut -d' ' -f1)"
+    [[ "$actual_sha" == "$expected_sha" ]] || fail "Prüfsumme stimmt nicht für $archive"
+
+    destination="$evidence_dir/sources/nextcloud-$major"
+    mkdir -p "$destination"
+    tar -xf "$archive" -C "$destination"
+    mapfile -t roots < <(find "$destination" -mindepth 1 -maxdepth 1 -type d -print)
+    ((${#roots[@]} == 1)) || fail "Serverarchiv $archive besitzt nicht genau eine Wurzel."
+    server_root="${roots[0]}"
+    [[ -f "$server_root/version.php" && -f "$server_root/occ" ]] \
+        || fail "Serverarchiv $archive enthält keine vollständige Nextcloud-Wurzel."
+    actual_major="$(php -r 'include $argv[1]; echo (int)$OC_Version[0];' "$server_root/version.php")"
+    [[ "$actual_major" == "$major" ]] || fail "version.php meldet Major $actual_major statt $major."
+
+    server_majors+=("$major")
+    server_roots+=("$server_root")
+    printf 'server\t%s\t%s\t%s\t%s\n' "$major" "$ref" "$commit" "$actual_sha" >> "$manifest"
+    previous_major="$major"
+done
+
+declare -A seen_apps=()
+for specification in "${apps[@]}"; do
+    IFS=: read -r app_id repository commit extra <<< "$specification"
+    [[ -z "${extra:-}" && "$app_id" =~ ^[a-z][a-z0-9_]*$ && -d "$repository/.git" && "$commit" =~ ^[0-9a-f]{40}$ ]] \
+        || fail "Ungültige --app-Angabe: $specification"
+    [[ -z "${seen_apps[$app_id]:-}" ]] || fail "App doppelt angegeben: $app_id"
+    git -C "$repository" cat-file -e "$commit^{commit}" 2>/dev/null \
+        || fail "Commit $commit fehlt in $repository"
+    metadata="$(git -C "$repository" show "$commit:appinfo/info.xml")" \
+        || fail "appinfo/info.xml fehlt in $app_id@$commit"
+    actual_app_id="$(php -r '$xml=simplexml_load_string(stream_get_contents(STDIN)); if ($xml === false) exit(2); echo (string)$xml->id;' <<< "$metadata")"
+    [[ "$actual_app_id" == "$app_id" ]] || fail "App-ID $actual_app_id passt nicht zu $app_id."
+
+    destination="$evidence_dir/apps/$app_id"
+    mkdir -p "$destination"
+    git -C "$repository" archive "$commit" | tar -x -C "$destination"
+    tree_hash="$(git -C "$repository" rev-parse "$commit^{tree}")"
+    printf 'app\t%s\t%s\t%s\ttree=%s\n' "$app_id" "$repository" "$commit" "$tree_hash" >> "$manifest"
+    seen_apps[$app_id]=1
+done
+
+handoff_active=0
+original_ddev_status=''
+original_ddev_name=''
+restore_reserved_ddev() {
+    local command_status=$?
+    trap - EXIT
+    if ((handoff_active)); then
+        set +e
+        (cd "$reserved_ddev_root" && ddev start -y) > "$evidence_dir/ddev-restore.log" 2>&1
+        local restore_status=$?
+        if ((restore_status == 0)) && [[ "$original_ddev_status" == stopped ]]; then
+            (cd "$reserved_ddev_root" && ddev stop) >> "$evidence_dir/ddev-restore.log" 2>&1
+            restore_status=$?
+        fi
+        if ((restore_status != 0)); then
+            echo "FEHLER: Reserviertes DDEV-Projekt konnte nicht vollständig wiederhergestellt werden: $reserved_ddev_root" >&2
+            ((command_status == 0)) && command_status=$restore_status
+        fi
+    fi
+    exit "$command_status"
+}
+
+if [[ -n "$reserved_ddev_root" ]]; then
+    description="$(cd "$reserved_ddev_root" && ddev describe -j)" \
+        || fail 'Reservierter DDEV-Ausgangszustand konnte nicht gelesen werden.'
+    read -r original_ddev_name original_ddev_status < <(php -r '
+        $description=json_decode(stream_get_contents(STDIN),true,512,JSON_THROW_ON_ERROR);
+        echo ($description["raw"]["name"]??"")." ".($description["raw"]["status"]??"")."\n";
+    ' <<< "$description")
+    [[ "$original_ddev_name" =~ ^[a-z0-9][a-z0-9-]*$ ]] \
+        || fail 'Reservierter DDEV-Projektname ist ungültig.'
+    [[ "$original_ddev_status" == running || "$original_ddev_status" == stopped ]] \
+        || fail "Reservierter DDEV-Status ist nicht sicher wiederherstellbar: $original_ddev_status"
+    handoff_active=1
+    trap restore_reserved_ddev EXIT
+    (cd "$reserved_ddev_root" && ddev stop --unlist) > "$evidence_dir/ddev-handoff.log" 2>&1
+    export NC_COMPAT_PROJECT_NAME="$original_ddev_name"
+fi
+
+for index in "${!server_majors[@]}"; do
+    major="${server_majors[$index]}"
+    result="$evidence_dir/results/fresh-$major"
+    "$driver" fresh "$major" "${server_roots[$index]}" "$evidence_dir/apps" "$result"
+    [[ -f "$result/result.txt" && "$(cat "$result/result.txt")" == green ]] \
+        || fail "Driver erzeugte kein grünes Ergebnis für Fresh $major."
+done
+
+if ((${#server_majors[@]} >= 2)); then
+    for ((index = 1; index < ${#server_majors[@]}; index++)); do
+        from_index=$((index - 1))
+        from_major="${server_majors[$from_index]}"
+        to_major="${server_majors[$index]}"
+        result="$evidence_dir/results/upgrade-$from_major-$to_major"
+        "$driver" upgrade "$from_major" "$to_major" \
+            "${server_roots[$from_index]}" "${server_roots[$index]}" \
+            "$evidence_dir/apps" "$result"
+        [[ -f "$result/result.txt" && "$(cat "$result/result.txt")" == green ]] \
+            || fail "Driver erzeugte kein grünes Ergebnis für Upgrade $from_major->$to_major."
+    done
+fi
+
+printf 'Compatibility matrix completed: %s\n' "$evidence_dir"

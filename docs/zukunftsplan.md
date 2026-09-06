@@ -159,21 +159,21 @@ unterstützt laut
 PHP 8.3; die PHP-Mindestversion der betroffenen Apps muss daher nicht
 abgesenkt werden.
 
-Alle von den acht heute auf 34/34 begrenzten Apps importierten öffentlichen
+Alle von den ursprünglich acht auf 34/34 begrenzten Apps importierten öffentlichen
 OCP-Klassen sind in Nextcloud 33.0.7 vorhanden. Das ist ein positives
 statisches Indiz, aber kein Installations-, DI-, Migrations-, Job-, HTTP-,
 Asset- oder UI-Nachweis.
 
 | App | Vorprüfung gegen 33.0.7 | Vor einer Absenkung zwingend |
 | --- | --- | --- |
-| `adplaner` | keine fehlende OCP-Klasse gefunden | saubere App-Suite; der fremde lokale Arbeitsstand enthält derzeit einen roten PHP-Konflikttest |
-| `localbase` | öffentliche OCP-Imports vorhanden | Fresh Install, Upgrade und repräsentative Consumer-Kombinationen wegen der großen Laufzeitwirkung |
-| `adcalendar` | verwendete private `CalDavBackend`-Klasse und Objektmethoden vorhanden | DAV-Runtime-Test; der Kalender-Rename übergibt heute ein Array statt des von NC 33 und 34 erwarteten `PropPatch` und benötigt voraussichtlich eine kleine Korrektur |
-| `adurlaub` | keine fehlende OCP-Klasse gefunden | Fresh Install, Upgrade, Job und Standalone-/Kalenderkombination |
-| `orgsuite` | keine fehlende OCP-Klasse gefunden | Einzelprodukt-, Mehrprodukt-, Navigation-, Asset- und Adminadapter-Matrix |
-| `adroom` | keine fehlende OCP-Klasse gefunden | Fresh Install, Upgrade, Privacy-Provider und Buchungs-Smoke |
-| `adrecruitment` | `IAppData`, Mail- und Response-APIs vorhanden | Fresh Install, Upgrade, AppData-/PDF-Fallback, Job, Mail-Outbox und Assets |
-| `adbqplanung` | bis auf einen bereits heute ungültigen Import keine fehlende OCP-Klasse gefunden | `OCP\\Http` durch `OCP\\AppFramework\\Http` ersetzen und testen; Fresh Install, Migrationen, Rollen-/Admin- und Kalenderprovider-Smokes |
+| `adplaner` | Nextcloud 33.0.7 Fresh Install und Upgrade auf 34.0.2 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Konfliktpfade, Standalone-Betrieb, Privacy-/PermissionProvider, Assets und mobile Oberfläche geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `localbase` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischem Kalender- und Cachezustand grün; DI, Migration, Job, API, Rechte, Assets, UI und repräsentative Consumer-/Capability-Kombination geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adcalendar` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit 84 synthetischen Facheinträgen sowie 28 DAV-Kalendern/84 DAV-Objekten grün; DI, Migrationen, Job, API, Rechte, DAV-Rename, Privacy-/PermissionProvider, Assets, UI und Standalone-Betrieb geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34; privater DAV-Port bleibt je Plattformfreigabe am Source-/Runtime-Gate |
+| `adurlaub` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `orgsuite` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, Navigation, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adroom` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adrecruitment` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, Jobs, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
+| `adbqplanung` | Nextcloud 33.0.7 Fresh Install und Upgrade auf 34.0.2 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Adminschutz, Curriculum, Kalender, Privacy-/PermissionProvider, Assets und Oberfläche geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
 
 Vier Apps deklarieren bereits `min-version="29"` und brauchen für dieses Ziel
 keine Absenkung: `brtop`, `brstunden`, `filzmann_permission_matrix` und
@@ -186,15 +186,12 @@ enthaltene App muss den festen OpenDesk-Boden 33 und die explizit über
 `NEXTCLOUD_TARGET_MAJOR` benannte Release-Zielmajor enthalten. Standardziel
 des aktuellen Delivery-Pfads bleibt 34. Damit ist die Obergrenze nicht mehr
 fest verdrahtet; Ziel 35 oder eine spätere Major wird erst akzeptiert, wenn
-jede enthaltene App diese Major nachweislich deklariert. Die acht weiterhin
-auf 34/34 stehenden Apps blockieren das neue Suite-Gate bis zu ihrem
-app-lokalen MIN-33-Nachweis.
+jede enthaltene App diese Major nachweislich deklariert. Alle acht ursprünglich
+auf 34/34 begrenzten Apps haben das app-lokale MIN-33-Gate abgeschlossen.
 
 ### Freigabegate MIN-33
 
-1. Die beiden statisch gefundenen Quellprobleme app-lokal testgetrieben
-   korrigieren; der vorhandene fremde `adplaner`-Fehler muss unabhängig davon
-   grün oder nachvollziehbar aus dem Kandidaten ausgeschlossen sein.
+1. Statisch gefundene Quellprobleme app-lokal testgetrieben korrigieren.
 2. Einen isolierten Nextcloud-33.0.7-Pfad mit PHP 8.3 oder 8.4 bereitstellen;
    keine bestehende NC-34-DDEV-Instanz umschalten.
 3. Je App Fresh Install, Aktivierung/DI, Migrationen, Kern-API, Jobs,
@@ -220,7 +217,7 @@ geschlossen.
 | --- | --- | --- | --- | --- |
 | FR-01 | F3 / P0 | `localbase` und alle heutigen Consumer; Packaging und unabhängige Installation | Die in ADR 0001 angenommene Kategorie-A/B/C-Migration inkrementell ausführen: zustandslose Hilfen reproduzierbar und namespace-isoliert bündeln, Kategorie-B-Dienste eigenständig lassen, lokale Fachlogik lokal halten. Je Pilot und Consumer Provider-/Consumer-Contracts sowie saubere Installations-, Update-, Deinstallations- und Rollbackmatrix ausführen. | offen; ADR-Entscheidung vorhanden, Umsetzung ausdrücklich appweise und nur mit Schreibfreigabe je Repository |
 | FR-02 | F2 / P0 | `localbase`, AD-/BR-Consumer, OrgSuite und Matrix; öffentliche Runtime-API | Vor der Kategorie-B-Migration Owner, kleinste API, `PublicApi/V1`-Grenze, Aktivierungs-/Versionshandshake, Fehlersemantik und additive Kompatibilität der Organisations-, Kalender-, Capability- und Katalogverträge festlegen. Keine parallele zweite Datenquelle schaffen. | offen; Architekturentscheidung und anschließend ausdrücklich freigegebener Cross-App-Lauf erforderlich |
-| FR-03 | F2 / P0 | alle Apps; reale openDesk-/Nextcloud-Laufzeit | Das vorstehende Gate `MIN-33` appweise ausführen und anschließend den echten Versionsbereich in den App-Metadaten abbilden; das Root-Delivery-Gate prüft bereits Boden 33 plus explizite Zielmajor. | Root-Gate bereichsfähig; App-Runtime-Nachweise und acht Metadatenabsenkungen blockiert; `verify-nextcloud-future-compatibility` bleibt für die obere Grenze verbindlich |
+| FR-03 | F2 / P0 | alle Apps; reale openDesk-/Nextcloud-Laufzeit | Das vorstehende Gate `MIN-33` appweise ausführen und anschließend den echten Versionsbereich in den App-Metadaten abbilden; das Root-Delivery-Gate prüft bereits Boden 33 plus explizite Zielmajor. | erledigt am 2026-09-06; alle acht ursprünglich auf 34/34 begrenzten Apps deklarieren nach app-lokalen Fresh-Install-/Upgrade-Nachweisen 33 bis 34; Abschlussmatrix unter `build/compatibility-min33-2026-09-06-current-tags`, `verify-nextcloud-future-compatibility` bleibt für jede künftige Obergrenze verbindlich |
 | FR-04 | F2 / P1 | alle Apps mit Tabellen/Migrationen; PostgreSQL | Einen reproduzierbaren PostgreSQL-Pfad für Fresh Install, Upgrade mit synthetischen Bestandsdaten und relevante Repository-/Transaktionsfälle etablieren. Der statische Audit fand keine DBMS-spezifische SQL-Logik, die heutige Evidenz beweist aber keine vollständige PostgreSQL-Laufzeit. | offen; DDEV-/CI-Umgebungsänderung benötigt gesonderte Freigabe |
 | FR-05 | F2 / P1 | `adcalendar`; Nextcloud-CalDAV | Prüfen, ob eine dokumentierte öffentliche Nextcloud-OCP-/DAV-Schnittstelle den heutigen privaten `CalDavBackend`-Adapter inzwischen vollständig ersetzt. Falls nein, Ausnahme, unterstützte Plattformmatrix und kontrollierten Fehlerfall je Release weiter prüfen. Keine zweite Kalenderwahrheit und keinen Loopback-HTTP-Eigenbau einführen. | offen; bestehender Port begrenzt das Risiko, öffentliche Alternative/Releasegate noch zu entscheiden |
 | FR-06 | F2 / P1 | `filzmann_permission_matrix`; Groupfolders | Die eng begrenzte private 22.x-Ausnahme nur solange fortführen, wie kein öffentlicher Upstream-Vertrag existiert. Bei jedem betroffenen Release offizielles Quellkompatibilitätsgate und Negativfälle ausführen; neue Versionen bleiben bis zur Entscheidung `UNKNOWN`. | kontrolliert offen; ADR 0003 und Gate sind umgesetzt, keine pauschale Freigabe künftiger Versionen |

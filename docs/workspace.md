@@ -402,7 +402,7 @@ vorher auf demselben unveränderten Stand nochmals gestartet.
 | `scripts/measure-ad-suite-php-coverage.sh` und `scripts/measure-ad-suite-js-coverage.sh` | Coverage aller registrierten Apps gegen zentrale Baselines | gezielte Coverage-Abnahme | hoch; führen Suiten aus; PHP benötigt DDEV/Xdebug, JS c8; nicht zusätzlich ohne eigenen Beweisbedarf starten |
 | `scripts/check-ad-suite-delivery` | striktes Fast, enthaltene Produkte, App-Tests, einmaliger temporärer Paketbau und Archivprüfung | konkrete Suite-Delivery | hoch; baut intern mit bereits geprüften Tests; sauberer Commitstand erforderlich |
 | optionale Delivery-Smokes | DDEV-Status/Inventar, HTTP/CSRF, Rollenmatrix oder echte Integrationsfälle | ausdrücklich beauftragte lokale Laufzeitprüfung | hoch; verschiedene Fehlerklassen, keine vollständige Neuinstallation |
-| `verify-nextcloud-future-compatibility` | gepinnte Plattformmatrix, Fresh Install, DI/Jobs, Runtime, Assets/UI, anwendbare Upgrades | Supportbereich / RC-Veröffentlichung | sehr hoch; bestehender fachlicher Owner für Fresh Install/Reinstall; lokaler Einzelnachweis unten, kein getrackter Gesamtmatrix-Runner |
+| `scripts/verify-nextcloud-compatibility` mit `scripts/run-nextcloud-ddev-compatibility-stage` | gepinnte Plattformmatrix, Fresh Install, DI/Jobs, app-lokale Rechte-Smokes, Runtime, Assets/UI und anwendbare Upgrades gemäß `verify-nextcloud-future-compatibility` | Supportbereich / RC-Veröffentlichung | sehr hoch; prüft exakte Commits und verwaltet die reservierte lokale DDEV-Registrierung mit Wiederherstellung |
 | `scripts/check-privacy-app-compatibility` | physisch fehlende und inkompatible optionale Privacy-App | Änderung dieser Runtimegrenze | hoch; Mountwechsel benötigen Neustarts; kein historischer API-Adapter und kein Fresh-Install-Ersatz |
 
 Die Dokumentreferenz-Fixtures prüfen den Prüfer einschließlich seiner
@@ -432,12 +432,25 @@ statische Analyse gegen einen gepinnten OCP-Stand.
 
 ### Fresh Install und externe Testkonten
 
-Der bestehende Skill `verify-nextcloud-future-compatibility` verlangt bereits
-eine isolierte Neuinstallation je gepinntem Plattformstand. Dies bleibt der
-zuständige Workflow; ein paralleler Reinstall-Mechanismus wird nicht angelegt.
-Im Audit war jedoch kein ausführbarer vollständiger DDEV-Versions-/Reinstall-
-Lauf auffindbar. Frühere appweise Nachweise im Zukunftsplan sind keine neue
-Ausführung und beweisen nicht die Neuinstallierbarkeit aller aktuellen Apps.
+Der Skill `verify-nextcloud-future-compatibility` bleibt der zuständige
+Workflow für isolierte Neuinstallationen je gepinntem Plattformstand. Der
+getrackte Einstieg `scripts/verify-nextcloud-compatibility` prüft Archive und
+Commit-Identitäten, erzwingt lückenlose Majors und ruft für Fresh Install und
+benachbarte Upgrades `scripts/run-nextcloud-ddev-compatibility-stage` auf.
+Der Driver prüft die exakten App-Snapshots im PHP-/Node-Container vor der
+Core-Installation, installiert anschließend einen leeren Core und aktiviert
+erst danach Infrastruktur und Fachapps. App-lokale Dateien namens
+`nextcloud-compatibility-smoke.php` definieren UI- und
+Berechtigungsgrenzen, damit der Parent keine fachlichen Seiten- oder
+Rechteannahmen dupliziert.
+
+Wenn der lokal auflösbare Name `nextcloud-dev` benötigt wird, übernimmt
+`--reserved-ddev-root nextcloud-dev` dessen Registrierung einmal für die
+gesamte Matrix. Der Runner erfasst den vorherigen Laufzustand, verwendet für
+die isolierten Stufen SQLite ohne gemeinsamen Datenbankcontainer und stellt
+Registrierung sowie ursprünglichen Laufzustand auch nach einem Fehler wieder
+her. Frühere appweise Nachweise im Zukunftsplan sind keine neue Ausführung und
+beweisen nicht die Neuinstallierbarkeit aller aktuellen Apps.
 Insbesondere sind `RUN_DDEV_CHECKS=1`, Installer-Fakes und der isolierte
 Urlaubsschema-Test kein vollständiger Nextcloud-/Workspace-Reinstall.
 Nach ausdrücklicher Freigabe wurde im bestehenden Workflow am 5. September
