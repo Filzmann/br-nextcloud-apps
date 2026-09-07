@@ -59,6 +59,14 @@ existing DDEV driver then verifies the consumers after provider disable,
 removal and reinstallation. Do not enable this lifecycle stage in ordinary
 compatibility runs that do not need it.
 
+When that provider also needs an app-version update proof, pass its immutable
+higher-version target as `--update-app APP_ID:REPOSITORY:COMMIT`. The runner
+rejects missing base snapshots and non-increasing versions, records both trees
+in the manifest and exposes only the extracted target through
+`NC_COMPAT_UPDATE_APPS_ROOT`. The DDEV driver verifies the consumer after the
+update; for LocalBase it also compares a synthetic persisted organization
+state before and after the version transition.
+
 For each red or unverified row, include the exact failure and whether it is an
 app incompatibility, an upstream defect, an environment limitation, or missing
 evidence. Do not waive a mandatory row inside the report.

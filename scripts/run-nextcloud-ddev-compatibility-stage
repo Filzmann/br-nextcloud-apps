@@ -325,18 +325,55 @@ verify_optional_provider_lifecycle() {
     local provider="${NC_COMPAT_OPTIONAL_PROVIDER_LIFECYCLE:-}"
     [[ -n "$provider" ]] || return 0
     [[ "$provider" =~ ^[a-z][a-z0-9_]*$ ]] || fail "Ungültige optionale Provider-App-ID: $provider"
-    [[ -d "$apps_root/$provider" && -d "$project/html/custom_apps/$provider" ]] \
+    local reinstall_source="$apps_root/$provider"
+    local update_source="${NC_COMPAT_UPDATE_APPS_ROOT:-}/$provider"
+    [[ -d "$reinstall_source" && -d "$project/html/custom_apps/$provider" ]] \
         || fail "Optionaler Lifecycle-Provider fehlt im Prüflauf: $provider"
+
+    if [[ -n "${NC_COMPAT_UPDATE_APPS_ROOT:-}" && -d "$update_source" && "$provider" == localbase ]]; then
+        local organization_state
+        organization_state="$(php -r '
+            require $argv[1];
+            echo json_encode(\OCA\LocalBase\Organization\AdOrganizationDefinition::defaults()->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        ' "$project/html/custom_apps/$provider/lib/Organization/AdOrganizationDefinition.php")"
+        occ config:app:set "$provider" ad_organization_definition --value="$organization_state" \
+            > "$result_dir/lifecycle-$provider-update-state-seed-$effective_major.log" 2>&1
+        occ config:app:get "$provider" ad_organization_definition \
+            > "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json"
+    fi
 
     occ app:disable "$provider" > "$result_dir/lifecycle-$provider-disable-$effective_major.log" 2>&1
     verify_consumer_runtime "$effective_major" "$provider-disabled-$effective_major"
+
+    if [[ -n "${NC_COMPAT_UPDATE_APPS_ROOT:-}" && -d "$update_source" ]]; then
+        local update_version
+        update_version="$(php -r '$xml=simplexml_load_file($argv[1]); if ($xml === false) exit(2); echo (string)$xml->version;' "$update_source/appinfo/info.xml")"
+        rm -rf "$project/html/custom_apps/$provider"
+        install_app_snapshot "$update_source" "$project/html/custom_apps/$provider" "$effective_major"
+        occ app:enable "$provider" > "$result_dir/lifecycle-$provider-update-$effective_major.log" 2>&1
+        occ app:list --output=json > "$result_dir/lifecycle-$provider-update-apps-$effective_major.json"
+        php -r '
+            $apps=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            $actual=$apps["enabled"][$argv[2]]??null;
+            if($actual!==$argv[3])throw new RuntimeException("Updated app version mismatch: ".var_export($actual,true));
+        ' "$result_dir/lifecycle-$provider-update-apps-$effective_major.json" "$provider" "$update_version"
+        if [[ "$provider" == localbase ]]; then
+            occ config:app:get "$provider" ad_organization_definition \
+                > "$result_dir/lifecycle-$provider-update-state-after-$effective_major.json"
+            cmp -s "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json" \
+                "$result_dir/lifecycle-$provider-update-state-after-$effective_major.json" \
+                || fail "Persistierter LocalBase-Organisationszustand änderte sich beim In-place-Update."
+        fi
+        verify_consumer_runtime "$effective_major" "$provider-updated-$effective_major"
+        reinstall_source="$update_source"
+    fi
 
     occ app:remove "$provider" > "$result_dir/lifecycle-$provider-remove-$effective_major.log" 2>&1
     [[ ! -e "$project/html/custom_apps/$provider" ]] \
         || fail "Providercode blieb nach app:remove vorhanden: $provider"
     verify_consumer_runtime "$effective_major" "$provider-removed-$effective_major"
 
-    install_app_snapshot "$apps_root/$provider" "$project/html/custom_apps/$provider" "$effective_major"
+    install_app_snapshot "$reinstall_source" "$project/html/custom_apps/$provider" "$effective_major"
     occ app:enable "$provider" > "$result_dir/lifecycle-$provider-reenable-$effective_major.log" 2>&1
     verify_consumer_runtime "$effective_major" "$provider-reenabled-$effective_major"
 }

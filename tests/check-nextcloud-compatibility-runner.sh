@@ -78,7 +78,7 @@ chmod +x "$stage/bin/ddev"
 cat > "$stage/driver" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s\n' "$*" >> "$DRIVER_LOG"
+printf '%s\tupdate-root=%s\n' "$*" "${NC_COMPAT_UPDATE_APPS_ROOT:-none}" >> "$DRIVER_LOG"
 mkdir -p "${@: -1}"
 printf 'green\n' > "${@: -1}/result.txt"
 SH
@@ -87,11 +87,16 @@ chmod +x "$stage/driver"
 sha33="$(sha256sum "$stage/nextcloud-33.tar.gz" | cut -d' ' -f1)"
 sha34="$(sha256sum "$stage/nextcloud-34.tar.gz" | cut -d' ' -f1)"
 app_commit="$(git -C "$stage/demoapp" rev-parse HEAD)"
+sed -i 's/<version>1.0.0<\//<version>1.1.0<\//' "$stage/demoapp/appinfo/info.xml"
+git -C "$stage/demoapp" add appinfo/info.xml
+git -C "$stage/demoapp" commit -qm update
+update_commit="$(git -C "$stage/demoapp" rev-parse HEAD)"
 
 PATH="$stage/bin:$PATH" DDEV_LOG="$stage/ddev.log" DRIVER_LOG="$stage/driver.log" "$runner" \
     --server "33:$stage/nextcloud-33.tar.gz:$sha33:v33.0.7:1111111111111111111111111111111111111111" \
     --server "34:$stage/nextcloud-34.tar.gz:$sha34:v34.0.2:2222222222222222222222222222222222222222" \
     --app "demoapp:$stage/demoapp:$app_commit" \
+    --update-app "demoapp:$stage/demoapp:$update_commit" \
     --driver "$stage/driver" \
     --reserved-ddev-root "$stage/original-ddev" \
     --evidence-dir "$stage/evidence"
@@ -102,6 +107,10 @@ grep -Fq $'server\t33\tv33.0.7\t1111111111111111111111111111111111111111' "$stag
     || fail 'Pinned server identity is missing from the manifest.'
 grep -Fq $'app\tdemoapp\t'"$stage/demoapp"$'\t'"$app_commit" "$stage/evidence/manifest.tsv" \
     || fail 'Pinned app commit is missing from the manifest.'
+grep -Fq $'update-app\tdemoapp\t'"$stage/demoapp"$'\t'"$update_commit" "$stage/evidence/manifest.tsv" \
+    || fail 'Pinned update app commit is missing from the manifest.'
+grep -Fq $'update-root='"$stage/evidence/update-apps" "$stage/driver.log" \
+    || fail 'The pinned update app root was not handed to the runtime driver.'
 [[ "$(grep -Fxc 'stop --unlist' "$stage/ddev.log")" -eq 1 ]] \
     || fail 'Reserved DDEV registration was not handed off exactly once.'
 tail -n 2 "$stage/ddev.log" | grep -Fqx 'start -y' \
@@ -135,6 +144,15 @@ if "$runner" \
     --driver "$stage/driver" \
     --evidence-dir "$stage/bad-sha" >/dev/null 2>&1; then
     fail 'A wrong server checksum was accepted.'
+fi
+
+if "$runner" \
+    --server "33:$stage/nextcloud-33.tar.gz:$sha33:v33.0.7:1111111111111111111111111111111111111111" \
+    --app "demoapp:$stage/demoapp:$app_commit" \
+    --update-app "demoapp:$stage/demoapp:$app_commit" \
+    --driver "$stage/driver" \
+    --evidence-dir "$stage/bad-update-version" >/dev/null 2>&1; then
+    fail 'A non-increasing app update version was accepted.'
 fi
 
 if "$runner" \

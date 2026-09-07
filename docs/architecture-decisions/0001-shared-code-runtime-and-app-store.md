@@ -11,8 +11,9 @@
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
   `filzmann_permission_matrix` als erstem Consumer einschließlich
-  Provider-Deaktivierung, -Entfernung, -Wiederinstallation und Rückbau auf
-  einen Stand ohne V1; die übrige LocalBase-Migration bleibt offen
+  In-place-Update, Provider-Deaktivierung, -Entfernung, -Wiederinstallation
+  und Rückbau auf einen Stand ohne V1; die übrige LocalBase-Migration bleibt
+  offen
 
 ## Kontext und Belegstatus
 
@@ -482,9 +483,11 @@ Aktivierung und Version vor der Klassenauflösung und bleibt bei fehlendem,
 älterem oder fehlerhaftem Provider fail-closed funktionsfähig. Der reale
 Contract, Fresh Installs mit und ohne LocalBase sowie Deaktivierung, Entfernung
 und Wiederinstallation des aktuellen V1- und eines älteren Providers ohne V1
-sind auf Nextcloud 34 nachgewiesen. Offen bleiben ein In-place-Update des
-Piloten, die Paketextraktion, Namespace-Isolierung, die übrigen öffentlichen
-API-Grenzen sowie die Lifecycle-Nachweise der weiteren Consumer.
+sind auf Nextcloud 34 nachgewiesen. Zusätzlich ist das In-place-Update von
+LocalBase `0.12.0-dev.1` auf `0.12.0-dev.2` mit unverändertem synthetischem
+Organisationszustand und weiterhin funktionsfähiger Matrix grün. Offen bleiben
+die Paketextraktion, Namespace-Isolierung, die übrigen öffentlichen API-Grenzen
+sowie die Lifecycle-Nachweise der weiteren Consumer.
 
 Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
 öffentliche Zumutbarkeit dieser Zusatz-App, genaue

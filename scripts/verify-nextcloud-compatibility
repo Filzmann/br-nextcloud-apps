@@ -7,6 +7,7 @@ Usage:
   verify-nextcloud-compatibility \
     --server MAJOR:ARCHIVE:SHA256:REF:COMMIT [--server ...] \
     --app APP_ID:REPOSITORY:COMMIT [--app ...] \
+    [--update-app APP_ID:REPOSITORY:COMMIT ...] \
     --driver EXECUTABLE [--reserved-ddev-root DIRECTORY] \
     --evidence-dir DIRECTORY
 
@@ -15,6 +16,8 @@ commits, then executes one fresh stage per contiguous major and one upgrade
 stage per adjacent pair. The driver receives:
   fresh MAJOR SERVER_ROOT APPS_ROOT RESULT_DIR
   upgrade FROM_MAJOR TO_MAJOR FROM_SERVER_ROOT TO_SERVER_ROOT APPS_ROOT RESULT_DIR
+When --update-app is present, NC_COMPAT_UPDATE_APPS_ROOT points the driver to
+the exact higher-version app snapshots recorded in the manifest.
 TXT
 }
 
@@ -25,6 +28,7 @@ fail() {
 
 servers=()
 apps=()
+update_apps=()
 driver=''
 evidence_dir=''
 reserved_ddev_root=''
@@ -39,6 +43,11 @@ while (($#)); do
         --app)
             (($# >= 2)) || fail '--app benötigt einen Wert.'
             apps+=("$2")
+            shift 2
+            ;;
+        --update-app)
+            (($# >= 2)) || fail '--update-app benötigt einen Wert.'
+            update_apps+=("$2")
             shift 2
             ;;
         --driver)
@@ -77,7 +86,7 @@ if [[ -n "$reserved_ddev_root" ]]; then
     command -v ddev >/dev/null || fail 'ddev fehlt für die reservierte Projektübergabe.'
 fi
 
-mkdir -p "$evidence_dir/sources" "$evidence_dir/apps" "$evidence_dir/results"
+mkdir -p "$evidence_dir/sources" "$evidence_dir/apps" "$evidence_dir/update-apps" "$evidence_dir/results"
 manifest="$evidence_dir/manifest.tsv"
 printf 'kind\tid\tref_or_repository\tcommit\tsha256_or_metadata\n' > "$manifest"
 printf 'created_utc\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$manifest"
@@ -114,6 +123,7 @@ for specification in "${servers[@]}"; do
 done
 
 declare -A seen_apps=()
+declare -A app_versions=()
 for specification in "${apps[@]}"; do
     IFS=: read -r app_id repository commit extra <<< "$specification"
     [[ -z "${extra:-}" && "$app_id" =~ ^[a-z][a-z0-9_]*$ && -d "$repository/.git" && "$commit" =~ ^[0-9a-f]{40}$ ]] \
@@ -132,7 +142,40 @@ for specification in "${apps[@]}"; do
     tree_hash="$(git -C "$repository" rev-parse "$commit^{tree}")"
     printf 'app\t%s\t%s\t%s\ttree=%s\n' "$app_id" "$repository" "$commit" "$tree_hash" >> "$manifest"
     seen_apps[$app_id]=1
+    app_versions[$app_id]="$(php -r '$xml=simplexml_load_string(stream_get_contents(STDIN)); echo (string)$xml->version;' <<< "$metadata")"
 done
+
+declare -A seen_update_apps=()
+for specification in "${update_apps[@]}"; do
+    IFS=: read -r app_id repository commit extra <<< "$specification"
+    [[ -z "${extra:-}" && "$app_id" =~ ^[a-z][a-z0-9_]*$ && -d "$repository/.git" && "$commit" =~ ^[0-9a-f]{40}$ ]] \
+        || fail "Ungültige --update-app-Angabe: $specification"
+    [[ -n "${seen_apps[$app_id]:-}" ]] || fail "Update-App besitzt keinen Ausgangssnapshot: $app_id"
+    [[ -z "${seen_update_apps[$app_id]:-}" ]] || fail "Update-App doppelt angegeben: $app_id"
+    git -C "$repository" cat-file -e "$commit^{commit}" 2>/dev/null \
+        || fail "Update-Commit $commit fehlt in $repository"
+    metadata="$(git -C "$repository" show "$commit:appinfo/info.xml")" \
+        || fail "appinfo/info.xml fehlt in $app_id@$commit"
+    actual_app_id="$(php -r '$xml=simplexml_load_string(stream_get_contents(STDIN)); if ($xml === false) exit(2); echo (string)$xml->id;' <<< "$metadata")"
+    [[ "$actual_app_id" == "$app_id" ]] || fail "Update-App-ID $actual_app_id passt nicht zu $app_id."
+    update_version="$(php -r '$xml=simplexml_load_string(stream_get_contents(STDIN)); echo (string)$xml->version;' <<< "$metadata")"
+    php -r 'exit(version_compare($argv[1], $argv[2], ">") ? 0 : 1);' "$update_version" "${app_versions[$app_id]}" \
+        || fail "Update-Version $update_version ist nicht höher als ${app_versions[$app_id]} für $app_id."
+
+    destination="$evidence_dir/update-apps/$app_id"
+    mkdir -p "$destination"
+    git -C "$repository" archive "$commit" | tar -x -C "$destination"
+    tree_hash="$(git -C "$repository" rev-parse "$commit^{tree}")"
+    printf 'update-app\t%s\t%s\t%s\ttree=%s;from-version=%s;to-version=%s\n' \
+        "$app_id" "$repository" "$commit" "$tree_hash" "${app_versions[$app_id]}" "$update_version" >> "$manifest"
+    seen_update_apps[$app_id]=1
+done
+
+if ((${#update_apps[@]})); then
+    export NC_COMPAT_UPDATE_APPS_ROOT="$evidence_dir/update-apps"
+else
+    unset NC_COMPAT_UPDATE_APPS_ROOT
+fi
 
 handoff_active=0
 original_ddev_status=''
