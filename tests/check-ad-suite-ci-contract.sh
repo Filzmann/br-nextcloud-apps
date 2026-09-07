@@ -36,6 +36,9 @@ require_text "$workspace/scripts/check-apps" \
 require_text "$workspace/scripts/check-apps" \
     'php tests/privacy-provider-v1-contract.php' \
     'App-übergreifender Privacy-Provider-V1-Vertrag'
+require_text "$workspace/scripts/check-apps" \
+    'php tests/localbase-organization-v1-contract.php' \
+    'App-übergreifender LocalBase-Organisationsprovider-V1-Vertrag'
 
 for app in "${apps[@]}"; do
     workflow="$workspace/$app/.github/workflows/tests.yml"

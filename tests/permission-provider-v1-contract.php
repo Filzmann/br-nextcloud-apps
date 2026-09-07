@@ -17,6 +17,7 @@ $apps = [
     'OCA\\Recruitment\\' => $workspace . '/adrecruitment/lib/',
     'OCA\\AdBqPlanning\\' => $workspace . '/adbqplanung/lib/',
     'OCA\\FilzmannDataProtection\\' => $workspace . '/filzmann_data_protection/lib/',
+    'OCA\\LocalBase\\' => $workspace . '/localbase/lib/',
 ];
 
 spl_autoload_register(static function (string $class) use ($apps): void {

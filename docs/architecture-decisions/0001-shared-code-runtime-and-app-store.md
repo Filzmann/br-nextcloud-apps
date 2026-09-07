@@ -5,9 +5,12 @@
 - Ergänzung PHP-Autoloading: 2026-08-09
 - Ergänzung Standalone-Privacy-Verweis: 2026-08-23
 - Ergänzung Entwicklungsphase: 2026-09-05
+- Ergänzung erster Kategorie-B-Pilot: 2026-09-06
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
-- Noch nicht umgesetzt: die in dieser Datei beschriebene LocalBase-Migration
+- Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
+  `filzmann_permission_matrix` als erstem Consumer; die übrige
+  LocalBase-Migration bleibt offen
 
 ## Kontext und Belegstatus
 
@@ -59,7 +62,7 @@ persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus
 | `brtop` | API-Responder, Modelltrait, Logger, Gruppenservice sowie LocalBase-JavaScript | `brtop/lib/Controller/ApiController.php`, `lib/Model/Meeting.php`, `lib/Service/BrtopLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
 | `adplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `adplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
 | `brstunden` | API-Responder, Modelltrait, Logger, Gruppenservice und LocalBase-JavaScript | `brstunden/lib/Controller/ApiController.php`, `lib/Model/HourEntry.php`, `lib/Service/BrStundenLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `filzmann_permission_matrix` | optionaler versionierter LocalBase-Organisationssnapshot; eigenständiger Test-Runner und Nextcloud-Navigation | `filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `filzmann_permission_matrix/tests/run.php`, `filzmann_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
+| `filzmann_permission_matrix` | optionaler Organisationssnapshot über `OCA\\LocalBase\\PublicApi\\V1`; eigenständiger Test-Runner und Nextcloud-Navigation | `filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `filzmann_permission_matrix/tests/run.php`, `filzmann_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
 | `adcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
 | `adurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
 | `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `orgsuite/tests/http-smoke.sh` |
@@ -470,8 +473,14 @@ Store-Release hängt nie von einer halb abgeschlossenen Entkopplung ab.
 
 Umgesetzt und verbindlich ist das Entscheidungs- und Releasemodell. Ebenfalls
 verbindlich ist, dass neue Apps nicht automatisch von LocalBase abhängen.
-Dokumentiert, aber noch nicht technisch umgesetzt sind die Paketextraktion,
-Namespace-Isolierung, API-Versionierung und LocalBase-Migration.
+Der erste Kategorie-B-Schritt ist technisch umgesetzt: LocalBase projiziert
+seine kanonische Organisationskonfiguration über
+`OCA\\LocalBase\\PublicApi\\V1` Version `1.0`; die Berechtigungsmatrix prüft
+Aktivierung und Version und bleibt bei fehlendem oder fehlerhaftem Provider
+fail-closed funktionsfähig. Der reale Contract sowie Fresh Installs mit und
+ohne LocalBase sind nachgewiesen. Offen bleiben die Paketextraktion,
+Namespace-Isolierung, die übrigen öffentlichen API-Grenzen und die weiteren
+Consumer-, Update-, Deinstallations- und Rückbauschritte.
 
 Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
 öffentliche Zumutbarkeit dieser Zusatz-App, genaue
