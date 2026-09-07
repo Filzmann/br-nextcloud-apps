@@ -7,6 +7,11 @@ namespace OCP {
         public function getValueString(string $appId, string $key, string $default = ''): string;
         public function setValueString(string $appId, string $key, string $value): void;
     }
+
+    final class Server {
+        public static mixed $service = null;
+        public static function get(string $name): mixed { return self::$service; }
+    }
 }
 
 namespace OCP\App {
@@ -43,6 +48,7 @@ namespace {
     use OCA\LocalBase\PublicApi\V1\OrganizationSnapshot;
     use OCA\LocalBase\PublicApi\V1\OrganizationSnapshotService;
     use OCP\App\IAppManager;
+    use OCP\Server;
     use Psr\Log\LoggerInterface;
 
     $workspace = dirname(__DIR__);
@@ -99,24 +105,29 @@ namespace {
     $assertSame(true, $snapshot->isValid(), 'Der reale LocalBase-Provider liefert keinen gültigen Snapshot.');
     $assertSame(false, isset($snapshot->toArray()['members']), 'Der öffentliche Snapshot enthält Mitgliederlisten.');
 
-    $consumer = new MatrixOrganizationSnapshotService($apps, $logger, $provider);
+    Server::$service = $provider;
+    $consumer = new MatrixOrganizationSnapshotService($apps, $logger);
     $valid = $consumer->snapshot();
     $assertSame('VALID', $valid['status'], 'Der reale Matrix-Consumer akzeptiert den echten LocalBase-V1-Vertrag nicht.');
     $assertSame(OrganizationSnapshot::CONTRACT_VERSION, $valid['contract_version'], 'Provider und Consumer verwenden unterschiedliche Vertragsversionen.');
     $assertSame($snapshot->checksum(), $valid['checksum'], 'Der Consumer bewahrt die Provider-Prüfsumme nicht.');
 
     $apps->enabled = [];
-    $missing = (new MatrixOrganizationSnapshotService($apps, $logger, null))->snapshot();
+    $missing = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
     $assertSame('MISSING', $missing['status'], 'Eine fehlende LocalBase-App wird nicht kontrolliert ausgewiesen.');
     $assertSame([], $missing['roles'], 'Eine fehlende LocalBase-App liefert Rollenbedeutungen.');
 
     $apps->enabled = ['localbase'];
-    $incompatible = (new MatrixOrganizationSnapshotService($apps, $logger, null))->snapshot();
+    $incompatible = (new class($apps, $logger) extends MatrixOrganizationSnapshotService {
+        protected function readProviderSnapshot(): OrganizationSnapshot {
+            throw new UnexpectedValueException('synthetic missing V1 provider');
+        }
+    })->snapshot();
     $assertSame('INCOMPATIBLE', $incompatible['status'], 'Ein aktivierter Provider ohne V1-Service wird nicht inkompatibel ausgewiesen.');
     $assertSame([], $incompatible['areas'], 'Ein inkompatibler Provider liefert Bereichsbedeutungen.');
 
     $config->values['localbase']['ad_organization_definition'] = '{invalid';
-    $invalid = (new MatrixOrganizationSnapshotService($apps, $logger, $provider))->snapshot();
+    $invalid = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
     $assertSame('INVALID', $invalid['status'], 'Beschädigte kanonische Organisationsdaten werden nicht fail-closed ausgewiesen.');
     $assertSame([], $invalid['roles'], 'Beschädigte Organisationsdaten liefern Rollenbedeutungen.');
 

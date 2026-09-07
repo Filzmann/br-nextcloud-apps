@@ -95,21 +95,28 @@ install_app_snapshots() {
     while IFS= read -r source; do
         app="$(basename "$source")"
         destination="$project/html/custom_apps/$app"
-        mkdir -p "$destination"
-        tar -C "$source" -cf - . | tar -C "$destination" -xf -
-        php -r '
-            $path=$argv[1]; $major=(int)$argv[2];
-            $xml=simplexml_load_file($path);
-            if ($xml === false) throw new RuntimeException("Invalid app XML");
-            $dependency=$xml->dependencies->nextcloud;
-            $min=(int)$dependency["min-version"];
-            $max=(int)$dependency["max-version"];
-            if ($major < $min) $dependency["min-version"]=(string)$major;
-            if ($major > $max) $dependency["max-version"]=(string)$major;
-            $xml->asXML($path);
-        ' "$destination/appinfo/info.xml" "$effective_major"
+        install_app_snapshot "$source" "$destination" "$effective_major"
     done < <(find "$project/html/.compatibility-app-tests" -mindepth 1 -maxdepth 1 -type d -print | sort)
     rm -rf "$project/html/.compatibility-app-tests"
+}
+
+install_app_snapshot() {
+    local source="$1"
+    local destination="$2"
+    local effective_major="$3"
+    mkdir -p "$destination"
+    tar -C "$source" -cf - . | tar -C "$destination" -xf -
+    php -r '
+        $path=$argv[1]; $major=(int)$argv[2];
+        $xml=simplexml_load_file($path);
+        if ($xml === false) throw new RuntimeException("Invalid app XML");
+        $dependency=$xml->dependencies->nextcloud;
+        $min=(int)$dependency["min-version"];
+        $max=(int)$dependency["max-version"];
+        if ($major < $min) $dependency["min-version"]=(string)$major;
+        if ($major > $max) $dependency["max-version"]=(string)$major;
+        $xml->asXML($path);
+    ' "$destination/appinfo/info.xml" "$effective_major"
 }
 
 write_ddev_config() {
@@ -170,6 +177,7 @@ prepare_runtime_permissions() {
     local effective_major="$1"
     local base_url="https://$project_name.$project_tld"
     runtime_smokes pre "$effective_major" > "$result_dir/runtime-smokes-pre-$effective_major.tsv"
+    verify_runtime_smoke_coverage pre "$result_dir/runtime-smokes-pre-$effective_major.tsv"
     local app path expected_statuses status
     while IFS=$'\t' read -r app path expected_statuses probe; do
         status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" \
@@ -181,17 +189,32 @@ prepare_runtime_permissions() {
     done < "$result_dir/runtime-smokes-pre-$effective_major.tsv"
 
     runtime_smokes grant "$effective_major" > "$result_dir/permission-grants-$effective_major.log"
+    verify_runtime_smoke_coverage grant "$result_dir/permission-grants-$effective_major.log"
 }
 
 write_runtime_smoke_runner() {
     cat > "$project/html/compatibility-grants.php" <<'PHP'
 <?php
 define('OC_CONSOLE', true);
-require __DIR__ . '/lib/base.php';
 $phase = $argv[1] ?? '';
 if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'apis'], true)) {
     throw new RuntimeException('Unknown compatibility smoke phase.');
 }
+$registrationClasses = [];
+if ($phase === 'registrations') {
+    foreach (glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [] as $appRoot) {
+        $app = basename($appRoot);
+        if ($app === 'localbase') continue;
+        $info = simplexml_load_file($appRoot . '/appinfo/info.xml', SimpleXMLElement::class, LIBXML_NONET);
+        if ($info === false) throw new RuntimeException('Invalid app metadata for ' . $app);
+        foreach (['background-jobs/job', 'commands/command', 'settings/*'] as $expression) {
+            foreach ($info->xpath($expression) ?: [] as $node) {
+                $registrationClasses[$app][$expression][] = (string)$node;
+            }
+        }
+    }
+}
+require __DIR__ . '/lib/base.php';
 $uid = 'compat-admin';
 $users = \OCP\Server::get(\OCP\IUserManager::class);
 $session = \OCP\Server::get(\OCP\IUserSession::class);
@@ -199,9 +222,10 @@ $user = $users->get($uid);
 if ($user === null) throw new RuntimeException('Compatibility admin is missing.');
 $session->setUser($user);
 
-$appRoots = glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [];
-sort($appRoots);
-foreach ($appRoots as $appRoot) {
+try {
+    $appRoots = glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [];
+    sort($appRoots);
+    foreach ($appRoots as $appRoot) {
     $app = basename($appRoot);
     if ($app === 'localbase') continue;
     $contractPath = $appRoot . '/tests/nextcloud-compatibility-smoke.php';
@@ -216,11 +240,8 @@ foreach ($appRoots as $appRoot) {
     }
     $probe = $contract['permissionProbe'];
     if ($phase === 'registrations') {
-        $info = simplexml_load_file($appRoot . '/appinfo/info.xml');
-        if ($info === false) throw new RuntimeException('Invalid app metadata for ' . $app);
-        foreach (['background-jobs/job', 'commands/command', 'settings/*'] as $expression) {
-            foreach ($info->xpath($expression) ?: [] as $node) {
-                $class = (string)$node;
+        foreach ($registrationClasses[$app] ?? [] as $expression => $classes) {
+            foreach ($classes as $class) {
                 $instance = \OCP\Server::get($class);
                 echo implode("\t", [$app, $expression, $class, get_debug_type($instance)]) . "\n";
             }
@@ -248,7 +269,11 @@ foreach ($appRoots as $appRoot) {
     }
     $statuses = $phase === 'pre' ? $contract['preGrantUiStatuses'] : $contract['postGrantUiStatuses'];
     $probeState = is_callable($probe) ? ($probe($uid) ? 'allowed' : 'denied') : 'not-applicable';
-    echo implode("\t", [$app, $contract['uiPath'], implode(',', $statuses), $probeState]) . "\n";
+        echo implode("\t", [$app, $contract['uiPath'], implode(',', $statuses), $probeState]) . "\n";
+    }
+} catch (\Throwable $error) {
+    fwrite(STDERR, get_class($error) . ': ' . $error->getMessage() . "\n");
+    exit(1);
 }
 PHP
 }
@@ -257,6 +282,63 @@ runtime_smokes() {
     local phase="$1"
     local effective_major="$2"
     (cd "$project" && ddev exec -d /var/www/html/html php compatibility-grants.php "$phase") </dev/null
+}
+
+verify_runtime_smoke_coverage() {
+    local phase="$1"
+    local file="$2"
+    local expected actual expected_rows rows
+    expected="$(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+        | grep -Fvx 'localbase' | sort || true)"
+    actual="$(cut -f1 "$file" | sed '/^$/d' | sort -u)"
+    expected_rows="$(printf '%s\n' "$expected" | sed '/^$/d' | wc -l)"
+    rows="$(sed '/^$/d' "$file" | wc -l)"
+    if [[ "$actual" != "$expected" || "$rows" -ne "$expected_rows" ]]; then
+        fail "Runtime-Smoke $phase ist unvollständig; erwartet: ${expected:-keine}; erhalten: ${actual:-keine}."
+    fi
+}
+
+verify_consumer_runtime() {
+    local effective_major="$1"
+    local suffix="$2"
+    local base_url="https://$project_name.$project_tld"
+    local app path expected_statuses status
+
+    runtime_smokes describe "$effective_major" > "$result_dir/runtime-smokes-$suffix.tsv"
+    verify_runtime_smoke_coverage describe "$result_dir/runtime-smokes-$suffix.tsv"
+    while IFS=$'\t' read -r app path expected_statuses probe; do
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/ui-$app-$suffix.html" --write-out '%{http_code}' "$base_url$path")"
+        [[ ",$expected_statuses," == *",$status,"* ]] \
+            || fail "$app UI lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
+    done < "$result_dir/runtime-smokes-$suffix.tsv"
+
+    runtime_smokes apis "$effective_major" > "$result_dir/api-smokes-$suffix.tsv"
+    while IFS=$'\t' read -r app path expected_statuses; do
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/api-$app-$suffix.json" --write-out '%{http_code}' "$base_url$path")"
+        [[ ",$expected_statuses," == *",$status,"* ]] \
+            || fail "$app API lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
+    done < "$result_dir/api-smokes-$suffix.tsv"
+}
+
+verify_optional_provider_lifecycle() {
+    local effective_major="$1"
+    local provider="${NC_COMPAT_OPTIONAL_PROVIDER_LIFECYCLE:-}"
+    [[ -n "$provider" ]] || return 0
+    [[ "$provider" =~ ^[a-z][a-z0-9_]*$ ]] || fail "Ungültige optionale Provider-App-ID: $provider"
+    [[ -d "$apps_root/$provider" && -d "$project/html/custom_apps/$provider" ]] \
+        || fail "Optionaler Lifecycle-Provider fehlt im Prüflauf: $provider"
+
+    occ app:disable "$provider" > "$result_dir/lifecycle-$provider-disable-$effective_major.log" 2>&1
+    verify_consumer_runtime "$effective_major" "$provider-disabled-$effective_major"
+
+    occ app:remove "$provider" > "$result_dir/lifecycle-$provider-remove-$effective_major.log" 2>&1
+    [[ ! -e "$project/html/custom_apps/$provider" ]] \
+        || fail "Providercode blieb nach app:remove vorhanden: $provider"
+    verify_consumer_runtime "$effective_major" "$provider-removed-$effective_major"
+
+    install_app_snapshot "$apps_root/$provider" "$project/html/custom_apps/$provider" "$effective_major"
+    occ app:enable "$provider" > "$result_dir/lifecycle-$provider-reenable-$effective_major.log" 2>&1
+    verify_consumer_runtime "$effective_major" "$provider-reenabled-$effective_major"
 }
 
 verify_app_tests() {
@@ -313,8 +395,7 @@ verify_runtime() {
 
     local base_url="https://$project_name.$project_tld"
     curl --fail --silent --show-error --insecure "$base_url/status.php" > "$result_dir/http-status-$effective_major.json"
-    runtime_smokes describe "$effective_major" > "$result_dir/runtime-smokes-$effective_major.tsv"
-    local app asset content_type path status expected_statuses probe
+    local app asset content_type
     while IFS= read -r app; do
         asset="$(find "$project/html/custom_apps/$app" -type f \( -path '*/css/*.css' -o -path '*/js/*.js' \) -printf '%P\n' | sort | head -n 1)"
         if [[ -n "$asset" ]]; then
@@ -328,18 +409,7 @@ verify_runtime() {
 
     done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
 
-    while IFS=$'\t' read -r app path expected_statuses probe; do
-        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/ui-$app-$effective_major.html" --write-out '%{http_code}' "$base_url$path")"
-        [[ ",$expected_statuses," == *",$status,"* ]] \
-            || fail "$app UI lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
-    done < "$result_dir/runtime-smokes-$effective_major.tsv"
-
-    runtime_smokes apis "$effective_major" > "$result_dir/api-smokes-$effective_major.tsv"
-    while IFS=$'\t' read -r app path expected_statuses; do
-        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/api-$app-$effective_major.json" --write-out '%{http_code}' "$base_url$path")"
-        [[ ",$expected_statuses," == *",$status,"* ]] \
-            || fail "$app API lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
-    done < "$result_dir/api-smokes-$effective_major.tsv"
+    verify_consumer_runtime "$effective_major" "$effective_major"
 }
 
 copy_server "$initial_server"
@@ -354,6 +424,9 @@ enable_apps "$major"
 write_runtime_smoke_runner
 prepare_runtime_permissions "$major"
 verify_runtime "$major"
+if [[ "$mode" == fresh ]]; then
+    verify_optional_provider_lifecycle "$major"
+fi
 
 if [[ "$mode" == upgrade ]]; then
     (cd "$project" && ddev stop) > "$result_dir/ddev-stop-before-upgrade.log" 2>&1

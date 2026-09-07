@@ -52,6 +52,13 @@ Record command, exit code, and artifact/log location for each applicable row:
 | Upgrade | Previous major to target with synthetic existing data, if applicable |
 | Combination | Standalone and suite/dependency combinations, if applicable |
 
+For an optional runtime provider, set
+`NC_COMPAT_OPTIONAL_PROVIDER_LIFECYCLE=<app-id>` only in the explicitly
+approved Fresh-Install run that owns this additional trust boundary. The
+existing DDEV driver then verifies the consumers after provider disable,
+removal and reinstallation. Do not enable this lifecycle stage in ordinary
+compatibility runs that do not need it.
+
 For each red or unverified row, include the exact failure and whether it is an
 app incompatibility, an upstream defect, an environment limitation, or missing
 evidence. Do not waive a mandatory row inside the report.

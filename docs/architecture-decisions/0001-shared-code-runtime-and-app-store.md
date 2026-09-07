@@ -6,11 +6,13 @@
 - Ergänzung Standalone-Privacy-Verweis: 2026-08-23
 - Ergänzung Entwicklungsphase: 2026-09-05
 - Ergänzung erster Kategorie-B-Pilot: 2026-09-06
+- Ergänzung Provider-Lifecycle des ersten Piloten: 2026-09-07
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
-  `filzmann_permission_matrix` als erstem Consumer; die übrige
-  LocalBase-Migration bleibt offen
+  `filzmann_permission_matrix` als erstem Consumer einschließlich
+  Provider-Deaktivierung, -Entfernung, -Wiederinstallation und Rückbau auf
+  einen Stand ohne V1; die übrige LocalBase-Migration bleibt offen
 
 ## Kontext und Belegstatus
 
@@ -476,11 +478,13 @@ verbindlich ist, dass neue Apps nicht automatisch von LocalBase abhängen.
 Der erste Kategorie-B-Schritt ist technisch umgesetzt: LocalBase projiziert
 seine kanonische Organisationskonfiguration über
 `OCA\\LocalBase\\PublicApi\\V1` Version `1.0`; die Berechtigungsmatrix prüft
-Aktivierung und Version und bleibt bei fehlendem oder fehlerhaftem Provider
-fail-closed funktionsfähig. Der reale Contract sowie Fresh Installs mit und
-ohne LocalBase sind nachgewiesen. Offen bleiben die Paketextraktion,
-Namespace-Isolierung, die übrigen öffentlichen API-Grenzen und die weiteren
-Consumer-, Update-, Deinstallations- und Rückbauschritte.
+Aktivierung und Version vor der Klassenauflösung und bleibt bei fehlendem,
+älterem oder fehlerhaftem Provider fail-closed funktionsfähig. Der reale
+Contract, Fresh Installs mit und ohne LocalBase sowie Deaktivierung, Entfernung
+und Wiederinstallation des aktuellen V1- und eines älteren Providers ohne V1
+sind auf Nextcloud 34 nachgewiesen. Offen bleiben ein In-place-Update des
+Piloten, die Paketextraktion, Namespace-Isolierung, die übrigen öffentlichen
+API-Grenzen sowie die Lifecycle-Nachweise der weiteren Consumer.
 
 Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
 öffentliche Zumutbarkeit dieser Zusatz-App, genaue
