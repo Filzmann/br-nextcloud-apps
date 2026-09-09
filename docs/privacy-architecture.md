@@ -491,8 +491,8 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
-   `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment` und
-   `brstunden` sind
+   `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment`,
+   `brstunden` und `brtop` sind
    umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
@@ -582,6 +582,18 @@ Retention, betriebliche Mail- und Backupregeln sowie nachgelagerte
 PDF-Empfänger bleiben als `PRIVACY-DECISION-REQUIRED` sichtbar. Weil die App
 keinen nativen Admin-Bypass besitzt, wird keine scheinbare Verarbeitung für
 temporären Admin-Vollzugriff erfunden.
+
+`brtop` veröffentlicht als siebter realer Katalog-Consumer fünf getrennte
+Verarbeitungen für Legislatur/Besetzung, Sitzung/Agenda/Protokoll,
+Ladungssnapshot/Abwesenheit, Dokumenterzeugung mit persönlicher
+Nextcloud-Dateiablage und temporären Admin-Vollzugriff. Der Katalog übernimmt
+die bereits dokumentierte `partial`-Grenze: explizite UID-Bezüge sind
+subjectgebunden auskunftsfähig; Datei- und Anhangpfade, Datei-, TOP-,
+Protokoll- und Beschlussinhalte sowie unsichere Freitexttreffer bleiben zum
+Schutz von Gremien- und Drittpersonendaten ausgeschlossen. Empfängerscopes,
+Rechtsgrundlagen, Retention, Backup/Restore, Kalenderinfrastruktur, Shares und
+der konsistente Datei-/Metadaten-Löschweg bleiben sichtbar
+`PRIVACY-DECISION-REQUIRED`.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in

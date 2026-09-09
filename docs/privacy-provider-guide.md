@@ -81,7 +81,7 @@ offenzulegen. Der weitere Consumer-Rollout und das vollständige Coverage-Gate
 bleiben bis zu gesondert freigegebenen Cross-Repository-Läufen offen.
 
 Die ersten realen Consumer sind `adroom`, `adplaner`, `adcalendar`, `adurlaub`,
-`adrecruitment` und `brstunden`. Ihre Provider werden im Parent gegen den echten Vertrag und das Contract-Test-Kit der
+`adrecruitment`, `brstunden` und `brtop`. Ihre Provider werden im Parent gegen den echten Vertrag und das Contract-Test-Kit der
 Standalone-App geprüft; die app-lokalen Tests bleiben über kleine Test-Stubs
 auch ohne benachbarten Checkout ausführbar. Diese Stubs sind keine
 Produktionsabhängigkeit und keine zweite Runtime-Implementierung. Weitere Apps
