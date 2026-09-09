@@ -492,7 +492,7 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
    `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment`,
-   `brstunden` und `brtop` sind
+   `brstunden`, `brtop` und `adbqplanung` sind
    umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
@@ -593,6 +593,18 @@ Protokoll- und Beschlussinhalte sowie unsichere Freitexttreffer bleiben zum
 Schutz von Gremien- und Drittpersonendaten ausgeschlossen. Empfängerscopes,
 Rechtsgrundlagen, Retention, Backup/Restore, Kalenderinfrastruktur, Shares und
 der konsistente Datei-/Metadaten-Löschweg bleiben sichtbar
+`PRIVACY-DECISION-REQUIRED`.
+
+`adbqplanung` veröffentlicht als achter realer Katalog-Consumer vier getrennte
+Verarbeitungen für Durchlauf/Curriculum/Terminplanung, Dozentinnenprofile und
+Lehrzuordnungen, extern dokumentierte Dozentinnenanfragen sowie temporären
+Admin-Vollzugriff. Bewerbungsakten und Teilnehmerinnenzuordnungen bleiben bei
+AD Recruitment und werden nicht kopiert; die App speichert für externe
+Anfragen nur Status und Referenzen, aber weder Nachrichten noch
+Kommunikationsinhalte. Interne PFKs sind per geprüfter Nextcloud-UID
+subjectgebunden auskunftsfähig. Externe Profile und Anfragen bleiben bis zu
+einem authentifizierten externen Subject-Vertrag sowie Retention-,
+Rechtsgrundlagen-, Backup- und Kommunikationsentscheidungen ausdrücklich
 `PRIVACY-DECISION-REQUIRED`.
 
 Als zweiter ausdrücklich freigegebener Consumer ist

@@ -15,6 +15,7 @@ spl_autoload_register(static function (string $class) use ($workspace): void {
         'OCA\\Recruitment\\' => 'adrecruitment',
         'OCA\\BrStunden\\' => 'brstunden',
         'OCA\\BrTop\\' => 'brtop',
+        'OCA\\AdBqPlanning\\' => 'adbqplanung',
     ];
     foreach ($apps as $prefix => $directory) {
         if (!str_starts_with($class, $prefix)) {
@@ -39,6 +40,8 @@ use OCA\BrStunden\Privacy\BrStundenProcessingMetadataProvider;
 use OCA\BrStunden\Privacy\BrStundenProcessingMetadataProviderListener;
 use OCA\BrTop\Privacy\BrTopProcessingMetadataProvider;
 use OCA\BrTop\Privacy\BrTopProcessingMetadataProviderListener;
+use OCA\AdBqPlanning\Privacy\BqProcessingMetadataProvider;
+use OCA\AdBqPlanning\Privacy\BqProcessingMetadataProviderListener;
 use OCA\Recruitment\Privacy\RecruitmentProcessingMetadataProvider;
 use OCA\Recruitment\Privacy\RecruitmentProcessingMetadataProviderListener;
 use OCA\AdRoom\Privacy\RoomProcessingMetadataProvider;
@@ -65,6 +68,8 @@ $hoursProvider = new BrStundenProcessingMetadataProvider();
 $hoursCatalog = ProcessingMetadataProviderContractTestKit::verify($hoursProvider);
 $brTopProvider = new BrTopProcessingMetadataProvider();
 $brTopCatalog = ProcessingMetadataProviderContractTestKit::verify($brTopProvider);
+$bqProvider = new BqProcessingMetadataProvider();
+$bqCatalog = ProcessingMetadataProviderContractTestKit::verify($bqProvider);
 
 if ($provider->descriptor()->appId() !== 'adroom' || $provider->descriptor()->contractVersion() !== '1.0') {
     throw new RuntimeException('AD Raumplaner veröffentlicht keine stabile Processing-Metadata-Identität.');
@@ -129,6 +134,15 @@ if ($brTopCatalog->processingIds() !== ['council_legislature_and_roster_manageme
 if (array_key_exists('personal_runtime_data', $brTopCatalog->toArray())) {
     throw new RuntimeException('Der BR-TOP-Katalog enthält personenbezogene Laufzeitdaten.');
 }
+if ($bqProvider->descriptor()->appId() !== 'adbqplanung' || $bqProvider->descriptor()->contractVersion() !== '1.0') {
+    throw new RuntimeException('AD BQ-Planer veröffentlicht keine stabile Processing-Metadata-Identität.');
+}
+if ($bqCatalog->processingIds() !== ['bq_run_curriculum_and_schedule_management', 'lecturer_profile_and_assignment_management', 'external_lecturer_request_tracking', 'temporary_admin_full_access']) {
+    throw new RuntimeException('Der AD-BQ-Planer-Katalog deckt seine personenbezogenen Verarbeitungen nicht vollständig ab.');
+}
+if (array_key_exists('personal_runtime_data', $bqCatalog->toArray())) {
+    throw new RuntimeException('Der AD-BQ-Planer-Katalog enthält personenbezogene Laufzeitdaten.');
+}
 
 $registration = new RegisterProcessingMetadataProvidersEvent();
 $listener = new RoomProcessingMetadataProviderListener($provider);
@@ -150,7 +164,9 @@ $hoursListener = new BrStundenProcessingMetadataProviderListener($hoursProvider)
 $hoursListener->handle($registration);
 $brTopListener = new BrTopProcessingMetadataProviderListener($brTopProvider);
 $brTopListener->handle($registration);
-if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar', 'adurlaub', 'adrecruitment', 'brstunden', 'brtop'] || $registration->registrationFailures() !== []) {
+$bqListener = new BqProcessingMetadataProviderListener($bqProvider);
+$bqListener->handle($registration);
+if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar', 'adurlaub', 'adrecruitment', 'brstunden', 'brtop', 'adbqplanung'] || $registration->registrationFailures() !== []) {
     throw new RuntimeException('Die Processing-Metadata-Provider werden nicht kompatibel und lazy registriert.');
 }
 
@@ -162,11 +178,11 @@ $incompatible = new class($catalog) implements ProcessingMetadataProvider {
     public function catalog(): ProcessingMetadataCatalog { return $this->catalog; }
 };
 $registration->register($incompatible);
-if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar', 'adurlaub', 'adrecruitment', 'brstunden', 'brtop']) {
+if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar', 'adurlaub', 'adrecruitment', 'brstunden', 'brtop', 'adbqplanung']) {
     throw new RuntimeException('Ein inkompatibler Provider hat die gesunde Pilotabdeckung verändert.');
 }
 if ($registration->registrationFailures() !== ['incompatible_app' => 'Processing metadata provider incompatible.']) {
     throw new RuntimeException('Ein inkompatibler Provider bleibt nicht kontrolliert diagnostizierbar.');
 }
 
-echo "Processing-Metadata-Provider-V1-Vertrag geprüft: adroom, adplaner, adcalendar, adurlaub, adrecruitment, brstunden, brtop\n";
+echo "Processing-Metadata-Provider-V1-Vertrag geprüft: adroom, adplaner, adcalendar, adurlaub, adrecruitment, brstunden, brtop, adbqplanung\n";
