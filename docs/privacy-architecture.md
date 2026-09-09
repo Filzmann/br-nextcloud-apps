@@ -491,7 +491,7 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
-   `adroom` und `adplaner` sind umgesetzt und lokal verifiziert;
+   `adroom`, `adplaner` und `adcalendar` sind umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
    eines konkreten Coverage-Profils bleibt offen;
@@ -546,6 +546,13 @@ PersonalDataProvider- und Dateninventur abgeleitet, enthält keine
 personenbezogenen Laufzeitdaten und weist ungeklärte Rechtsgrundlagen,
 Retention-, Backup- und Betroffenenrechtsregeln ausdrücklich als
 `PRIVACY-DECISION-REQUIRED` aus.
+
+`adcalendar` veröffentlicht als dritter realer Katalog-Consumer die getrennten
+Verarbeitungen für führende Kalendereinträge, persönliche Kalenderstandards,
+verschlüsselte externe Verbindungen, abgeleitete interne und externe
+Zielkalender sowie temporäre Adminfreigaben. Secrets werden weder entschlüsselt
+noch als Laufzeitdaten in den Katalog übernommen; offene Anbieter-,
+Drittland-, Retention-, Backup- und Restoreentscheidungen bleiben sichtbar.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in

@@ -10,6 +10,7 @@ spl_autoload_register(static function (string $class) use ($workspace): void {
     $apps = [
         'OCA\\AdRoom\\' => 'adroom',
         'OCA\\AdPlaner\\' => 'adplaner',
+        'OCA\\AdCalendar\\' => 'adcalendar',
     ];
     foreach ($apps as $prefix => $directory) {
         if (!str_starts_with($class, $prefix)) {
@@ -26,6 +27,8 @@ spl_autoload_register(static function (string $class) use ($workspace): void {
 
 use OCA\AdPlaner\Privacy\PlanerProcessingMetadataProvider;
 use OCA\AdPlaner\Privacy\PlanerProcessingMetadataProviderListener;
+use OCA\AdCalendar\Privacy\CalendarProcessingMetadataProvider;
+use OCA\AdCalendar\Privacy\CalendarProcessingMetadataProviderListener;
 use OCA\AdRoom\Privacy\RoomProcessingMetadataProvider;
 use OCA\AdRoom\Privacy\RoomProcessingMetadataProviderListener;
 use OCA\FilzmannDataProtection\Privacy\DataProtectionProcessingMetadataProvider;
@@ -40,6 +43,8 @@ $provider = new RoomProcessingMetadataProvider();
 $catalog = ProcessingMetadataProviderContractTestKit::verify($provider);
 $planerProvider = new PlanerProcessingMetadataProvider();
 $planerCatalog = ProcessingMetadataProviderContractTestKit::verify($planerProvider);
+$calendarProvider = new CalendarProcessingMetadataProvider();
+$calendarCatalog = ProcessingMetadataProviderContractTestKit::verify($calendarProvider);
 
 if ($provider->descriptor()->appId() !== 'adroom' || $provider->descriptor()->contractVersion() !== '1.0') {
     throw new RuntimeException('AD Raumplaner veröffentlicht keine stabile Processing-Metadata-Identität.');
@@ -59,6 +64,15 @@ if ($planerCatalog->processingIds() !== ['shift_planning_management', 'temporary
 if (array_key_exists('personal_runtime_data', $planerCatalog->toArray())) {
     throw new RuntimeException('Der AD-Planer-Katalog enthält personenbezogene Laufzeitdaten.');
 }
+if ($calendarProvider->descriptor()->appId() !== 'adcalendar' || $calendarProvider->descriptor()->contractVersion() !== '1.0') {
+    throw new RuntimeException('AD Kalender veröffentlicht keine stabile Processing-Metadata-Identität.');
+}
+if ($calendarCatalog->processingIds() !== ['calendar_entry_management', 'personal_calendar_preferences', 'external_calendar_connections', 'derived_calendar_publication', 'temporary_admin_full_access']) {
+    throw new RuntimeException('Der AD-Kalender-Katalog deckt seine personenbezogenen Verarbeitungen nicht vollständig ab.');
+}
+if (array_key_exists('personal_runtime_data', $calendarCatalog->toArray())) {
+    throw new RuntimeException('Der AD-Kalender-Katalog enthält personenbezogene Laufzeitdaten.');
+}
 
 $registration = new RegisterProcessingMetadataProvidersEvent();
 $listener = new RoomProcessingMetadataProviderListener($provider);
@@ -70,8 +84,10 @@ $registration->register(new DataProtectionProcessingMetadataProvider());
 $listener->handle($registration);
 $planerListener = new PlanerProcessingMetadataProviderListener($planerProvider);
 $planerListener->handle($registration);
-if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner'] || $registration->registrationFailures() !== []) {
-    throw new RuntimeException('Der AD-Raumplaner-Provider wird nicht kompatibel und lazy registriert.');
+$calendarListener = new CalendarProcessingMetadataProviderListener($calendarProvider);
+$calendarListener->handle($registration);
+if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar'] || $registration->registrationFailures() !== []) {
+    throw new RuntimeException('Die Processing-Metadata-Provider werden nicht kompatibel und lazy registriert.');
 }
 
 $incompatible = new class($catalog) implements ProcessingMetadataProvider {
@@ -82,11 +98,11 @@ $incompatible = new class($catalog) implements ProcessingMetadataProvider {
     public function catalog(): ProcessingMetadataCatalog { return $this->catalog; }
 };
 $registration->register($incompatible);
-if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner']) {
+if (array_keys($registration->providers()) !== ['filzmann_data_protection', 'adroom', 'adplaner', 'adcalendar']) {
     throw new RuntimeException('Ein inkompatibler Provider hat die gesunde Pilotabdeckung verändert.');
 }
 if ($registration->registrationFailures() !== ['incompatible_app' => 'Processing metadata provider incompatible.']) {
     throw new RuntimeException('Ein inkompatibler Provider bleibt nicht kontrolliert diagnostizierbar.');
 }
 
-echo "Processing-Metadata-Provider-V1-Vertrag geprüft: adroom, adplaner\n";
+echo "Processing-Metadata-Provider-V1-Vertrag geprüft: adroom, adplaner, adcalendar\n";

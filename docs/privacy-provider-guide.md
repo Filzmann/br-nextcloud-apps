@@ -80,7 +80,7 @@ Provider werden isoliert, ohne interne Fehlerdetails oder fremde Daten
 offenzulegen. Der weitere Consumer-Rollout und das vollständige Coverage-Gate
 bleiben bis zu gesondert freigegebenen Cross-Repository-Läufen offen.
 
-Die ersten realen Consumer sind `adroom` und `adplaner`. Ihre Provider werden
+Die ersten realen Consumer sind `adroom`, `adplaner` und `adcalendar`. Ihre Provider werden
 im Parent gegen den echten Vertrag und das Contract-Test-Kit der
 Standalone-App geprüft; die app-lokalen Tests bleiben über kleine Test-Stubs
 auch ohne benachbarten Checkout ausführbar. Diese Stubs sind keine
