@@ -491,8 +491,8 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
-   `adroom`, `adplaner`, `adcalendar` und `adurlaub` sind umgesetzt und lokal
-   verifiziert;
+   `adroom`, `adplaner`, `adcalendar`, `adurlaub` und `adrecruitment` sind
+   umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
    eines konkreten Coverage-Profils bleibt offen;
@@ -561,6 +561,14 @@ Freiwillige Urlaubsnotizen bleiben als mögliche Drittpersonenklasse sichtbar,
 verlassen AD Urlaub aber nicht über Consumer-Verträge. Die vorhandene
 administrative Retention-Vorschau bleibt ausdrücklich `REVIEW`-only und wird
 nicht als freigegebene Lösch- oder Aufbewahrungsregel dargestellt.
+
+`adrecruitment` veröffentlicht als fünfter realer Katalog-Consumer sieben
+getrennte Verarbeitungen für Bewerbungsakte, Interviews/BQ,
+Posteingang/Dokumente, Einstellungsfreigabe, Statusmail, Bewerberpool und
+temporäre Adminfreigaben. Der Katalog weist insbesondere die fehlende sicher
+authentifizierte Bewerber-Selbstauskunft, `retention_state` ohne ausführende
+Policy sowie ungeklärte Mailanbieter-, Drittland-, Backup- und
+Restoreentscheidungen ausdrücklich aus.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
