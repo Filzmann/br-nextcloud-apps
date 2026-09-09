@@ -492,7 +492,7 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
    `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment`,
-   `brstunden`, `brtop` und `adbqplanung` sind
+   `brstunden`, `brtop`, `adbqplanung` und `filzmann_permission_matrix` sind
    umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
@@ -606,6 +606,18 @@ subjectgebunden auskunftsfähig. Externe Profile und Anfragen bleiben bis zu
 einem authentifizierten externen Subject-Vertrag sowie Retention-,
 Rechtsgrundlagen-, Backup- und Kommunikationsentscheidungen ausdrücklich
 `PRIVACY-DECISION-REQUIRED`.
+
+`filzmann_permission_matrix` veröffentlicht als neunter realer
+Katalog-Consumer vier getrennte Verarbeitungen für Berechtigungssnapshots und
+Matrixdarstellung, Matrixexporte und deren technische Nachweise,
+Auditprotokolle sowie temporären Admin-Vollzugriff. Die bestehenden
+PersonalData- und Retention-Projektionen bleiben laufzeitgebunden: Inhalte,
+freie Dateinamen, freie Auditdetails und Drittpersonenangaben gelangen nicht
+in den statischen Katalog. Die mengenbasierte Snapshotbegrenzung ist als
+bestehende Löschregel dokumentiert; die konfigurierbaren Fristen für
+Exportmetadaten und Auditprotokolle bleiben reine `REVIEW`-Policies. Offene
+Rechtsgrundlagen, Empfänger-, Backup-, Einschränkungs- und ausführende
+Retention-Entscheidungen bleiben `PRIVACY-DECISION-REQUIRED`.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
