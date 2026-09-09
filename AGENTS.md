@@ -122,6 +122,22 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   Dateien einer Fachapp direkt. Neue oder wesentlich erweiterte Datenklassen
   erhalten spätestens vor fachlicher Fertigstellung eine konkrete
   Provider-, Retention-, Drittpersonen- und Testaufgabe.
+- Für jede neue oder geänderte personenbezogene Verarbeitung wird die
+  betroffene app-lokale `processing_id` bestimmt und der Processing-Katalog
+  gegen `docs/contracts/privacy-processing-metadata.schema.json` im selben
+  App-Auftrag mitgeführt. Root besitzt nur Schema und Governance; fachliche
+  Werte und Laufzeitdaten bleiben bei der App. Fehlende Zwecke,
+  Erforderlichkeit, Empfänger, Zugriff, Rechtsgrundlagen, Retention- oder
+  Backupentscheidungen werden als `PRIVACY-DECISION-REQUIRED` ausgewiesen und
+  nicht durch technische Defaults ersetzt. Unbekannte Anforderungen erlauben
+  weder vorsorgliche Datensammlung noch unbegrenzte Aufbewahrung.
+- Privacy-Prüfung bleibt inkrementell: Datenmodell, API, Import, Export,
+  Report, Log, Backup, Berechtigung, Synchronisation, Index, Integration und
+  personenbezogener Workflow lösen nur die Prüfung der berührten Verarbeitung,
+  Provider, Weitergaben und vorhandenen Tests aus. APIs liefern nur den
+  erforderlichen Consumer-Ausschnitt; Privacy Provider erhalten keinen
+  pauschalen Zugriff. Art. 15 konsumiert app-eigene Policy und Laufzeitdaten,
+  ist aber niemals deren Source of Truth oder ein zentraler Schattenspeicher.
 - Jede von Simon verantwortete Nextcloud-App hält ihre anwendbaren
   `PersonalDataProvider` und `PermissionProvider` während der gesamten
   Weiterentwicklung vollständig. Neue oder geänderte personenbezogene

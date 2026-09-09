@@ -20,6 +20,23 @@ wenn sie einen klar benannten, app-spezifischen Vertrag enthalten und in
 | `<app>/appinfo/info.xml` | App-Metadaten und deklarierter Nextcloud-Supportbereich |
 | `<app>/.gitignore` | ausschließlich lokale und generierte Artefakte |
 
+## Bedingter Processing-Katalog
+
+Eine App mit eigener personenbezogener Verarbeitung hält ihre kanonischen
+fachlichen Processing-Metadaten in
+`<app>/resources/privacy-processing.json`. Die Datei folgt dem Root-Schema
+`docs/contracts/privacy-processing-metadata.schema.json`, bleibt Teil des
+jeweiligen App-Repositories und enthält keine personenbezogenen Laufzeitdaten.
+App-lokale Provider, Retention-Policies und Contract-Tests leiten ihre
+benötigten Projektionen daraus ab, statt Zweck, Empfänger oder Retention
+unabhängig ein zweites Mal zu pflegen.
+
+Apps ohne eigene personenbezogene Verarbeitung erzeugen keinen leeren
+Katalog. Sie begründen die Nichtanwendbarkeit in `docs/architecture.md` und
+bewerten sie bei einer Scopeänderung neu. Ein Katalog ist im App-`README.md`
+als technischer Vertrag einzuordnen, aber keine zusätzliche Planungs- oder
+Steuerungsdatei.
+
 `README.md` und `CHANGELOG.md` dürfen den aktuellen beziehungsweise
 historischen Stand beschreiben, aber keine konkurrierende Aufgabenliste
 führen. `ROADMAP.md` enthält keine als erledigt, umgesetzt oder abgeschlossen

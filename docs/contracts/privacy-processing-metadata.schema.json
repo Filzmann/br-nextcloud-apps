@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://filzmann.de/nextcloud/filzmann_data_protection/contracts/privacy-processing-metadata.schema.json",
+  "title": "Data Protection Center Processing Metadata",
+  "description": "Project-wide contract governed by the Data Protection Center for app-owned processing policy metadata. It never contains personal runtime data.",
+  "x-contract-owner": {
+    "app_id": "filzmann_data_protection",
+    "product_name": "Data Protection Center",
+    "german_product_name": "Datenschutz-Center",
+    "php_namespace": "OCA\\FilzmannDataProtection"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "app_id",
+    "processings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "app_id": {
+      "$ref": "#/$defs/technical_id"
+    },
+    "processings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/processing"
+      }
+    },
+    "personal_runtime_data": {
+      "description": "Forbidden: personal runtime data remains in the responsible app and is queried through providers.",
+      "not": {}
+    }
+  },
+  "$defs": {
+    "technical_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+    },
+    "non_empty_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "text_list": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/non_empty_text"
+      },
+      "uniqueItems": true
+    },
+    "decision_required": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "affected_data",
+        "planned_processing",
+        "missing_decision",
+        "reason",
+        "technical_impact",
+        "privacy_preserving_alternative",
+        "responsible_party",
+        "blocking"
+      ],
+      "properties": {
+        "status": {
+          "const": "PRIVACY-DECISION-REQUIRED"
+        },
+        "affected_data": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "planned_processing": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "missing_decision": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "reason": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "technical_impact": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "privacy_preserving_alternative": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "responsible_party": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Use 'ungeklärt' when responsibility has not been established; do not guess it."
+        },
+        "blocking": {
+          "type": "boolean"
+        }
+      }
+    },
+    "declared_text": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        {
+          "$ref": "#/$defs/decision_required"
+        }
+      ]
+    },
+    "declared_list": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/text_list"
+        },
+        {
+          "$ref": "#/$defs/decision_required"
+        }
+      ]
+    },
+    "controller": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "business_owner"
+      ],
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "business_owner": {
+          "$ref": "#/$defs/declared_text"
+        }
+      }
+    },
+    "recipient": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "allowed_disclosures"
+      ],
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "allowed_disclosures": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "conditions": {
+          "$ref": "#/$defs/text_list"
+        }
+      }
+    },
+    "retention_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "trigger",
+        "duration_or_deadline",
+        "action"
+      ],
+      "properties": {
+        "policy_id": {
+          "$ref": "#/$defs/technical_id"
+        },
+        "trigger": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "duration_or_deadline": {
+          "$ref": "#/$defs/non_empty_text",
+          "description": "ISO 8601 duration or an explicitly documented deadline rule; never inferred."
+        },
+        "action": {
+          "enum": [
+            "delete",
+            "anonymize",
+            "restrict",
+            "review"
+          ]
+        },
+        "conditions_or_holds": {
+          "$ref": "#/$defs/text_list"
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "audit_requirements",
+        "personal_data_policy"
+      ],
+      "properties": {
+        "audit_requirements": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "personal_data_policy": {
+          "$ref": "#/$defs/declared_text"
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relevance",
+        "restore_handling"
+      ],
+      "properties": {
+        "relevance": {
+          "oneOf": [
+            {
+              "enum": [
+                "included",
+                "excluded",
+                "not_applicable"
+              ]
+            },
+            {
+              "$ref": "#/$defs/decision_required"
+            }
+          ]
+        },
+        "restore_handling": {
+          "$ref": "#/$defs/declared_text"
+        }
+      }
+    },
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "article_15",
+        "rectification",
+        "restriction",
+        "erasure_or_anonymization"
+      ],
+      "properties": {
+        "article_15": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "rectification": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "restriction": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "erasure_or_anonymization": {
+          "$ref": "#/$defs/declared_text"
+        }
+      }
+    },
+    "exports_and_reports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "article_15_relevance",
+        "other_outputs",
+        "minimization"
+      ],
+      "properties": {
+        "article_15_relevance": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "other_outputs": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "minimization": {
+          "$ref": "#/$defs/declared_text"
+        }
+      }
+    },
+    "processing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processing_id",
+        "name",
+        "controller",
+        "data_categories",
+        "data_subjects",
+        "purposes",
+        "access_roles",
+        "recipients",
+        "data_sources",
+        "legal_basis",
+        "retention",
+        "logging",
+        "backup",
+        "exports_and_reports",
+        "data_subject_rights",
+        "international_transfers",
+        "automated_decisions",
+        "special_safeguards",
+        "systems"
+      ],
+      "properties": {
+        "processing_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        },
+        "name": {
+          "$ref": "#/$defs/non_empty_text"
+        },
+        "controller": {
+          "$ref": "#/$defs/controller"
+        },
+        "data_categories": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "data_subjects": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "purposes": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "access_roles": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "recipients": {
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/recipient"
+              },
+              "uniqueItems": true
+            },
+            {
+              "$ref": "#/$defs/decision_required"
+            }
+          ]
+        },
+        "data_sources": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "legal_basis": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "retention": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/retention_rule"
+            },
+            {
+              "$ref": "#/$defs/decision_required"
+            }
+          ]
+        },
+        "logging": {
+          "$ref": "#/$defs/logging"
+        },
+        "backup": {
+          "$ref": "#/$defs/backup"
+        },
+        "exports_and_reports": {
+          "$ref": "#/$defs/exports_and_reports"
+        },
+        "data_subject_rights": {
+          "$ref": "#/$defs/rights"
+        },
+        "international_transfers": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "automated_decisions": {
+          "$ref": "#/$defs/declared_text"
+        },
+        "special_safeguards": {
+          "$ref": "#/$defs/declared_list"
+        },
+        "systems": {
+          "$ref": "#/$defs/declared_list"
+        }
+      }
+    }
+  }
+}

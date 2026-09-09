@@ -1,6 +1,6 @@
 # App-übergreifende Datenschutzarchitektur
 
-Stand: 24. August 2026
+Stand: 9. September 2026
 
 Dieses Dokument ist die normative Root-Quelle für app-übergreifende
 Datenschutzauskunft, Datenlebenszyklen, Aufbewahrung, Löschung und
@@ -91,6 +91,110 @@ kein Daten-Fallback über SQL, Reflection, Volltextsuche, fremde Speicherpfade
 oder `IUserMigrator`-Archive. Der öffentliche Integrationsvertrag und die
 Empfehlungen für andere App-Entwickler stehen in
 [`docs/privacy-provider-guide.md`](privacy-provider-guide.md).
+
+## Processing-Metadata-Vertrag
+
+Für alle eigenen Apps gilt **Central governance, decentralized ownership**:
+Root definiert mit
+[`docs/contracts/privacy-processing-metadata.schema.json`](contracts/privacy-processing-metadata.schema.json)
+das gemeinsame, versionierte JSON-Schema; jede datenbesitzende App hält genau
+einen daraus abgeleiteten fachlichen Katalog unter dem kanonischen Pfad
+`resources/privacy-processing.json` für ihre eigenen Verarbeitungen. Apps ohne
+eigene personenbezogene Verarbeitung dokumentieren die begründete
+Nichtanwendbarkeit in ihrer Architektur und erzeugen keinen leeren
+Scheinkatalog.
+Root, LocalBase und das Datenschutz-Center führen keine Registry mit Kopien
+dieser App-Kataloge. Git versioniert Änderungen an Zweck, Datenkategorien,
+Empfängern, Retention und Schutzanforderungen im zuständigen App-Repository.
+Der maschinenlesbare Contract-Owner verwendet dieselbe kanonische Identität
+wie die bestehende Datenschutz-App: App-ID `filzmann_data_protection`,
+Produktname `Data Protection Center` beziehungsweise `Datenschutz-Center` und
+PHP-Namespace `OCA\FilzmannDataProtection`. Eine zusätzliche generische
+„Privacy“-App oder zweite App-ID wird nicht eingeführt.
+
+Das Schema trennt strikt:
+
+- Processing-Metadaten beschreiben mit stabiler `processing_id` Zweck,
+  Datenkategorien, Personengruppen, fachliche Verantwortung, Zugriff,
+  Empfänger und erlaubte Weitergaben, Herkunft, Rechtsgrundlage, Retention,
+  Logging, Backup, Betroffenenrechte, Schutzanforderungen und Systeme;
+- personenbezogene Laufzeitdaten bleiben außerhalb des Katalogs und werden
+  nur für eine konkrete, autorisierte Anfrage durch den zuständigen Provider
+  projiziert;
+- unbekannte fachliche Werte werden mit `PRIVACY-DECISION-REQUIRED` samt
+  Auswirkung, datenschutzärmerer Alternative, möglicher Zuständigkeit und
+  Blockierungsstatus sichtbar. Unbekannte Retention ist keine unbegrenzte
+  Aufbewahrung.
+
+Ein App-Katalog ist die kanonische Policyquelle für Art.-15-Metadaten,
+Retention-Preview, Architekturreview und zugehörige Contract-Tests. Provider
+dürfen daraus jeweils nur den für ihren Zweck erforderlichen Ausschnitt
+projizieren. Laufzeitdaten, interne Tabellen-, Datei- oder AppConfig-Strukturen
+und vollständige Datensätze gehören niemals in diesen Katalog.
+
+Der heutige öffentliche V1-`PersonalDataProvider` liefert Processing-Angaben
+noch datensatzbezogen in `PersonalDataEntry`; `RetentionProvider` führt einen
+separaten Policykatalog. Diese implementierten Verträge bleiben gültig. Eine
+gemeinsame Katalogprojektion ist als kleiner zusätzlicher
+`ProcessingMetadataProvider` im kanonischen öffentlichen Vertrag von
+`filzmann_data_protection` versioniert, statt die bestehenden Provider still
+zu verbreitern. Der additive Pilot besitzt eine eigene typisierte Registry,
+damit personenbezogene Laufzeitdaten und Processing-Metadaten nicht in
+demselben Aufruf vermischt werden. Sein Minimalvertrag lautet:
+
+```php
+interface ProcessingMetadataProvider {
+    public function descriptor(): ProcessingMetadataProviderDescriptor;
+    public function catalog(): ProcessingMetadataCatalog;
+}
+```
+
+Der Katalogaufruf liefert ausschließlich schema-konforme Metadaten. Die
+Registrierung verwendet denselben lazy Nextcloud-Event- und
+Versionshandshake-Mechanismus wie die vorhandenen Provider. Der erste Pilot
+isoliert inkompatible und ungültige Provider bereits appweise; die Zuordnung
+zu `missing`, `failed` oder `partial` entsteht erst mit dem gesondert
+freizugebenden Consumer- und Coverage-Rollout. Es gibt weder
+Quellcodeheuristiken noch direkte Fremddatenzugriffe. Diese Einordnung ist
+Kategorie B für Registry und Aggregation, bewusst app-lokal für Werte und
+Root-Governance für das Schema; sie ist keine gebündelte
+Kategorie-A-Laufzeitbibliothek.
+
+Der Parent entdeckt Kataloge ausschließlich über das kanonische
+Repositoryinventar und den festen app-lokalen Pfad; er führt keine zweite
+manuelle App- oder Processing-Liste. Während des appweisen Rollouts ist ein
+fehlender Katalog ein offen dokumentierter Migrationsstand. Sobald ein Katalog
+vorhanden ist, muss ihn der app-lokale Test gegen das Root-Schema validieren;
+die spätere zentrale Providerabdeckung entscheidet getrennt, ob sein Fehlen
+zur Laufzeit als `missing` ausgewiesen wird.
+
+## Privacy-by-Design beim Ändern einer App
+
+Der Harness prüft inkrementell den berührten fachlichen Scope, nicht bei jeder
+Änderung den gesamten Workspace. Bei Datenmodell, Formular, API, Import,
+Export, Report, Log, Backup, Berechtigung, Synchronisation, Index, Integration
+oder personenbezogenem Workflow wird vor der Umsetzung bestimmt:
+
+1. welche bestehende `processing_id` betroffen ist oder ob eine neue
+   Verarbeitung entsteht;
+2. ob der app-lokale Katalog, `PersonalDataProvider`, `RetentionProvider`,
+   PermissionProvider oder ein API-Contract im selben App-Auftrag angepasst
+   werden muss;
+3. ob Zweck, Erforderlichkeit, minimale Attribute, Zugriff, Weitergabe,
+   Rechtsgrundlage, Retention-Trigger/-Maßnahme, Logging, Backup und
+   Betroffenenrechte bereits fachlich entschieden sind;
+4. welche bestehende Security-, Provider-, Contract- oder Integrationprüfung
+   die technische Invariante bereits belegt.
+
+Vorhandene Entscheidungen werden umgesetzt; offene technische Details darf
+Codex lösen. Eine fehlende fachliche oder rechtliche Entscheidung wird nicht
+geraten. Kann der übrige Scope mit Nicht-Speichern, temporärer Verarbeitung,
+weniger Attributen, Aggregation, Pseudonymisierung, Anonymisierung,
+Zugriffsbeschränkung oder verhinderter Weitergabe sicher fortgesetzt werden,
+wird die Lücke nicht blockierend dokumentiert. Andernfalls bleibt nur der
+betroffene Teil blockiert und erhält eine gezielte Rückfrage. APIs geben nur
+die für den Consumer erforderlichen Attribute aus; Privacy Provider sind
+keine privilegierten Hintertüren.
 
 Die Berechtigungsmatrix ist nach
 [`ADR 0003`](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
@@ -580,6 +684,34 @@ an einer fremden App.
 
 `nötig` bedeutet geplant, nicht implementiert. Fristen und Maßnahmen sind
 bewusst nicht vorweggenommen.
+
+Keines der App-Repositories besitzt am 9. September 2026 bereits einen
+app-lokalen, gegen das neue Root-Schema validierten Processing-Katalog. Die
+vorhandenen Provider enthalten schmalere, teils datensatzbezogene Metadaten;
+sie sind Implementierungsbeleg, aber noch keine einmalig nutzbare
+Processing-Policyquelle. Bis zur jeweils ausdrücklich beauftragten
+app-lokalen Migration gelten folgende echte Entscheidungslücken:
+
+| App / Verarbeitung | `PRIVACY-DECISION-REQUIRED` | Technische Relevanz | Blockierend | Fachliche Zuständigkeit |
+| --- | --- | --- | --- | --- |
+| `brtop` / Sitzungen, Ladungen und Dokumente | Zweck-/Empfängerabgrenzung und Retention für Gremieninhalte, Pfade, Anhänge und Nachweise | bestimmt Katalog, vollständige Art.-15-Projektion, Datei-/RetentionProvider und Anonymisierung | ja für Aufnahme dieser Inhalte, nein für bestehende Teilprojektion | ungeklärt |
+| `adplaner` / Schichtplanung | Retention, Empfänger und Erforderlichkeit freier Tagesnotizen | bestimmt Katalog, Datenminimierung, Providerprojektion und Lösch-/Anonymisierungsweg | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
+| `brstunden` / Stunden- und Fortbildungsnachweise | Retention und zulässiger Aggregaterhalt nach Entfernen des Personenbezugs | bestimmt Katalog und Retention-/Anonymisierungsvertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
+| `localbase` / persönliche UI-Werte und Demo-Registry | Zweck, Retention und Löschzuständigkeit für UI-Werte und Demokontenregister | bestimmt eigenen Katalog und fehlende Providerabdeckung | ja für Vollständigkeitsbehauptung, nein für heutige Fachapps | ungeklärt |
+| `filzmann_permission_matrix` / Snapshot-, Export- und Auditnachweise | fachliche Maßnahme nach Ablauf der vorhandenen REVIEW-Fristen | bestimmt späteren ausführenden Retention-Contract; die bestehenden 180-Tage-Previews bleiben REVIEW | ja für Ausführung, nein für Preview und Auskunft | ungeklärt |
+| `filzmann_data_protection` / Adminfreigabehistorie | Aufbewahrung, Sperren und zulässige Maßnahme für den sicherheitsrelevanten Nachweis | bestimmt eigenen Katalog und RetentionProvider | ja für Retention-Ausführung, nein für Aggregation | ungeklärt |
+| `adcalendar` / Dienste, Termine, Einstellungen und Verbindungen | Retention, Empfänger und Behandlung abgeleiteter DAV-/Providerkalender nach Restore | bestimmt Katalog, Retention und Backup-/Restore-Vertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
+| `adurlaub` / Urlaubsverwaltung | fachliche Frist, zentrale REVIEW-Berechtigung und Behandlung freiwilliger Notizen | bestimmt Katalog und Migration des Retention-Piloten | ja für Standalone-Retention und Ausführung, nein für Auskunft | ungeklärt |
+| `orgsuite` / Navigation und Adminadapter | derzeit keine eigene personenbezogene Verarbeitung belegt; bei Scopeänderung erneut entscheiden | begründete Nichtanwendbarkeit, kein leerer Scheinprovider | nein | nicht anwendbar im heutigen Scope |
+| `adroom` / Raumbuchung | fachliche Frist, Trigger und Maßnahme für Buchungen | bestimmt Katalog und Migration des Retention-Piloten | ja für automatische Maßnahme, nein für Auskunft | ungeklärt |
+| `adrecruitment` / Bewerbungsakten und interne Bearbeitung | Rechtsgrundlage, Fristen, Sperren, externer Subject-Vertrag und differenzierte Maßnahmen | bestimmt Katalog, Bewerberauskunft, Retention und AppData-Anhänge | ja für externen Subject- und Retention-Scope, nein für bestehende interne Teilprojektion | ungeklärt |
+| `adbqplanung` / PFK- und Dozentinnenplanung | Retention-Trigger/-Maßnahmen und sicherer externer Subject-Vertrag | bestimmt Katalog, externe Auskunft und Retention | ja für externen Subject- und Retention-Scope, nein für interne Auskunft | ungeklärt |
+
+Rechtsgrundlagen, Backupfristen, konkrete fachliche Verantwortlichkeiten und
+bislang nicht ausdrücklich festgelegte Empfänger werden bei der app-lokalen
+Katalogerstellung ebenfalls als `PRIVACY-DECISION-REQUIRED` erfasst; die
+Tabelle erfindet dafür keine Defaultwerte. `orgsuite` bleibt die begründete
+Nichtanwendbarkeit und wird bei jeder Scopeänderung neu bewertet.
 
 | App | personenbezogene Daten laut aktuellem Code | PersonalDataProvider nötig | RetentionProvider nötig | Lifecycle-Abhängigkeit | Anonymisierung sinnvoll | Priorität | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |

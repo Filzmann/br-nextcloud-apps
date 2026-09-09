@@ -5,6 +5,8 @@ workspace="$(cd "$(dirname "$0")/.." && pwd)"
 privacy_contract='docs/privacy-architecture.md'
 provider_guide='docs/privacy-provider-guide.md'
 standalone_adr='docs/architecture-decisions/0002-standalone-privacy-platform.md'
+processing_schema='docs/contracts/privacy-processing-metadata.schema.json'
+app_structure='docs/app-repository-structure.md'
 
 fail() {
     echo "Datenschutz-Architekturvertrag ungültig: $*" >&2
@@ -14,6 +16,7 @@ fail() {
 [[ -f "$workspace/$privacy_contract" ]] || fail "Normative Quelle fehlt: $privacy_contract"
 [[ -f "$workspace/$provider_guide" ]] || fail "Providerleitfaden fehlt: $provider_guide"
 [[ -f "$workspace/$standalone_adr" ]] || fail "Standalone-ADR fehlt: $standalone_adr"
+[[ -f "$workspace/$processing_schema" ]] || fail "Processing-Metadata-Schema fehlt: $processing_schema"
 
 for source in \
     AGENTS.md \
@@ -44,10 +47,24 @@ for contract in \
     'Cursor-Paging' \
     'Versionshandshake' \
     'bei jeder relevanten Weiterentwicklung' \
+    'Central governance, decentralized ownership' \
+    'PRIVACY-DECISION-REQUIRED' \
+    'privacy-processing-metadata.schema.json' \
+    'personenbezogene Laufzeitdaten' \
+    'ProcessingMetadataProvider' \
+    'resources/privacy-processing.json' \
     'Fremd-App-Coverage' \
     'keinen direkten SQL-Zugriff'; do
     [[ "$privacy_text" == *"$contract"* ]] \
         || fail "Normative Quelle enthält den Vertrag nicht: $contract"
+done
+
+rg -Fq 'resources/privacy-processing.json' "$workspace/$app_structure" \
+    || fail "$app_structure enthält den kanonischen app-lokalen Katalogpfad nicht"
+
+for source in AGENTS.md README.md docs/privacy-provider-guide.md; do
+    rg -Fq 'privacy-processing-metadata.schema.json' "$workspace/$source" \
+        || fail "$source verweist nicht auf das Processing-Metadata-Schema"
 done
 
 [[ "$privacy_text" != *'späteren Ausbaustufe in LocalBase umgesetzt'* ]] \
@@ -79,5 +96,8 @@ for contract in \
     [[ "$adr_text" == *"$contract"* ]] \
         || fail "Standalone-ADR enthält den Vertrag nicht: $contract"
 done
+
+php "$workspace/tests/privacy-processing-metadata-schema-contract.php" \
+    "$workspace/$processing_schema"
 
 echo 'Datenschutz-Architekturvertrag: OK'

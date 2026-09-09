@@ -13,6 +13,8 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
   [`docs/zukunftsplan.md`](docs/zukunftsplan.md)
 - Datenschutzarchitektur und schrittweiser Rollout:
   [`docs/privacy-architecture.md`](docs/privacy-architecture.md)
+- Maschinenlesbares Root-Schema für app-eigene Processing-Metadaten:
+  [`docs/contracts/privacy-processing-metadata.schema.json`](docs/contracts/privacy-processing-metadata.schema.json)
 - Öffentlicher Leitfaden für Privacy-Provider:
   [`docs/privacy-provider-guide.md`](docs/privacy-provider-guide.md)
 - Portfolioentscheidung zur Berechtigungsmatrix:

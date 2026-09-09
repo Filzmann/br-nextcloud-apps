@@ -59,6 +59,34 @@ dient der nachvollziehbaren Zuordnung innerhalb der Providerprojektion, ist
 kein direkter Zugriffsschlüssel auf eine fremde Tabelle und enthält keine
 Geheimnisse.
 
+Die allgemeine fachliche Policy eines Datentyps wird nicht unabhängig in
+jeder Ausgabe neu gepflegt. Sie stammt künftig aus dem app-lokalen Katalog
+nach dem Root-Schema
+[`privacy-processing-metadata.schema.json`](contracts/privacy-processing-metadata.schema.json).
+Contract-Owner und öffentlicher Namespace bleiben dabei die bestehende App
+`filzmann_data_protection` (`Data Protection Center`/`Datenschutz-Center`,
+`OCA\FilzmannDataProtection`); es entsteht keine zusätzliche Provider-App.
+V1 projiziert davon weiterhin nur die heute vertraglich vorgesehenen Angaben
+in den konkreten `PersonalDataEntry`; eine eigenständige Katalogabfrage wird
+nur als neue, versionierte öffentliche Fähigkeit ergänzt. Sie darf V1 nicht
+still verbreitern und enthält keine personenbezogenen Laufzeitdaten.
+
+Der additive Pilotvertrag verwendet dafür
+`ProcessingMetadataProviderDescriptor`, `ProcessingMetadataCatalog` und
+`ProcessingMetadataProvider`. Seine Registrierung ist lazy und
+versionsgeprüft. Ein Provider liest ausschließlich den app-eigenen Katalog
+`resources/privacy-processing.json`; ungültige Kataloge und fehlerhafte
+Provider werden isoliert, ohne interne Fehlerdetails oder fremde Daten
+offenzulegen. Der weitere Consumer-Rollout und das vollständige Coverage-Gate
+bleiben bis zu gesondert freigegebenen Cross-Repository-Läufen offen.
+
+Der erste reale Consumer ist `adroom`. Sein Provider wird im Parent gegen den
+echten Vertrag und das Contract-Test-Kit der Standalone-App geprüft; der
+app-lokale Test bleibt über kleine Test-Stubs auch ohne benachbarten Checkout
+ausführbar. Diese Stubs sind keine Produktionsabhängigkeit und keine zweite
+Runtime-Implementierung. Weitere Apps benötigen weiterhin jeweils eine
+ausdrückliche Schreibfreigabe.
+
 ## Erforderliche Art.-15-Angaben
 
 Ein Provider liefert je App und Datenart mindestens:
