@@ -491,7 +491,8 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
-   `adroom`, `adplaner` und `adcalendar` sind umgesetzt und lokal verifiziert;
+   `adroom`, `adplaner`, `adcalendar` und `adurlaub` sind umgesetzt und lokal
+   verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
    eines konkreten Coverage-Profils bleibt offen;
@@ -553,6 +554,13 @@ verschlüsselte externe Verbindungen, abgeleitete interne und externe
 Zielkalender sowie temporäre Adminfreigaben. Secrets werden weder entschlüsselt
 noch als Laufzeitdaten in den Katalog übernommen; offene Anbieter-,
 Drittland-, Retention-, Backup- und Restoreentscheidungen bleiben sichtbar.
+
+`adurlaub` veröffentlicht als vierter realer Katalog-Consumer die getrennten
+Verarbeitungen `vacation_management` und `temporary_admin_full_access`.
+Freiwillige Urlaubsnotizen bleiben als mögliche Drittpersonenklasse sichtbar,
+verlassen AD Urlaub aber nicht über Consumer-Verträge. Die vorhandene
+administrative Retention-Vorschau bleibt ausdrücklich `REVIEW`-only und wird
+nicht als freigegebene Lösch- oder Aufbewahrungsregel dargestellt.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
