@@ -490,8 +490,8 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
    charakterisieren;
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
-   technische Contract-Kern, das Test-Kit und der erste reale Consumer
-   `adroom` sind umgesetzt und lokal verifiziert;
+   technische Contract-Kern, das Test-Kit und die ersten realen Consumer
+   `adroom` und `adplaner` sind umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
    eines konkreten Coverage-Profils bleibt offen;
@@ -537,6 +537,15 @@ App-zu-App-Installation und kein Daten-Fallback.
    Nextcloud-Laufzeit grün. Alle später hinzugekommenen Provider behalten
    app-lokale Vertragsnachweise; der Root behauptet daraus keine automatisch
    vollständige Datenabdeckung.
+
+Der Processing-Metadata-Rollout ist anschließend appweise fortgeführt worden:
+`adplaner` veröffentlicht als zweiter realer Katalog-Consumer die
+Verarbeitungen `shift_planning_management` und
+`temporary_admin_full_access`. Der Katalog wird aus der bereits vorhandenen
+PersonalDataProvider- und Dateninventur abgeleitet, enthält keine
+personenbezogenen Laufzeitdaten und weist ungeklärte Rechtsgrundlagen,
+Retention-, Backup- und Betroffenenrechtsregeln ausdrücklich als
+`PRIVACY-DECISION-REQUIRED` aus.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in

@@ -80,12 +80,12 @@ Provider werden isoliert, ohne interne Fehlerdetails oder fremde Daten
 offenzulegen. Der weitere Consumer-Rollout und das vollständige Coverage-Gate
 bleiben bis zu gesondert freigegebenen Cross-Repository-Läufen offen.
 
-Der erste reale Consumer ist `adroom`. Sein Provider wird im Parent gegen den
-echten Vertrag und das Contract-Test-Kit der Standalone-App geprüft; der
-app-lokale Test bleibt über kleine Test-Stubs auch ohne benachbarten Checkout
-ausführbar. Diese Stubs sind keine Produktionsabhängigkeit und keine zweite
-Runtime-Implementierung. Weitere Apps benötigen weiterhin jeweils eine
-ausdrückliche Schreibfreigabe.
+Die ersten realen Consumer sind `adroom` und `adplaner`. Ihre Provider werden
+im Parent gegen den echten Vertrag und das Contract-Test-Kit der
+Standalone-App geprüft; die app-lokalen Tests bleiben über kleine Test-Stubs
+auch ohne benachbarten Checkout ausführbar. Diese Stubs sind keine
+Produktionsabhängigkeit und keine zweite Runtime-Implementierung. Weitere Apps
+benötigen weiterhin jeweils eine ausdrückliche Schreibfreigabe.
 
 ## Erforderliche Art.-15-Angaben
 
