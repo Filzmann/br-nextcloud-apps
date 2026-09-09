@@ -491,7 +491,8 @@ Eigener Root-/Neue-App-Auftrag ohne gleichzeitige Consumer-Migration:
 3. Version 1 von Descriptor, Subject, Status, Art.-15-Metadaten,
    providergebundenem Cursor-Paging und Versionshandshake festlegen; der
    technische Contract-Kern, das Test-Kit und die ersten realen Consumer
-   `adroom`, `adplaner`, `adcalendar`, `adurlaub` und `adrecruitment` sind
+   `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment` und
+   `brstunden` sind
    umgesetzt und lokal verifiziert;
 4. erwartete Providerabdeckung und das sichtbare `missing`-Verhalten
    modellieren; das Laufzeitmodell ist umgesetzt, die administrative Quelle
@@ -569,6 +570,18 @@ temporäre Adminfreigaben. Der Katalog weist insbesondere die fehlende sicher
 authentifizierte Bewerber-Selbstauskunft, `retention_state` ohne ausführende
 Policy sowie ungeklärte Mailanbieter-, Drittland-, Backup- und
 Restoreentscheidungen ausdrücklich aus.
+
+`brstunden` veröffentlicht als sechster realer Katalog-Consumer die getrennten
+Verarbeitungen `monthly_hours_management`, `monthly_reminder_communication`
+und `payroll_pdf_generation`. Die Stundenverwaltung bildet den bestehenden
+subjectgebundenen PersonalDataProvider ab. Reminderläufe speichern keine
+Empfängerlisten oder Nachrichtenkopien, sondern nur aggregierte Laufwerte;
+die Abrechnungs-PDF wird ausschließlich als transiente Downloadantwort für
+das aktuelle Mitglied erzeugt. Fachliche Verantwortung, Rechtsgrundlagen,
+Retention, betriebliche Mail- und Backupregeln sowie nachgelagerte
+PDF-Empfänger bleiben als `PRIVACY-DECISION-REQUIRED` sichtbar. Weil die App
+keinen nativen Admin-Bypass besitzt, wird keine scheinbare Verarbeitung für
+temporären Admin-Vollzugriff erfunden.
 
 Als zweiter ausdrücklich freigegebener Consumer ist
 `filzmann_permission_matrix` auf denselben V1-Vertrag angebunden und lokal in
