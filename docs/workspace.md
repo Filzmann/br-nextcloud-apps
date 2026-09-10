@@ -386,6 +386,12 @@ DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben übe
 
 ### Zuständigkeit und Kosten der Prüfungen
 
+Der ergänzende [systemische Harness-Audit vom 9./10. September 2026](harness-audit-2026-09-09.md)
+klassifiziert Regeln und Testgruppen samt Beweisgrenzen. Er dokumentiert die
+entfernte zweite Instruktionsprüfung in `scripts/check-apps`, den gestärkten
+Majorfolgen-Test sowie verbleibende Schema-/Runtime- und Fresh-Install-Lücken.
+Er ist ein datierter Befundbericht, keine zusätzliche Regel- oder Aufgabenquelle.
+
 Bestandsaudit vom 5. September 2026. Die Kosten sind relative Einordnungen,
 keine gemessenen Laufzeitversprechen. Für den Abschluss wird ein passender
 umfassender Einstieg gewählt; dessen Teilprüfungen werden nicht unmittelbar

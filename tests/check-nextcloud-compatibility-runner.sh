@@ -59,6 +59,7 @@ XML
 
 make_server 33 7
 make_server 34 2
+make_server 35 0
 make_app demoapp
 
 mkdir -p "$stage/original-ddev/.ddev" "$stage/bin"
@@ -86,6 +87,7 @@ chmod +x "$stage/driver"
 
 sha33="$(sha256sum "$stage/nextcloud-33.tar.gz" | cut -d' ' -f1)"
 sha34="$(sha256sum "$stage/nextcloud-34.tar.gz" | cut -d' ' -f1)"
+sha35="$(sha256sum "$stage/nextcloud-35.tar.gz" | cut -d' ' -f1)"
 app_commit="$(git -C "$stage/demoapp" rev-parse HEAD)"
 sed -i 's/<version>1.0.0<\//<version>1.1.0<\//' "$stage/demoapp/appinfo/info.xml"
 git -C "$stage/demoapp" add appinfo/info.xml
@@ -155,13 +157,29 @@ if "$runner" \
     fail 'A non-increasing app update version was accepted.'
 fi
 
-if "$runner" \
+if DRIVER_LOG="$stage/rejected-driver.log" "$runner" \
     --server "32:$stage/nextcloud-33.tar.gz:$sha33:v32.0.0:1111111111111111111111111111111111111111" \
-    --server "34:$stage/nextcloud-34.tar.gz:$sha34:v34.0.2:2222222222222222222222222222222222222222" \
     --app "demoapp:$stage/demoapp:$app_commit" \
     --driver "$stage/driver" \
-    --evidence-dir "$stage/bad-major" >/dev/null 2>&1; then
-    fail 'A mismatching or non-consecutive server major was accepted.'
+    --evidence-dir "$stage/bad-major" >"$stage/bad-major.log" 2>&1; then
+    fail 'A mismatching server major was accepted.'
 fi
+grep -Fq 'version.php meldet Major 33 statt 32.' "$stage/bad-major.log" \
+    || fail 'The mismatching archive was not rejected for its actual major.'
+
+# Both archives are valid: this must reach the continuity guard, independently
+# of the archive/version mismatch above. No runtime stage may start on a gap.
+if DRIVER_LOG="$stage/rejected-driver.log" "$runner" \
+    --server "33:$stage/nextcloud-33.tar.gz:$sha33:v33.0.7:1111111111111111111111111111111111111111" \
+    --server "35:$stage/nextcloud-35.tar.gz:$sha35:v35.0.0:3333333333333333333333333333333333333333" \
+    --app "demoapp:$stage/demoapp:$app_commit" \
+    --driver "$stage/driver" \
+    --evidence-dir "$stage/major-gap" >"$stage/major-gap.log" 2>&1; then
+    fail 'A non-consecutive server major was accepted.'
+fi
+grep -Fq 'Servermajors sind nicht lückenlos aufsteigend: 33, 35' "$stage/major-gap.log" \
+    || fail 'The valid archives were not rejected for the gap in their majors.'
+[[ ! -e "$stage/rejected-driver.log" ]] \
+    || fail 'An invalid server matrix started a runtime stage.'
 
 echo 'Nextcloud-Compatibility-Runner-Vertrag: OK'

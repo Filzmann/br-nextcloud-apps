@@ -208,23 +208,12 @@ Zielverhalten, geeignete Testebene, was der geplante Test beweist und
 ausdrücklich nicht beweist sowie relevante negative Fälle und Grenzfälle
 bestimmt.
 
-Der Skill erzwingt Red–Green–Refactor mit einem aus dem erwarteten fachlichen
-Grund zunächst roten Test, der kleinsten notwendigen Implementierung,
-Regressionstests und Refactoring erst bei grünem Stand. Der Abschlussbericht
-weist Invariante, Testebene, Red-Nachweis samt Fehlergrund, minimale
-Implementierung, ausgeführte Tests und Ergebnisse, verbleibende ungetestete
-Risiken sowie begründete Abweichungen aus.
-
 Ein sofort grüner Test ist kein TDD-Nachweis; er darf nur als ausdrücklich
-begründeter Charakterisierungstest dienen. Reine Dokumentations-,
-Formatierungs-, generierte oder mechanische Änderungen ohne sinnvoll
-testbares Verhalten erhalten statt eines künstlichen TDD-Zyklus die passende
-maschinelle Prüfung; Zweifelsfälle werden kurz begründet.
-Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
+begründeter Charakterisierungstest dienen. Der vollständige Ablauf steht ausschließlich im Skill
+`test-driven-change`, einschließlich Red–Green–Refactor, Ausnahmen für
+Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 
-- Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden
-  test-first entwickelt. Cross-App-Verträge erhalten Provider- und
-  Consumer-Contract-Tests.
+- Cross-App-Verträge erhalten Provider- und Consumer-Contract-Tests.
 - Berührt eine Änderung eine fachliche oder sicherheitsrelevante Schutz- oder
   Zustandsgrenze, belegen Tests den erlaubten und mindestens einen sinnvollen
   verweigerten, ungültigen oder manipulierten Fall einschließlich
@@ -232,10 +221,6 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   keiner künstlich erzeugt; ein nicht automatisierbarer relevanter Pfad wird
   mit geeigneter Integrations- oder manueller Prüfung und verbleibender
   Nachweislücke berichtet.
-- Zeitlich begrenzte Spikes und schwer isolierbare Nextcloud-Integration sind
-  im Skill ausdrücklich zu begründende Abweichungen. Übernommener Spike-Code
-  wird zuvor charakterisiert; deklarative Änderungen erhalten passende
-  Syntax-, Contract-, Layout- oder Sichtprüfungen.
 - Für neuen oder wesentlich geänderten ausführbaren Code werden mindestens
   85 Prozent Line-Coverage angestrebt. PHP und JavaScript werden getrennt
   ausgewiesen; Sicherheitsinvarianten sind vollständig abzudecken.

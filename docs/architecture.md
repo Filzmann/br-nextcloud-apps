@@ -102,20 +102,14 @@ oder Capability-Verträge. Ein fehlender Provider ist ein gültiger
 Standalone-Zustand. Navigation, Capability-Verfügbarkeit und Menüsichtbarkeit
 erweitern niemals fachliche Rechte.
 
-OrgSuite bleibt die kanonische Quelle der gemeinsamen AD- und BR-Menüs. Im
-OrgSuite-Adminbereich können Nextcloud-Admins je Suite zusätzliche externe
-Links mit Bezeichnung, HTTPS-Ziel und stabiler Reihenfolge verwalten. Die
-Konfiguration wird serverseitig validiert und datensparsam in der
-OrgSuite-AppConfig gespeichert; Fachapps pflegen keine Kopien. Die Links
-werden im jeweiligen gemeinsamen Suite-Menü zusätzlich zu den aktivierten
-Fachapps angezeigt. Ein externer Link erteilt weder Nextcloud- noch Fachrechte
-und verändert die serverseitigen Berechtigungsprüfungen der Apps nicht.
+OrgSuite besitzt auch die zusätzlichen externen Suite-Links; Fachapps pflegen
+keine Kopien. Konfiguration und Darstellung sind app-lokal in
+`orgsuite/AGENTS.md` und `orgsuite/docs/architecture.md` festgelegt. Der oben
+genannte Grundsatz, dass Navigation keine Rechte erweitert, gilt auch hier.
 
 `adbqplanung` konsumiert den öffentlichen LocalBase-Jahreskalender Version 1
-für Schulferien und gesetzliche Feiertage über einen app-eigenen Port.
-Brückentage bleiben lokale BQ-Konfiguration. Ein `stale`-Stand wird sichtbar
-gekennzeichnet; `unavailable` oder inkompatible Daten liefern keinen
-automatischen BQ-Terminvorschlag.
+über einen app-eigenen Port. Fachliche Planungsregeln und das Verhalten bei
+eingeschränkter Kalenderverfügbarkeit stehen in `adbqplanung/AGENTS.md`.
 
 Die normative Einteilung gemeinsamen Codes und app-übergreifender
 Laufzeitdienste, die Store-Regeln sowie die komponentenweise

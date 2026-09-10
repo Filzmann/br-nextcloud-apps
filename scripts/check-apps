@@ -32,22 +32,8 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$kind" == 'app' ]] || continue
 
     repo="$workspace/$path"
-    echo "== $path: lokale Instruktionskette und Skill-Auflösung =="
-    (
-        cd "$repo"
-        [[ -f AGENTS.md && ! -L AGENTS.md ]]
-        grep -Fq 'vollständige Repository-Steuerung' AGENTS.md
-        IFS=',' read -r -a skills <<< "$required_skills"
-        for required_skill in "${skills[@]}"; do
-            local_skill=".agents/skills/$required_skill/SKILL.md"
-            [[ -f "$local_skill" && ! -L "$local_skill" ]]
-            grep -Fq "name: $required_skill" "$local_skill"
-            if git check-ignore -q "$local_skill"; then
-                echo "Lokaler Skill wird ignoriert: $path/$required_skill" >&2
-                exit 1
-            fi
-        done
-    )
+    # Instruction chains, skill contents and ignore state are already covered
+    # by check-workspace-structure (or check-full's preceding check-fast).
     echo "== $path: lokale PHP-Tests =="
     (cd "$repo" && php tests/run.php)
     echo "== $path: lokale JavaScript-Tests =="
