@@ -61,8 +61,12 @@ declare -A seen_repositories=()
 for index in "${!repository_ids[@]}"; do
     repository_id="${repository_ids[$index]}"
     repository_path="${repository_paths[$index]}"
-    if [[ -z "$repository_id" || -n "${seen_repositories[$repository_id]:-}" ]]; then
-        echo "Leere oder doppelte Scanner-Repository-ID: $repository_id" >&2
+    if [[ ! "$repository_id" =~ ^[a-z0-9][a-z0-9_-]{0,63}$ ]]; then
+        echo 'Ungültige Scanner-Repository-ID.' >&2
+        exit 2
+    fi
+    if [[ -n "${seen_repositories[$repository_id]:-}" ]]; then
+        echo "Doppelte Scanner-Repository-ID: $repository_id" >&2
         exit 2
     fi
     if [[ ! -d "$repository_path/.git" ]]; then
@@ -121,7 +125,8 @@ scanner_environment=(
 )
 if [[ "$execution_mode" == 'test' ]]; then
     for variable in MOCK_GITLEAKS_ERROR MOCK_GITLEAKS_FINDING MOCK_SEMGREP_ERROR MOCK_SEMGREP_FINDING \
-        MOCK_SEMGREP_WARNING MOCK_SEMGREP_REPORT_ERROR MOCK_OSV_ERROR MOCK_OSV_FINDING MOCK_OSV_PURL_FINDING; do
+        MOCK_SEMGREP_WARNING MOCK_SEMGREP_REPORT_ERROR MOCK_OSV_ERROR MOCK_OSV_FINDING MOCK_OSV_MALFORMED \
+        MOCK_OSV_PURL_FINDING; do
         if [[ -v "$variable" ]]; then
             scanner_environment+=("$variable=${!variable}")
         fi

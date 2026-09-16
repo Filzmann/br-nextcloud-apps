@@ -224,8 +224,11 @@ function normalizeSemgrep(array $report, string $repository, string $repositoryP
 /** @return list<array<string, mixed>> */
 function normalizeOsv(array $report, string $repository, string $repositoryPath, string $declaredSource): array
 {
+    if (!isset($report['results']) || !is_array($report['results']) || !array_is_list($report['results'])) {
+        throw new RuntimeException('OSV-Bericht besitzt keine vollständige Ergebnisstruktur.');
+    }
     $findings = [];
-    foreach (($report['results'] ?? []) as $result) {
+    foreach ($report['results'] as $result) {
         if (!is_array($result)) {
             continue;
         }

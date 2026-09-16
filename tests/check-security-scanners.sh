@@ -130,7 +130,9 @@ fi
 if [[ "${MOCK_OSV_ERROR:-0}" == '1' ]]; then
     exit 128
 fi
-if [[ "${MOCK_OSV_PURL_FINDING:-0}" == '1' && -n "$sbom" ]]; then
+if [[ "${MOCK_OSV_MALFORMED:-0}" == '1' ]]; then
+    printf '%s\n' '{}' > "$output"
+elif [[ "${MOCK_OSV_PURL_FINDING:-0}" == '1' && -n "$sbom" ]]; then
     cat > "$output" <<JSON
 {
   "results": [{
@@ -180,10 +182,32 @@ run_scanners() {
         GITLEAKS_CONFIG_TOML='title = "hostile"' \
         SEMGREP_RULES="$temporary/hostile-semgrep.yml" \
         SEMGREP_BASELINE_COMMIT=HEAD~1 \
+        MOCK_OSV_MALFORMED="${MOCK_OSV_MALFORMED:-0}" \
         MOCK_OSV_PURL_FINDING="${MOCK_OSV_PURL_FINDING:-0}" \
         SECURITY_SCANNER_TEST_MODE=1 SECURITY_SCANNER_TEST_BIN_DIR="$temporary/bin" \
         "$runner" --evidence-file "$1" "${@:2}"
 }
+
+mkdir -p "$temporary/repository-id-probe"
+printf '%s\n' '<?php' > "$temporary/repository-id-probe/probe.php"
+git -C "$temporary/repository-id-probe" init -q
+git -C "$temporary/repository-id-probe" add probe.php
+invalid_repository_ids=('../escape' 'nested/id' 'nested\id' $'line\nbreak')
+for index in "${!invalid_repository_ids[@]}"; do
+    invalid_id="${invalid_repository_ids[$index]}"
+    invalid_evidence="$temporary/invalid-repository-id-$index.json"
+    if run_scanners "$invalid_evidence" \
+        --repository "$invalid_id=$temporary/repository-id-probe" \
+        >"$temporary/invalid-repository-id-$index.out" 2>&1; then
+        echo 'Eine unsichere Scanner-Repository-ID wurde akzeptiert.' >&2
+        exit 1
+    fi
+    grep -Fq 'Ungültige Scanner-Repository-ID.' "$temporary/invalid-repository-id-$index.out"
+    if [[ -e "$invalid_evidence" || -L "$invalid_evidence" ]]; then
+        echo 'Eine abgelehnte Scanner-Repository-ID erzeugte Evidence.' >&2
+        exit 1
+    fi
+done
 
 run_scanners "$temporary/passed.json"
 php -r '
@@ -247,6 +271,19 @@ php -r '
     if (($data["scanners"]["semgrep"]["findings"] ?? null) !== 0) throw new RuntimeException("Validierter Third-Party-Baum wurde als First-Party-Code gescannt");
     if (($data["scanners"]["osv-scanner"]["scanned_inventories"] ?? null) !== 1) throw new RuntimeException("Validiertes PURL-Inventar wurde nicht geprüft");
 ' "$temporary/valid-inventory.json"
+
+if MOCK_OSV_MALFORMED=1 run_scanners "$temporary/malformed-osv.json" \
+    --repository "validapp=$temporary/valid-inventory" >"$temporary/malformed-osv.out" 2>&1; then
+    echo 'Ein strukturell unvollständiger OSV-Bericht wurde als sauber bewertet.' >&2
+    exit 1
+fi
+grep -Fq 'Osv-scanner konnte nicht vollständig ausgeführt werden.' "$temporary/malformed-osv.out"
+php -r '
+    $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+    $error = array_values(array_filter($data["errors"] ?? [], static fn (array $entry): bool => ($entry["scanner"] ?? null) === "osv-scanner"))[0] ?? null;
+    if (($data["status"] ?? null) !== "failed" || ($data["scanners"]["osv-scanner"]["status"] ?? null) !== "error") throw new RuntimeException("Unvollständiger OSV-Bericht bleibt nicht fail-closed");
+    if (($error["type"] ?? null) !== "InvalidOrIncompleteReport" || ($error["reason"] ?? null) !== "invalid-or-incomplete-report") throw new RuntimeException("Unvollständiger OSV-Bericht ist nicht als Auswertungsfehler typisiert");
+' "$temporary/malformed-osv.json"
 
 if MOCK_OSV_PURL_FINDING=1 run_scanners "$temporary/purl-finding.json" \
     --repository "validapp=$temporary/valid-inventory" >/dev/null 2>&1; then
