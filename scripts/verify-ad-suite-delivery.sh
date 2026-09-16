@@ -159,14 +159,35 @@ if [[ "${RUN_INTEGRATION_SMOKES:-0}" == '1' ]]; then
 fi
 
 echo '== Reproduzierbarer Paketbau =='
-DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 NEXTCLOUD_TARGET_MAJOR="$nextcloud_target_major" \
+DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
+    NEXTCLOUD_TARGET_MAJOR="$nextcloud_target_major" \
     "$workspace/scripts/build-ad-suite-release.sh"
 (cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
+(cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.release-evidence.json.sha256)
 (cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)
+evidence_release_mode='candidate'
+if [[ "${DIAGNOSTIC_MODE:-0}" == '1' ]]; then
+    evidence_release_mode='diagnostic'
+fi
+php -r '
+    $evidence = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+    $actual = hash_file("sha256", $argv[2]);
+    $expectedMode = $argv[3];
+    $expectedDirty = $expectedMode === "diagnostic";
+    if ($evidence["artifact"]["sha256"] !== $actual) throw new RuntimeException("Suite-Evidence-Hash stimmt nicht");
+    if ($evidence["tests"]["builder"] !== "skipped-by-builder") throw new RuntimeException("Builder-Teststatus ist unzutreffend");
+    if ($evidence["tests"]["delivery_gate"] !== "not-evaluated-by-builder") throw new RuntimeException("Delivery-Gate-Status ist unzutreffend");
+    if ($evidence["security"]["mapping_consistency"] !== "passed") throw new RuntimeException("Mapping-Check fehlt");
+    if ($evidence["build_context"]["release_mode"] !== $expectedMode) throw new RuntimeException("Release-Modus ist unzutreffend");
+    if ($evidence["build_context"]["dirty_sources"] !== $expectedDirty) throw new RuntimeException("Dirty-Status ist unzutreffend");
+    if ($evidence["build_context"]["publishable"] !== false) throw new RuntimeException("Builder behauptet Veröffentlichbarkeit");
+    if ($evidence["compliance"]["certification"] !== "not-certified") throw new RuntimeException("Zertifizierungsgrenze fehlt");
+' "$temporary_dist/ad-suite-delivery-check.release-evidence.json" "$temporary_dist/ad-suite-delivery-check.tar.gz" "$evidence_release_mode"
 full_bundle_members="$(tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz")"
 for contract in \
     'ad-suite-delivery-check/install.sh' \
     'ad-suite-delivery-check/ad-product-catalog.json' \
+    'ad-suite-delivery-check/sbom.cdx.json' \
     'ad-suite-delivery-check/LDAP-UNIVENTION.md'; do
     if ! grep -Fq "$contract" <<< "$full_bundle_members"; then
         echo "Vollständiger Suite-Bundle-Vertrag fehlt: $contract" >&2
@@ -176,11 +197,20 @@ done
 for product in "${products[@]}"; do
     product_bundle="$temporary_dist/ad-product-$product-delivery-check.tar.gz"
     product_hash="$product_bundle.sha256"
-    if [[ ! -f "$product_bundle" || ! -f "$product_hash" ]]; then
+    product_evidence="$temporary_dist/ad-product-$product-delivery-check.release-evidence.json"
+    product_evidence_hash="$product_evidence.sha256"
+    if [[ ! -f "$product_bundle" || ! -f "$product_hash" || ! -f "$product_evidence" || ! -f "$product_evidence_hash" ]]; then
         echo "Produktpaket fehlt: $product" >&2
         exit 1
     fi
     (cd "$temporary_dist" && sha256sum --check "$(basename "$product_hash")")
+    (cd "$temporary_dist" && sha256sum --check "$(basename "$product_evidence_hash")")
+    php -r '
+        $evidence = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+        if ($evidence["artifact"]["sha256"] !== hash_file("sha256", $argv[2])) throw new RuntimeException("Produkt-Evidence-Hash stimmt nicht");
+        if ($evidence["build_context"]["release_mode"] !== $argv[3]) throw new RuntimeException("Produkt-Evidence-Modus ist unzutreffend");
+        if ($evidence["build_context"]["publishable"] !== false) throw new RuntimeException("Produkt-Builder behauptet Veröffentlichbarkeit");
+    ' "$product_evidence" "$product_bundle" "$evidence_release_mode"
     product_members="$(tar -tzf "$product_bundle")"
     for contract in \
         "ad-product-$product-delivery-check/install.sh" \
@@ -188,6 +218,7 @@ for product in "${products[@]}"; do
         "ad-product-$product-delivery-check/BETRIEB-UND-RUECKBAU.md" \
         "ad-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
         "ad-product-$product-delivery-check/ad-product-catalog.json" \
+        "ad-product-$product-delivery-check/sbom.cdx.json" \
         "ad-product-$product-delivery-check/localbase-" \
         "ad-product-$product-delivery-check/orgsuite-" \
         "ad-product-$product-delivery-check/$product-"; do

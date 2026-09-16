@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "orientation": {
+    "basis": "BSI IT-Grundschutz-oriented; internal evidence mapping, not a certification statement",
+    "reviewed_on": "2026-09-14",
+    "modules": ["APP.6", "APP.7", "CON.8", "OPS.1.1.6", "APP.3.1"],
+    "official_sources": [
+      "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium_Einzel_PDFs_2022/06_APP_Anwendungen/APP_6_Allgemeine_Software_Edition_2022.pdf",
+      "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium_Einzel_PDFs_2023/06_APP_Anwendungen/APP_7_Entwicklung_von_Individualsoftware_Edition_2023.pdf",
+      "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium_Einzel_PDFs_2023/03_CON_Konzepte_und_Vorgehensweisen/CON_8_Software_Entwicklung_Edition_2023.pdf",
+      "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium_Einzel_PDFs_2023/04_OPS_Betrieb/OPS_1_1_6_Software_Tests_und_Freigaben_Edition_2023.pdf",
+      "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium_Einzel_PDFs_2023/06_APP_Anwendungen/APP_3_1_Webanwendungen_und_Webservices_Edition_2023.pdf"
+    ],
+    "qualification": "Internal topic IDs below are project mappings, not quoted BSI requirement identifiers. Revalidate against the then-current Kompendium before an external audit."
+  },
+  "requirements": [
+    {
+      "id": "APP.6-SCOPE-AND-RESPONSIBILITY",
+      "bsi_module": "APP.6",
+      "topic": "application scope, platform boundary and lifecycle responsibility",
+      "status": "implemented",
+      "implementation_refs": ["security-compliance/scope.json", "docs/architecture.md", "config/workspace-repositories.tsv"],
+      "verification_refs": ["tests/check-security-compliance.sh", "tests/check-ad-product-catalog.sh"],
+      "evidence": ["successful Parent consistency check", "appinfo support-range evidence"],
+      "scope": ["all-apps", "parent"],
+      "residual_risk": "Deployment-operator controls are outside the app repositories."
+    },
+    {
+      "id": "APP.6-SUPPORT-AND-EOL",
+      "bsi_module": "APP.6",
+      "topic": "supported versions, security-fix state and end of life",
+      "status": "decision-required",
+      "implementation_refs": ["security-compliance/scope.json", "docs/architecture.md"],
+      "verification_refs": ["tests/check-nextcloud-support-range.sh"],
+      "evidence": ["per-app info.xml minimum and proven contiguous maximum"],
+      "scope": ["all-apps"],
+      "gap": "Product support durations and transitions are not decided.",
+      "residual_risk": "Users cannot yet derive a contractual security-fix period."
+    },
+    {
+      "id": "APP.7-SECURITY-REQUIREMENTS",
+      "bsi_module": "APP.7",
+      "topic": "security requirements and acceptance criteria for individual software",
+      "status": "implemented",
+      "implementation_refs": ["AGENTS.md", "docs/architecture.md", ".agents/skills/test-driven-change/SKILL.md"],
+      "verification_refs": ["tests/check-parent-governance-contract.sh", "tests/check-security-compliance.sh"],
+      "evidence": ["repository-local AGENTS contracts", "Red-Green-Refactor reports", "manual acceptance documents in app repositories"],
+      "scope": ["all-apps", "parent"],
+      "residual_risk": "Organizational acceptance remains a human decision."
+    },
+    {
+      "id": "CON.8-SECURE-DEVELOPMENT",
+      "bsi_module": "CON.8",
+      "topic": "secure development method, repository boundaries and change control",
+      "status": "implemented",
+      "implementation_refs": ["AGENTS.md", "docs/parent-governance-contract.md", "security-compliance/README.md"],
+      "verification_refs": ["tests/check-parent-governance-contract.sh", "tests/check-worktree-markdown-inventory.sh"],
+      "evidence": ["separate repository histories", "classified task routing", "focused and enclosing test results"],
+      "scope": ["all-apps", "parent"],
+      "residual_risk": "Repository rules cannot prove staff training or organizational effectiveness."
+    },
+    {
+      "id": "CON.8-CHANGE-IMPACT",
+      "bsi_module": "CON.8",
+      "topic": "contextual security impact and threat-model review",
+      "status": "implemented",
+      "implementation_refs": ["security-compliance/threat-model.json", "scripts/check-apps", "scripts/check-security-compliance", "scripts/validate-security-compliance.php"],
+      "verification_refs": ["tests/check-security-compliance.sh"],
+      "evidence": ["deterministic review triggers for routes, authorization, privacy, migration, dependency, file and background-job changes"],
+      "scope": ["all-apps", "parent"],
+      "residual_risk": "Path triggers guide review but do not replace semantic code review."
+    },
+    {
+      "id": "CON.8-SUPPLY-CHAIN",
+      "bsi_module": "CON.8",
+      "topic": "components, dependencies, integrity and vulnerability status",
+      "status": "implemented",
+      "implementation_refs": ["scripts/build-ad-suite-release.sh", "scripts/generate-cyclonedx-sbom.php", "scripts/run-security-scanners", "security-compliance/scanner-tools.json", "security-compliance/osv-scanner.toml", "security-compliance/vulnerability-exceptions.json"],
+      "verification_refs": ["tests/check-reproducible-release-archive.sh", "tests/check-security-scanners.sh", "tests/check-ad-suite-ci-contract.sh"],
+      "evidence": ["CycloneDX 1.6 release SBOM", "SHA-256 manifests", "SHA-256-pinned OSV-Scanner results", "expiry-validated vulnerability exceptions"],
+      "scope": ["all-apps", "ad-suite-release", "build-tooling"],
+      "residual_risk": "OSV covers supported dependency manifests, not GitHub Action provenance or vulnerabilities without a published advisory."
+    },
+    {
+      "id": "CON.8-STATIC-AND-SECRET-ANALYSIS",
+      "bsi_module": "CON.8",
+      "topic": "static analysis, secret detection and prohibited release content",
+      "status": "implemented",
+      "implementation_refs": ["scripts/check-fast", "scripts/run-security-scanners", "security-compliance/gitleaks.toml", "security-compliance/gitleaks-ignore.txt", "security-compliance/semgrep-rules.yml", "security-compliance/analysis-exceptions.json", ".github/workflows/deploy-staging.yml"],
+      "verification_refs": ["tests/check-security-scanners.sh", "tests/check-staging-deployment.sh", "tests/check-ad-suite-standalone-contract.sh"],
+      "evidence": ["content-aware current-worktree Gitleaks scan", "offline project-specific Semgrep analysis", "expiry-validated fingerprint exceptions", "sanitized scanner and release evidence"],
+      "scope": ["all-apps", "parent", "ad-suite-release"],
+      "residual_risk": "Project rules, pattern-based secret detection and static analysis cannot prove the absence of every vulnerable data flow."
+    },
+    {
+      "id": "OPS.1.1.6-TESTS-AND-APPROVAL",
+      "bsi_module": "OPS.1.1.6",
+      "topic": "tests, coverage, release approval and reproducible evidence",
+      "status": "implemented",
+      "implementation_refs": ["scripts/check-full", "scripts/check-ad-suite-delivery", "scripts/build-ad-suite-release.sh"],
+      "verification_refs": ["tests/check-ad-suite-ci-contract.sh", "tests/check-reproducible-release-archive.sh"],
+      "evidence": ["CI PHP/JavaScript tests and coverage", "provider/consumer contracts", "clean delivery gate", "reproducible archives and hashes"],
+      "scope": ["all-apps", "ad-suite-release"],
+      "residual_risk": "Green workspace checks are not an organizational production approval."
+    },
+    {
+      "id": "OPS.1.1.6-MIGRATION-AND-REINSTALL",
+      "bsi_module": "OPS.1.1.6",
+      "topic": "fresh install, migration, upgrade and reinstall verification",
+      "status": "partial",
+      "implementation_refs": ["docs/architecture.md", "scripts/run-nextcloud-ddev-compatibility-stage"],
+      "verification_refs": ["tests/check-nextcloud-compatibility-runner.sh", "tests/check-nextcloud-support-range.sh"],
+      "evidence": ["version-pinned Nextcloud compatibility stages", "app-local migration tests", "opt-in DDEV integration smokes"],
+      "scope": ["all-apps"],
+      "gap": "Runtime database coverage is not uniform; the documented PostgreSQL path remains open.",
+      "residual_risk": "Static and MariaDB evidence does not prove every supported database/runtime combination."
+    },
+    {
+      "id": "APP.3.1-AUTHORIZATION",
+      "bsi_module": "APP.3.1",
+      "topic": "server-side least privilege and negative authorization tests",
+      "status": "implemented",
+      "implementation_refs": ["docs/architecture.md", "docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md"],
+      "verification_refs": ["tests/permission-provider-v1-contract.php", "tests/check-app-local-admin-full-access-contract.sh"],
+      "evidence": ["app-local Access/Permission services", "deny/direct-API tests", "public PermissionProvider consumer contract"],
+      "scope": ["all-domain-apps", "ikt-privacy-products"],
+      "residual_risk": "New app-specific paths still require local tests; the central provider contract is not an endpoint penetration test."
+    },
+    {
+      "id": "APP.3.1-REQUEST-AND-OUTPUT",
+      "bsi_module": "APP.3.1",
+      "topic": "request validation, CSRF, bound SQL, output escaping and safe paths",
+      "status": "implemented",
+      "implementation_refs": ["AGENTS.md", "docs/architecture.md"],
+      "verification_refs": ["adcalendar/tests/Controller/ControllerSecuritySmokeTest.php", "adroom/tests/Controller/ControllerSecuritySmokeTest.php"],
+      "evidence": ["controller attribute tests", "API execution tests", "repository and file-service tests"],
+      "scope": ["all-apps"],
+      "residual_risk": "Representative central references do not replace every app-local controller and integration test."
+    },
+    {
+      "id": "APP.3.1-PRIVACY-AND-DATA-OWNERSHIP",
+      "bsi_module": "APP.3.1",
+      "topic": "data minimization, app ownership and privacy provider boundaries",
+      "status": "implemented",
+      "implementation_refs": ["docs/privacy-architecture.md", "docs/privacy-provider-guide.md", "docs/contracts/privacy-processing-metadata.schema.json"],
+      "verification_refs": ["tests/privacy-provider-v1-contract.php", "tests/processing-metadata-provider-v1-contract.php"],
+      "evidence": ["per-app processing catalogs", "subject-bound providers", "consumer contract tests", "visible partial/unknown coverage"],
+      "scope": ["all-data-processing-apps"],
+      "residual_risk": "Several retention, legal basis and external-subject decisions remain explicitly unresolved in app catalogs."
+    },
+    {
+      "id": "APP.3.1-LOGGING-AND-AUDIT",
+      "bsi_module": "APP.3.1",
+      "topic": "security-relevant events, diagnosability and data-minimized logs",
+      "status": "partial",
+      "implementation_refs": ["AGENTS.md", "docs/architecture.md", "security-compliance/README.md"],
+      "verification_refs": ["localbase/tests/Service/AppLoggerSmokeTest.php", "filzmann_permission_matrix/tests/unit/AccessServiceTest.php"],
+      "evidence": ["safe scalar logger context", "app-local admin grant and permission-matrix audit records", "error isolation tests"],
+      "scope": ["all-apps"],
+      "gap": "No cross-app security-event taxonomy or organizational retention/monitoring owner is approved.",
+      "residual_risk": "Security events can be implemented inconsistently across apps."
+    },
+    {
+      "id": "APP.7-VULNERABILITY-AND-INCIDENT",
+      "bsi_module": "APP.7",
+      "topic": "private reporting, triage, fix, regression, release and incident response",
+      "status": "partial",
+      "implementation_refs": ["SECURITY.md", "security-compliance/README.md", "ad-suite/SECURITY.md"],
+      "verification_refs": ["tests/check-security-compliance.sh", "scripts/check-ad-suite-delivery"],
+      "evidence": ["private-reporting guidance", "TDD regression requirement", "release gate and advisory step"],
+      "scope": ["all-apps", "parent"],
+      "gap": "Security contact and organizational incident owner are not configured.",
+      "residual_risk": "A reporter may need private coordination before a channel is available."
+    },
+    {
+      "id": "CON.8-CROSS-APP-CONTRACTS",
+      "bsi_module": "CON.8",
+      "topic": "versioned bounded provider/consumer integrations",
+      "status": "implemented",
+      "implementation_refs": ["docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md", "docs/architecture-decisions/0002-standalone-privacy-platform.md"],
+      "verification_refs": ["tests/localbase-organization-v1-contract.php", "tests/permission-provider-v1-contract.php", "tests/privacy-provider-v1-contract.php"],
+      "evidence": ["provider and consumer contract tests", "missing-provider standalone behavior", "no private cross-app table access"],
+      "scope": ["cross-app-integrations"],
+      "residual_risk": "Runtime provider combinations still require the documented integration stages."
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "method": "small shared-control threat model; app entries contain only concrete assets, boundaries and dominant threats",
+  "common_controls": [
+    {
+      "id": "AUTHZ-01",
+      "description": "Server-side actor, target-scope and capability checks with deny-by-default behavior; UI visibility grants no right.",
+      "implementation_refs": ["docs/architecture.md", "docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md"],
+      "verification_refs": ["tests/permission-provider-v1-contract.php", "tests/check-app-local-admin-full-access-contract.sh"]
+    },
+    {
+      "id": "WEB-01",
+      "description": "Typed validation, write-CSRF protection, bound query values, escaped output and normalized server-generated paths.",
+      "implementation_refs": ["AGENTS.md", "docs/architecture.md"],
+      "verification_refs": ["adcalendar/tests/Controller/ControllerSecuritySmokeTest.php", "adroom/tests/Controller/ControllerSecuritySmokeTest.php"]
+    },
+    {
+      "id": "PRIVACY-01",
+      "description": "Each app owns its data and projects only bounded subject/policy data through public privacy providers; unknown coverage remains visible.",
+      "implementation_refs": ["docs/privacy-architecture.md", "docs/privacy-provider-guide.md"],
+      "verification_refs": ["tests/privacy-provider-v1-contract.php", "tests/processing-metadata-provider-v1-contract.php"]
+    },
+    {
+      "id": "CONTRACT-01",
+      "description": "Cross-app communication uses versioned, bounded public provider/events and treats missing or incompatible providers as a valid non-authorizing state.",
+      "implementation_refs": ["docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md"],
+      "verification_refs": ["tests/localbase-organization-v1-contract.php", "tests/permission-provider-v1-contract.php"]
+    },
+    {
+      "id": "SECRETS-01",
+      "description": "Secrets are stored through Nextcloud-sensitive configuration/crypto mechanisms and excluded from responses, logs, tests and release content.",
+      "implementation_refs": ["AGENTS.md", "scripts/check-fast", "scripts/verify-ad-suite-delivery.sh"],
+      "verification_refs": ["tests/check-staging-deployment.sh", "adcalendar/tests/Controller/ExternalCalendarControllerSecurityTest.php"]
+    },
+    {
+      "id": "AUDIT-01",
+      "description": "Security-relevant failures and temporary privilege changes remain diagnosable with data-minimized app-local logging/audit.",
+      "implementation_refs": ["AGENTS.md", "docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md"],
+      "verification_refs": ["localbase/tests/Service/AppLoggerSmokeTest.php", "filzmann_permission_matrix/tests/unit/AdminFullAccessContractTest.php"]
+    },
+    {
+      "id": "RELEASE-01",
+      "description": "Tests, clean repository state, support range, reproducible archives, manifests, SBOM and SHA-256 evidence gate AD release readiness.",
+      "implementation_refs": ["scripts/check-ad-suite-delivery", "scripts/build-ad-suite-release.sh"],
+      "verification_refs": ["tests/check-reproducible-release-archive.sh", "tests/check-ad-suite-ci-contract.sh"]
+    },
+    {
+      "id": "JOBS-01",
+      "description": "Background jobs use bounded discovery, preserve app authorization/data ownership and isolate per-provider or per-subject failure.",
+      "implementation_refs": ["docs/architecture.md"],
+      "verification_refs": ["adcalendar/tests/Service/ReconcileShiftCalendarsJobTest.php", "localbase/tests/Service/RefreshHolidayCalendarJobSmokeTest.php"]
+    }
+  ],
+  "applications": [
+    {
+      "id": "brtop",
+      "assets": ["BR membership and legislature", "meetings, agenda, minutes and decisions", "invitation snapshots and generated documents"],
+      "actors": ["BR member", "chair/deputy", "temporarily authorized Nextcloud admin", "background/runtime services"],
+      "entry_points": ["page and API routes", "document generation", "absence/calendar provider events"],
+      "trust_boundaries": ["Nextcloud session to BR domain authorization", "LocalBase BR group contract", "database to generated file storage"],
+      "privileges": ["view BR process", "manage meetings and agenda", "temporary full access"],
+      "threats": [
+        {"id": "brtop-cross-role-or-document-access", "description": "A non-member or lower privilege could access BR content or generated documents.", "controls": ["AUTHZ-01", "WEB-01", "AUDIT-01"], "verification_refs": ["brtop/tests/Service/BrAccessServiceSmokeTest.php", "brtop/tests/Controller/AccessMiddlewareSmokeTest.php"], "residual_risk": "Content-level privacy/file coverage is explicitly partial and needs later approved retention/content handling."}
+      ]
+    },
+    {
+      "id": "adplaner",
+      "assets": ["team shift configuration", "monthly plans and assignments", "personal workload preferences and notes"],
+      "actors": ["assistant", "team EB", "temporarily authorized Nextcloud admin"],
+      "entry_points": ["page and API routes", "demo administration", "absence/conflict provider events"],
+      "trust_boundaries": ["Nextcloud group membership to team scope", "LocalBase organization snapshot", "optional absence providers"],
+      "privileges": ["edit own wishes", "manage team plan", "approve plan", "temporary full access"],
+      "threats": [
+        {"id": "adplaner-cross-team-write", "description": "A user could assign or approve shifts outside the permitted assistance team.", "controls": ["AUTHZ-01", "CONTRACT-01", "PRIVACY-01"], "verification_refs": ["adplaner/tests/AccessSmokeContractTest.php", "adplaner/tests/Service/TeamAccessServiceSmokeTest.php"], "residual_risk": "Real Nextcloud group combinations remain covered by opt-in access-matrix smoke rather than every unit run."}
+      ]
+    },
+    {
+      "id": "brstunden",
+      "assets": ["monthly BR hours", "annual overview", "reminder recipients and transient PDF"],
+      "actors": ["BR member", "chair/deputy", "monthly reminder job"],
+      "entry_points": ["page and API routes", "background reminder", "transient PDF response"],
+      "trust_boundaries": ["Nextcloud identity to self-entry", "LocalBase BR group contract", "mail service"],
+      "privileges": ["edit own hours", "view permitted overview", "send bounded reminders"],
+      "threats": [
+        {"id": "brstunden-foreign-hours-disclosure", "description": "A member could modify or receive subject-bound details about another member's hour records.", "controls": ["AUTHZ-01", "PRIVACY-01", "JOBS-01"], "verification_refs": ["brstunden/tests/unit/HoursServiceTest.php", "brstunden/tests/Privacy/BrStundenPrivacyProviderTest.php"], "residual_risk": "Mail recipient and retention policy require organizational decisions."}
+      ]
+    },
+    {
+      "id": "localbase",
+      "assets": ["shared organization and group contracts", "product catalog", "holiday cache", "shared provider registries and UI primitives"],
+      "actors": ["Nextcloud admin", "consumer app", "external holiday provider", "background refresh job"],
+      "entry_points": ["public PHP contracts/events", "admin API", "background job", "OpenHolidays HTTP adapter"],
+      "trust_boundaries": ["consumer app to shared runtime contract", "admin input to organization configuration", "external holiday API to validated cache"],
+      "privileges": ["read shared snapshots", "administer shared organization settings", "register bounded providers"],
+      "threats": [
+        {"id": "localbase-invalid-contract-authorizes", "description": "Missing, stale or manipulated shared data could be interpreted as an authorization or conflict-free state.", "controls": ["AUTHZ-01", "CONTRACT-01", "JOBS-01"], "verification_refs": ["localbase/tests/Service/AdOrganizationSnapshotServiceSmokeTest.php", "localbase/tests/Service/HolidayCalendarServiceSmokeTest.php"], "residual_risk": "Runtime availability of optional providers is outside the static contract test."}
+      ]
+    },
+    {
+      "id": "filzmann_permission_matrix",
+      "assets": ["permission snapshots and baselines", "exports", "access audit and temporary admin grants"],
+      "actors": ["configured viewer", "configured matrix admin", "temporarily authorized Nextcloud admin", "permission provider"],
+      "entry_points": ["page/API routes", "scan job", "export", "public permission provider event"],
+      "trust_boundaries": ["provider coverage to matrix claim", "viewer scope to sensitive export", "Nextcloud/groupfolders public runtime APIs"],
+      "privileges": ["view matrix", "run scan", "approve baseline", "export", "temporary full access"],
+      "threats": [
+        {"id": "matrix-false-positive-or-sensitive-export", "description": "Unsupported permission data could appear allowed, or an unauthorized actor could receive sensitive export/audit data.", "controls": ["AUTHZ-01", "CONTRACT-01", "PRIVACY-01", "AUDIT-01"], "verification_refs": ["filzmann_permission_matrix/tests/unit/AccessServiceTest.php", "filzmann_permission_matrix/tests/unit/ProviderRoadmapContractTest.php"], "residual_risk": "Unsupported adapters remain visible; a complete instance-wide rights proof is not claimed."}
+      ]
+    },
+    {
+      "id": "adcalendar",
+      "assets": ["services and appointments", "meeting membership", "personal defaults", "encrypted external calendar credentials and derived DAV objects"],
+      "actors": ["authenticated employee", "hierarchical/peer planner", "temporarily authorized Nextcloud admin", "reconciliation job", "external calendar provider"],
+      "entry_points": ["calendar and meeting APIs", "OAuth/CalDAV callbacks and admin tests", "background reconciliation", "DAV publisher"],
+      "trust_boundaries": ["organization roles to target-calendar scope", "application data to derived calendars", "user-configured HTTPS endpoint", "OAuth provider"],
+      "privileges": ["read calendar", "edit own/authorized foreign calendar", "manage external connection", "temporary full access"],
+      "threats": [
+        {"id": "adcalendar-cross-scope-write-or-secret-leak", "description": "A direct API call could mutate another calendar or expose/reuse external provider secrets across origins.", "controls": ["AUTHZ-01", "WEB-01", "SECRETS-01", "JOBS-01"], "verification_refs": ["adcalendar/tests/Service/CalendarAccessServiceExecutionTest.php", "adcalendar/tests/Controller/ExternalCalendarControllerSecurityTest.php"], "residual_risk": "External provider behavior and availability are outside repository control."}
+      ]
+    },
+    {
+      "id": "adurlaub",
+      "assets": ["vacation periods, status and notes", "organizational views", "conflict projections"],
+      "actors": ["employee", "authorized manager/peer", "temporarily authorized Nextcloud admin", "schedule-conflict provider"],
+      "entry_points": ["page/API routes", "demo admin", "absence and conflict provider events"],
+      "trust_boundaries": ["organization hierarchy to visible subjects", "approval to optional conflict providers", "privacy/retention projection"],
+      "privileges": ["plan own vacation", "view bounded groups", "approve authorized subject", "temporary full access"],
+      "threats": [
+        {"id": "adurlaub-cross-scope-read-approve", "description": "A user could enumerate another team or approve a vacation without hierarchy, area or peer authority.", "controls": ["AUTHZ-01", "CONTRACT-01", "PRIVACY-01"], "verification_refs": ["adurlaub/tests/VacationVisibilityPolicyTest.php", "adurlaub/tests/VacationAccessServiceTest.php"], "residual_risk": "Retention remains REVIEW-only until a deletion decision exists."}
+      ]
+    },
+    {
+      "id": "orgsuite",
+      "assets": ["suite navigation", "external link configuration", "LocalBase administration adapter"],
+      "actors": ["authenticated user", "Nextcloud admin", "target application"],
+      "entry_points": ["navigation listeners", "entry routes", "external-link admin API"],
+      "trust_boundaries": ["navigation visibility to independent target authorization", "admin-configured HTTPS links", "OrgSuite adapter to LocalBase-owned settings"],
+      "privileges": ["navigate to enabled app", "manage external suite links", "render shared admin adapter"],
+      "threats": [
+        {"id": "orgsuite-navigation-as-authorization", "description": "A visible menu/link could be mistaken for or used as domain authorization, or an unsafe external URL could be stored.", "controls": ["AUTHZ-01", "WEB-01", "CONTRACT-01"], "verification_refs": ["orgsuite/tests/NavigationListenerExecutionTest.php", "orgsuite/tests/ExternalLinkAdminControllerTest.php"], "residual_risk": "Authorization remains the destination app's responsibility."}
+      ]
+    },
+    {
+      "id": "adroom",
+      "assets": ["rooms and bookings", "booking owner UID and free title", "retention preview and admin grants"],
+      "actors": ["authenticated booker", "temporarily authorized Nextcloud admin", "privacy/retention consumer"],
+      "entry_points": ["page/API routes", "room administration", "provider registration"],
+      "trust_boundaries": ["session identity to booking ownership", "admin grant to destructive room management", "free title to privacy output"],
+      "privileges": ["read rooms/bookings", "manage own booking", "manage all rooms/bookings with temporary grant"],
+      "threats": [
+        {"id": "adroom-owner-spoof-or-cascade-delete", "description": "A request could spoof booking ownership or an insufficiently authorized room deletion could remove bookings.", "controls": ["AUTHZ-01", "WEB-01", "PRIVACY-01", "AUDIT-01"], "verification_refs": ["adroom/tests/Service/RoomAccessServiceTest.php", "adroom/tests/Controller/ApiControllerExecutionTest.php"], "residual_risk": "Retention action remains intentionally unimplemented pending policy."}
+      ]
+    },
+    {
+      "id": "adrecruitment",
+      "assets": ["candidate/application records", "mail and status history", "PDF attachments and extracted field evidence", "interviews, BQ and hiring data"],
+      "actors": ["HR", "scoped representative", "payroll/first-support role", "temporarily authorized Nextcloud admin", "mail job"],
+      "entry_points": ["workbench/API routes", "mail inbox/outbox", "PDF AppData download", "background jobs"],
+      "trust_boundaries": ["organization snapshot to granular recruitment scope", "untrusted mail/PDF to normalized storage", "status transition to outbound mail", "application record to hiring projection"],
+      "privileges": ["view/edit scoped application", "change status", "review document", "release mail/hiring", "temporary full access"],
+      "threats": [
+        {"id": "recruitment-scope-file-or-workflow-bypass", "description": "A direct request could cross recruitment scope, retrieve another PDF, overwrite evidence or bypass a status/hiring transition.", "controls": ["AUTHZ-01", "WEB-01", "PRIVACY-01", "JOBS-01"], "verification_refs": ["adrecruitment/tests/AccessServiceTest.php", "adrecruitment/tests/DocumentApiContractTest.php"], "residual_risk": "External candidate self-service and retention remain blocked on approved identity/policy decisions."}
+      ]
+    },
+    {
+      "id": "adbqplanung",
+      "assets": ["BQ runs and curricula", "teaching assignments", "external lecturer contact data", "calendar proposals"],
+      "actors": ["planner", "teacher", "publisher", "temporarily authorized Nextcloud admin", "calendar provider"],
+      "entry_points": ["run/teaching/proposal APIs", "role settings", "blocked-period provider"],
+      "trust_boundaries": ["role groups to planning/publishing capability", "calendar availability to automatic proposal", "external lecturer identity to privacy subject"],
+      "privileges": ["plan runs", "manage teaching", "publish", "temporary full access"],
+      "threats": [
+        {"id": "adbq-role-or-calendar-assumption", "description": "An unconfigured role or unavailable/stale calendar could grant a mutation or be treated as a conflict-free proposal.", "controls": ["AUTHZ-01", "CONTRACT-01", "PRIVACY-01"], "verification_refs": ["adbqplanung/tests/AuthorizationControllerContractTest.php", "adbqplanung/tests/Service/CalendarBlockedPeriodProviderTest.php"], "residual_risk": "External lecturer self-service is unavailable until an authenticated external-subject contract exists."}
+      ]
+    },
+    {
+      "id": "filzmann_data_protection",
+      "assets": ["provider registry and coverage", "transient subject reports", "retention review", "temporary admin grant history"],
+      "actors": ["authenticated subject", "configured privacy reviewer", "temporarily authorized Nextcloud admin", "app provider"],
+      "entry_points": ["self-service routes", "retention review", "public provider events", "temporary-admin controller"],
+      "trust_boundaries": ["session UID to subject request", "provider result to aggregate completeness", "review privilege to cross-subject data"],
+      "privileges": ["view own report", "review bounded provider coverage/retention", "temporary full access"],
+      "threats": [
+        {"id": "privacy-foreign-subject-or-false-completeness", "description": "A caller could select another subject, or a failed/missing provider could be presented as a complete report.", "controls": ["AUTHZ-01", "PRIVACY-01", "CONTRACT-01", "AUDIT-01"], "verification_refs": ["filzmann_data_protection/tests/unit/RetentionAccessTest.php", "filzmann_data_protection/tests/unit/ProviderDiscoveryCoverageTest.php"], "residual_risk": "Provider completeness is inherently bounded and remains visible rather than inferred."}
+      ]
+    }
+  ]
+}

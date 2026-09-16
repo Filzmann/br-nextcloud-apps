@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "required_fields": [
+      "id",
+      "scanner",
+      "repository",
+      "path",
+      "finding_id",
+      "content_hash",
+      "fingerprint",
+      "classification",
+      "reason",
+      "compensating_controls",
+      "review_on",
+      "expires_on"
+    ],
+    "allowed_scanners": ["gitleaks", "semgrep"],
+    "allowed_classifications": ["false-positive", "risk-accepted"],
+    "gitleaks_allowed_classifications": ["false-positive"]
+  },
+  "exceptions": []
+}

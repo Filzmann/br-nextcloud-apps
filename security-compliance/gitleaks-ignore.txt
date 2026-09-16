@@ -1,0 +1,1 @@
+# Intentionally empty. Accepted findings belong only in analysis-exceptions.json.

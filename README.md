@@ -15,6 +15,10 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
   [`docs/privacy-architecture.md`](docs/privacy-architecture.md)
 - Maschinenlesbares Root-Schema für app-eigene Processing-Metadaten:
   [`docs/contracts/privacy-processing-metadata.schema.json`](docs/contracts/privacy-processing-metadata.schema.json)
+- BSI-IT-Grundschutz-orientierte Security-Scope-, Threat- und Nachweismatrix:
+  [`security-compliance/README.md`](security-compliance/README.md)
+- Privater Meldeweg und Umgang mit Sicherheitsmeldungen:
+  [`SECURITY.md`](SECURITY.md)
 - Öffentlicher Leitfaden für Privacy-Provider:
   [`docs/privacy-provider-guide.md`](docs/privacy-provider-guide.md)
 - Portfolioentscheidung zur Berechtigungsmatrix:

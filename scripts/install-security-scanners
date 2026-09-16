@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+manifest="$workspace/security-compliance/scanner-tools.json"
+cache_dir="${SECURITY_SCANNER_CACHE_DIR:-$workspace/.cache/security-scanners}"
+
+if [[ "${1:-}" == '--cache-dir' ]]; then
+    cache_dir="$2"
+    shift 2
+fi
+if (( $# != 0 )); then
+    echo 'Verwendung: scripts/install-security-scanners [--cache-dir pfad]' >&2
+    exit 2
+fi
+if [[ "$(uname -s)" != 'Linux' ]]; then
+    echo 'Die gepinnten Security-Scanner werden derzeit nur auf Linux unterstützt.' >&2
+    exit 2
+fi
+case "$(uname -m)" in
+    x86_64|amd64) platform='linux-amd64' ;;
+    aarch64|arm64) platform='linux-arm64' ;;
+    *) echo "Nicht unterstützte Scanner-Architektur: $(uname -m)" >&2; exit 2 ;;
+esac
+
+umask 077
+mkdir -p "$cache_dir"
+if [[ -L "$cache_dir" ]]; then
+    echo 'Scanner-Cache darf kein Symlink sein.' >&2
+    exit 1
+fi
+bin_dir="$cache_dir/bin/$platform"
+mkdir -p "$bin_dir"
+
+manifest_value() {
+    php -r '
+        $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+        $value = $data["tools"][$argv[2]]["platforms"][$argv[3]][$argv[4]] ?? null;
+        if (!is_string($value) || $value === "") exit(2);
+        echo $value;
+    ' "$manifest" "$1" "$platform" "$2"
+}
+
+install_raw_binary() {
+    local tool="$1"
+    local url expected target temporary
+    url="$(manifest_value "$tool" url)"
+    expected="$(manifest_value "$tool" sha256)"
+    target="$bin_dir/$tool"
+    if [[ -f "$target" && ! -L "$target" && "$(sha256sum "$target" | cut -d' ' -f1)" == "$expected" ]]; then
+        chmod 700 "$target"
+        return
+    fi
+    temporary="$(mktemp "$cache_dir/.${tool}.download.XXXXXX")"
+    if ! curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$url" --output "$temporary"; then
+        rm -f "$temporary"
+        echo "Download des gepinnten Scanners fehlgeschlagen: $tool" >&2
+        exit 1
+    fi
+    if [[ "$(sha256sum "$temporary" | cut -d' ' -f1)" != "$expected" ]]; then
+        rm -f "$temporary"
+        echo "SHA-256-Prüfung des Scannerdownloads fehlgeschlagen: $tool" >&2
+        exit 1
+    fi
+    chmod 700 "$temporary"
+    mv -f "$temporary" "$target"
+}
+
+install_gitleaks() {
+    local url expected archive target stage extracted_hash cached_hash
+    url="$(manifest_value gitleaks url)"
+    expected="$(manifest_value gitleaks sha256)"
+    archive="$cache_dir/gitleaks-$platform.tar.gz"
+    target="$bin_dir/gitleaks"
+    if [[ ! -f "$archive" || -L "$archive" || "$(sha256sum "$archive" | cut -d' ' -f1)" != "$expected" ]]; then
+        rm -f "$archive"
+        archive="$(mktemp "$cache_dir/.gitleaks.download.XXXXXX")"
+        if ! curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$url" --output "$archive"; then
+            rm -f "$archive"
+            echo 'Download des gepinnten Scanners fehlgeschlagen: gitleaks' >&2
+            exit 1
+        fi
+        if [[ "$(sha256sum "$archive" | cut -d' ' -f1)" != "$expected" ]]; then
+            rm -f "$archive"
+            echo 'SHA-256-Prüfung des Scannerdownloads fehlgeschlagen: gitleaks' >&2
+            exit 1
+        fi
+        mv -f "$archive" "$cache_dir/gitleaks-$platform.tar.gz"
+        archive="$cache_dir/gitleaks-$platform.tar.gz"
+    fi
+    stage="$(mktemp -d "$cache_dir/.gitleaks.extract.XXXXXX")"
+    if ! tar -xzf "$archive" -C "$stage" gitleaks || [[ ! -f "$stage/gitleaks" || -L "$stage/gitleaks" ]]; then
+        rm -rf "$stage"
+        echo 'Das geprüfte Gitleaks-Archiv enthält kein reguläres gitleaks-Binary.' >&2
+        exit 1
+    fi
+    extracted_hash="$(sha256sum "$stage/gitleaks" | cut -d' ' -f1)"
+    cached_hash=''
+    if [[ -f "$target" && ! -L "$target" ]]; then
+        cached_hash="$(sha256sum "$target" | cut -d' ' -f1)"
+    fi
+    if [[ "$cached_hash" != "$extracted_hash" ]]; then
+        chmod 700 "$stage/gitleaks"
+        mv -f "$stage/gitleaks" "$target"
+    fi
+    rm -rf "$stage"
+    chmod 700 "$target"
+}
+
+install_gitleaks
+install_raw_binary osv-scanner
+printf '%s\n' "$bin_dir"

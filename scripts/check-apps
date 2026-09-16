@@ -27,6 +27,9 @@ if (( ! skip_structure )); then
     fi
 fi
 
+echo '== Kontextabhängige Security-Impact-Auswertung =='
+"$workspace"/scripts/check-security-compliance --workspace-diff
+
 while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$path" == 'path' ]] && continue
     [[ "$kind" == 'app' ]] || continue

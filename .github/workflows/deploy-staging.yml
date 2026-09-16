@@ -53,6 +53,14 @@ jobs:
           ref: main
           path: control
 
+      - name: Gepinnte Security-Scanner
+        run: |
+          set -euo pipefail
+          bash control/scripts/run-security-scanners \
+            --repository "parent=$GITHUB_WORKSPACE/control" \
+            --repository "$APP_ID=$GITHUB_WORKSPACE/app" \
+            --evidence-file "$RUNNER_TEMP/security-scans.json"
+
       - name: Geprüftes App-Archiv bauen
         run: |
           set -euo pipefail

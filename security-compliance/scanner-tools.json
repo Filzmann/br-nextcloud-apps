@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "tools": {
+    "gitleaks": {
+      "version": "8.30.1",
+      "source": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1",
+      "platforms": {
+        "linux-amd64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+          "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+          "archive": "tar.gz"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz",
+          "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080",
+          "archive": "tar.gz"
+        }
+      }
+    },
+    "osv-scanner": {
+      "version": "2.4.0",
+      "source": "https://github.com/google/osv-scanner/releases/tag/v2.4.0",
+      "platforms": {
+        "linux-amd64": {
+          "url": "https://github.com/google/osv-scanner/releases/download/v2.4.0/osv-scanner_linux_amd64",
+          "sha256": "15314940c10d26af9c6649f150b8a47c1262e8fc7e17b1d1029b0e479e8ed8a0",
+          "archive": "none"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/google/osv-scanner/releases/download/v2.4.0/osv-scanner_linux_arm64",
+          "sha256": "44e580752910f0ff36ec99aff59af20f65df1e859aa31e5605a8f0d055b496e9",
+          "archive": "none"
+        }
+      }
+    },
+    "semgrep": {
+      "version": "1.176.0",
+      "source": "https://github.com/semgrep/semgrep/releases/tag/v1.176.0",
+      "image": "docker.io/semgrep/semgrep:1.176.0-nonroot",
+      "image_digest": "sha256:e5ea1a270ca5557a114ae7a30a8f860cc16a924f8df85cd975688f17c7c97731"
+    }
+  }
+}
