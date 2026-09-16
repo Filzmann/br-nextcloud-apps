@@ -2,13 +2,25 @@ sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 
 [agents]
-max_threads = 3
-max_depth = 1
+enabled = true
+max_concurrent_threads_per_session = 3
 
-[agents.explorer]
-description = "Read-only mapping of files, contracts, and evidence in one explicitly scoped repository."
-config_file = "agents/explorer.toml"
+[agents.routine_worker]
+description = "ROUTINE execution for narrow, deterministic work without architecture or risk decisions."
+config_file = "agents/routine_worker.toml"
+
+[agents.standard_worker]
+description = "STANDARD execution for normal development within established contracts and repository boundaries."
+config_file = "agents/standard_worker.toml"
+
+[agents.complex_worker]
+description = "COMPLEX execution for ambiguous, architectural, security-sensitive, privacy-sensitive, migration, or cross-app work."
+config_file = "agents/complex_worker.toml"
+
+[agents.critical_reviewer]
+description = "CRITICAL_REVIEW execution for independent read-only review of high-impact completed work."
+config_file = "agents/critical_reviewer.toml"
 
 [agents.reviewer]
-description = "Read-only independent review of an existing plan or diff for correctness, security, tests, and rule compliance."
+description = "Codex approval-review support role only; it does not execute classified tasks."
 config_file = "agents/reviewer.toml"

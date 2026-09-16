@@ -27,6 +27,101 @@ overlay_line="$(grep -n '^install_app_snapshots "\$major"$' "$real_driver" | cut
 [[ "$(grep -Ec '^[[:space:]]*write_runtime_smoke_runner$' "$real_driver")" -eq 2 ]] \
     || fail 'Der Runtime-Smoke-Bootstrap wird nach einem Core-Upgrade nicht erneuert.'
 
+# Exercise the generated runtime program, not just a keyword in its source.
+mkdir -p "$stage/runtime/lib"
+python3 - "$real_driver" "$stage/runtime/compatibility-grants.php" <<'PY'
+from pathlib import Path
+import sys
+source = Path(sys.argv[1]).read_text()
+program = source.split('cat > "$project/html/compatibility-grants.php" <<\'PHP\'\n', 1)[1].split('\nPHP\n', 1)[0]
+Path(sys.argv[2]).write_text(program)
+PY
+cat > "$stage/runtime/lib/base.php" <<'PHP'
+<?php
+namespace OCP {
+    class Server {
+        public static function get(string $id): object {
+            return match ($id) {
+                'OCP\IUserManager' => new class { public function get(string $uid): object { return new \stdClass(); } },
+                'OCP\IUserSession' => new class { public function setUser(object $user): void {} },
+                'OCP\App\IAppManager' => new class {
+                    public function isEnabledForUser(string $app): bool { return getenv('DISABLED_OWNER') !== $app; }
+                },
+                'OCP\EventDispatcher\IEventDispatcher' => new class {
+                    public function dispatchTyped(object $event): void {
+                        file_put_contents(getenv('PROVIDER_DISPATCH_LOG'), "dispatch\n", FILE_APPEND);
+                    }
+                },
+                default => throw new \RuntimeException('Unexpected service: ' . $id),
+            };
+        }
+    }
+}
+namespace {
+    class SyntheticRegistryEvent {
+        public function providers(): array {
+            return getenv('PROVIDER_FAULT') === 'missing' ? [] : ['demoapp' => new \stdClass(), 'otherapp' => new \stdClass()];
+        }
+        public function registrationFailures(): array {
+            return getenv('PROVIDER_FAULT') === 'incompatible' ? ['demoapp' => 'Provider incompatible.'] : [];
+        }
+    }
+}
+PHP
+for app in demoapp otherapp; do
+    mkdir -p "$stage/runtime/custom_apps/$app/tests"
+    cat > "$stage/runtime/custom_apps/$app/tests/nextcloud-compatibility-smoke.php" <<'PHP'
+<?php
+return [
+    'uiPath' => '/', 'preGrantUiStatuses' => [200], 'postGrantUiStatuses' => [200],
+    'grantService' => null, 'permissionProbe' => null, 'apiSmokes' => [],
+    'providerRegistrations' => ['demo_owner' => [SyntheticRegistryEvent::class]],
+];
+PHP
+done
+PROVIDER_DISPATCH_LOG="$stage/dispatch.log" php "$stage/runtime/compatibility-grants.php" providers > "$stage/providers.tsv"
+[[ "$(wc -l < "$stage/dispatch.log")" -eq 1 ]] || fail 'A registry was dispatched more than once.'
+grep -Fqx $'demoapp\tSyntheticRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Provider registration was not proved.'
+grep -Fqx $'otherapp\tSyntheticRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Second provider registration was not proved.'
+for fault in missing incompatible; do
+    if PROVIDER_FAULT="$fault" PROVIDER_DISPATCH_LOG="$stage/dispatch.log" php "$stage/runtime/compatibility-grants.php" providers > "$stage/provider-fault.log" 2>&1; then
+        fail "A $fault provider was accepted after installation."
+    fi
+    grep -Eq 'Provider (missing|registration failed)' "$stage/provider-fault.log" || fail 'Provider failure was not diagnosed.'
+done
+DISABLED_OWNER=demo_owner PROVIDER_DISPATCH_LOG="$stage/disabled-dispatch.log" php "$stage/runtime/compatibility-grants.php" providers > "$stage/disabled-providers.tsv"
+[[ ! -e "$stage/disabled-dispatch.log" ]] || fail 'A disabled optional owner was dispatched.'
+grep -Fq 'owner-unavailable' "$stage/disabled-providers.tsv" || fail 'The missing optional owner was hidden.'
+
+python3 - "$stage/runtime/custom_apps/demoapp/tests/nextcloud-compatibility-smoke.php" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+p.write_text(p.read_text().replace(
+    "'grantService' => null, 'permissionProbe' => null",
+    "'grantService' => static function(string $uid): void { file_put_contents(getenv('GRANT_LOG'), $uid); }, 'permissionProbe' => static fn(string $uid): bool => is_file(getenv('GRANT_LOG'))"
+))
+PY
+GRANT_LOG="$stage/grant.log" php "$stage/runtime/compatibility-grants.php" pre > /dev/null
+[[ ! -e "$stage/grant.log" ]] || fail 'The pre-grant probe changed access.'
+GRANT_LOG="$stage/grant.log" php "$stage/runtime/compatibility-grants.php" grant > /dev/null
+[[ "$(cat "$stage/grant.log")" == compat-admin ]] || fail 'The app-local native grant setup did not run.'
+
+# Every included app supplies its own expectations; the Parent has no app list.
+php -r '
+    $root=$argv[1];
+    $rows=array_map(static fn($line)=>str_getcsv($line,"\t","\"",""),file($root."/config/workspace-repositories.tsv",FILE_IGNORE_NEW_LINES));
+    foreach($rows as [$path,$kind,$id]) {
+        if($kind!=="app" || $id==="localbase")continue;
+        $file=$root."/".$path."/tests/nextcloud-compatibility-smoke.php";
+        if(!is_file($file))throw new RuntimeException("App runtime smoke missing: ".$id);
+        $contract=require $file;
+        foreach(["uiPath","preGrantUiStatuses","postGrantUiStatuses","grantService","permissionProbe","apiSmokes","providerRegistrations"] as $key) {
+            if(!array_key_exists($key,$contract))throw new RuntimeException("App runtime contract incomplete: ".$id." / ".$key);
+        }
+    }
+' "$workspace"
+
 make_server() {
     local major="$1"
     local patch="$2"

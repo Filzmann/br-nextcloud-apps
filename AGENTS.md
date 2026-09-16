@@ -29,6 +29,62 @@ Repositories und folgt dem dort lokal mitgeführten Skill
 `work-in-nextcloud-app`. Der technische `workspace-write`-Zugriff erteilt
 keine fachliche Schreibfreigabe.
 
+## KI-Ausführungsrouting
+
+Für delegierbare Arbeit gilt die kleinste ausreichende Ausführungsklasse. Die
+einzige zentrale technische Routing-Policy liegt in `.codex/config.toml` und
+den dort referenzierten Dateien unter `.codex/agents/`; konkrete Modellnamen
+und Reasoning-Stufen stehen ausschließlich dort. Tasks speichern, sofern sie
+dauerhaft erfasst werden, nur `execution_class: ROUTINE|STANDARD|COMPLEX|CRITICAL_REVIEW`.
+
+- `ROUTINE` gilt für eng begrenzte, mechanische und deterministische Arbeit
+  nach einem vorhandenen Muster, ohne neue Architektur-, Berechtigungs-,
+  Datenschutz- oder Security-Entscheidung. Sie wird an `routine_worker`
+  geroutet.
+- `STANDARD` gilt für normale Entwicklung innerhalb bestehender Architektur
+  und bereits definierter Verträge. Sie wird an `standard_worker` geroutet.
+- `COMPLEX` gilt insbesondere für Architektur und Harness/Policy, neue oder
+  geänderte APIs und Shared Contracts, App-Grenzen, Security,
+  Authentifizierung/Autorisierung und Berechtigungen, Datenschutz,
+  Migrationen und persistente Strukturen, Datenintegrität und Nebenläufigkeit,
+  widersprüchliche Anforderungen oder großen Blast Radius. Sie wird an
+  `complex_worker` geroutet.
+- `CRITICAL_REVIEW` ist eine unabhängige Prüfung bereits umgesetzter
+  risikoreicher Arbeit durch `critical_reviewer`. Sie wird nach Risiko und
+  Nutzen eingesetzt und ist keine automatische zweite Prüfung jeder Änderung.
+
+Ist ein Task bereits gültig klassifiziert, wird er ohne separaten
+Modellaufruf und ohne unbegründete Reklassifikation geroutet. Neue oder bei
+der Arbeit entdeckte Tasks werden möglichst deterministisch anhand dieser
+Regeln klassifiziert. Bestehende Security-, Privacy-, Architektur-,
+Repository-, Test- und Stop-Gates sind autoritativ: Sie ziehen eine zu
+niedrige Klasse hoch oder stoppen die Arbeit und können durch Klassifikation
+nie abgeschwächt werden.
+
+Der Coordinator startet die konfigurierte Rolle und darf klassifizierte
+Worker-Arbeit nicht selbst ausführen. Kann die Rolle oder ihre explizite
+Modell-/Reasoning-Konfiguration nicht gestartet werden, endet die Bearbeitung
+ohne Parent-Fallback mit `ROUTING_FAILED`; gemeldet werden Task,
+`execution_class`, vorgesehener Worker und Grund. Codex erzwingt die Werte
+eines gestarteten Custom Agents technisch; das Selbstübernahmeverbot des
+Coordinators ist in der aktuellen Codex-Version eine Instruktionsgrenze und
+keine plattformseitige Ausführungssperre. Es darf nicht als stärkere
+technische Garantie dargestellt werden.
+
+Erkennt ein Worker eine höhere Grenze, stoppt er vor weiteren abhängigen
+Änderungen mit `ESCALATION_REQUIRED`, Ausgangs- und Zielklasse, Grund und
+Fundstelle; der Coordinator routet den Task neu. Ein `COMPLEX`-Worker weist
+klar trennbare mechanische Unteraufgaben mit eigener Klasse aus, damit der
+Coordinator sie an `ROUTINE` oder `STANDARD` herabstufen kann. Worker starten
+keine eigenen Subagents. Bei Bedarf wird knapp Task, Klasse, Worker,
+Konfigurationsdatei, daraus aufgelöstes Modell, Reasoning-Stufe und
+Eskalationsstatus berichtet; Prompts, Secrets und unnötige personenbezogene
+Daten werden nicht protokolliert.
+
+Die separate Rolle `reviewer` bleibt ausschließlich für Codex-
+Freigabeprüfungen erhalten und führt keine klassifizierten Tasks aus. Sie ist
+kein automatischer `CRITICAL_REVIEW`-Schritt.
+
 ## Harte Repositorygrenzen
 
 - Im Parent werden nur Meta-Dokumentation, DDEV-/Workspace-Konfiguration,

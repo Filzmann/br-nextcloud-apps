@@ -13,7 +13,10 @@ required_parent_files=(
     br-nextcloud-apps.code-workspace
     "$manifest"
     .codex/config.toml
-    .codex/agents/explorer.toml
+    .codex/agents/routine_worker.toml
+    .codex/agents/standard_worker.toml
+    .codex/agents/complex_worker.toml
+    .codex/agents/critical_reviewer.toml
     .codex/agents/reviewer.toml
     .agents/skills/create-nextcloud-app/SKILL.md
     .agents/skills/classify-shared-code/SKILL.md
@@ -613,17 +616,32 @@ if 'sandbox_workspace_write' in config:
 agents_config = config.get('agents')
 if not isinstance(agents_config, dict):
     fail('.codex/config.toml: agents muss eine Tabelle sein')
-if agents_config.get('max_depth') != 1 or agents_config.get('max_threads') != 3:
-    fail('Subagent-Grenzen müssen max_depth=1 und max_threads=3 sein')
-expected_agents = {'explorer', 'reviewer'}
-declared = set(agents_config) - {'max_depth', 'max_threads'}
-if declared != expected_agents:
-    fail(f'Erwartete Agenten sind explorer/reviewer, gefunden: {sorted(declared)}')
-for name in sorted(expected_agents):
+if agents_config.get('enabled') is not True:
+    fail('Subagent-Routing muss explizit aktiviert sein')
+if agents_config.get('max_concurrent_threads_per_session') != 3:
+    fail('Subagent-Grenze muss max_concurrent_threads_per_session=3 sein')
+if 'max_threads' in agents_config or 'max_depth' in agents_config:
+    fail('Veraltete oder nicht dokumentierte Subagent-Grenzen sind unzulässig')
+execution_routing = {
+    'ROUTINE': ('routine_worker', 'workspace-write', 'low'),
+    'STANDARD': ('standard_worker', 'workspace-write', 'medium'),
+    'COMPLEX': ('complex_worker', 'workspace-write', 'high'),
+    'CRITICAL_REVIEW': ('critical_reviewer', 'read-only', 'high'),
+}
+scalar_agent_settings = {'enabled', 'max_concurrent_threads_per_session'}
+declared = set(agents_config) - scalar_agent_settings
+expected_agents = {route[0] for route in execution_routing.values()}
+support_agents = {'reviewer'}
+if declared != expected_agents | support_agents:
+    fail(f'Erwartete Klassenrollen fehlen oder Parallelrollen existieren: {sorted(declared)}')
+configured_models: list[tuple[str, Path]] = []
+for execution_class, (name, sandbox_mode, reasoning_effort) in execution_routing.items():
     declaration = agents_config.get(name)
     if not isinstance(declaration, dict):
         fail(f'agents.{name} muss eine Tabelle sein')
-    require_string(declaration.get('description'), f'agents.{name}.description')
+    description = require_string(declaration.get('description'), f'agents.{name}.description')
+    if execution_class not in description:
+        fail(f'agents.{name}.description muss die Ausführungsklasse {execution_class} abbilden')
     relative = Path(require_string(declaration.get('config_file'), f'agents.{name}.config_file'))
     if relative.is_absolute():
         fail(f'agents.{name}.config_file muss relativ sein')
@@ -634,15 +652,86 @@ for name in sorted(expected_agents):
         role = tomllib.load(handle)
     if role.get('name') != name:
         fail(f'{role_path.relative_to(workspace)}: name muss {name} sein')
-    if role.get('sandbox_mode') != 'read-only':
-        fail(f'{role_path.relative_to(workspace)}: sandbox_mode muss read-only sein')
+    model = require_string(role.get('model'), f'{role_path}: model')
+    if not re.fullmatch(r'gpt-[a-z0-9.-]+', model):
+        fail(f'{role_path.relative_to(workspace)}: ungültiger Modellbezeichner')
+    configured_models.append((model, role_path))
+    if role.get('model_reasoning_effort') != reasoning_effort:
+        fail(f'{role_path.relative_to(workspace)}: reasoning muss {reasoning_effort} sein')
+    if role.get('sandbox_mode') != sandbox_mode:
+        fail(f'{role_path.relative_to(workspace)}: sandbox_mode muss {sandbox_mode} sein')
     instructions = require_string(role.get('developer_instructions'), f'{role_path}: developer_instructions')
-    for required_phrase in ('Do not edit files', 'access the network', 'spawn subagents'):
+    for required_phrase in ('Read the applicable AGENTS.md', 'Do not spawn subagents'):
         if required_phrase not in instructions:
             fail(f'{role_path.relative_to(workspace)}: Rollenverbot fehlt: {required_phrase}')
+    if execution_class != 'CRITICAL_REVIEW':
+        for required_phrase in ('ESCALATION_REQUIRED', 'Security', 'permissions', 'privacy', 'migration', 'shared contract'):
+            if required_phrase not in instructions:
+                fail(f'{role_path.relative_to(workspace)}: Eskalationsvertrag fehlt: {required_phrase}')
+    elif 'Do not edit files' not in instructions:
+        fail(f'{role_path.relative_to(workspace)}: Critical Review muss Änderungen verbieten')
     forbidden_keys = {'writable_roots', 'add_dir', 'add_dirs', 'sandbox_workspace_write'}
     if forbidden_keys.intersection(role):
         fail(f'{role_path.relative_to(workspace)} enthält schreibende Sandbox-Optionen')
+
+reviewer_declaration = agents_config.get('reviewer')
+if not isinstance(reviewer_declaration, dict) or 'approval-review support role only' not in require_string(reviewer_declaration.get('description'), 'agents.reviewer.description'):
+    fail('reviewer muss auf die Codex-Freigabeprüfung begrenzt sein')
+reviewer_relative = Path(require_string(reviewer_declaration.get('config_file'), 'agents.reviewer.config_file'))
+reviewer_path = (config_path.parent / reviewer_relative).resolve()
+if reviewer_relative.is_absolute() or not reviewer_path.is_relative_to(config_path.parent.resolve()) or not reviewer_path.is_file():
+    fail('Ungültiger Agentpfad für reviewer')
+with reviewer_path.open('rb') as handle:
+    reviewer_role = tomllib.load(handle)
+if reviewer_role.get('name') != 'reviewer' or reviewer_role.get('sandbox_mode') != 'read-only':
+    fail('reviewer muss die read-only Codex-Freigaberolle bleiben')
+reviewer_model = require_string(reviewer_role.get('model'), f'{reviewer_path}: model')
+if not re.fullmatch(r'gpt-[a-z0-9.-]+', reviewer_model) or reviewer_role.get('model_reasoning_effort') != 'high':
+    fail('reviewer braucht ein explizites Modell und high reasoning')
+reviewer_instructions = require_string(reviewer_role.get('developer_instructions'), f'{reviewer_path}: developer_instructions')
+for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE', 'Do not edit files', 'spawn subagents'):
+    if required_phrase not in reviewer_instructions:
+        fail(f'{reviewer_path.relative_to(workspace)}: Freigabegrenze fehlt: {required_phrase}')
+configured_models.append((reviewer_model, reviewer_path))
+
+for required_phrase in (
+    '## KI-Ausführungsrouting',
+    '`ROUTINE`',
+    '`STANDARD`',
+    '`COMPLEX`',
+    '`CRITICAL_REVIEW`',
+    'execution_class',
+    'ROUTING_FAILED',
+    'ESCALATION_REQUIRED',
+    'nicht selbst ausführen',
+    'bereits gültig klassifiziert',
+):
+    if required_phrase not in parent_text:
+        fail(f'Root-AGENTS.md: Routingvertrag fehlt: {required_phrase}')
+
+tracked_parent_files = subprocess.run(
+    ('git', 'ls-files'),
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines()
+untracked_parent_files = subprocess.run(
+    ('git', 'ls-files', '--others', '--exclude-standard'),
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines()
+for relative_text_path in sorted(set(tracked_parent_files + untracked_parent_files)):
+    candidate = workspace / relative_text_path
+    if not candidate.is_file() or candidate in {role_path for _, role_path in configured_models}:
+        continue
+    try:
+        candidate_text = candidate.read_text(encoding='utf-8')
+    except UnicodeDecodeError:
+        continue
+    for model, _ in configured_models:
+        if model in candidate_text:
+            fail(f'Konkreter Modellname außerhalb der zentralen Rollenpolicy: {relative_text_path}')
 PY
 
 tracking_warning=0

@@ -197,7 +197,7 @@ write_runtime_smoke_runner() {
 <?php
 define('OC_CONSOLE', true);
 $phase = $argv[1] ?? '';
-if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'apis'], true)) {
+if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'providers', 'apis'], true)) {
     throw new RuntimeException('Unknown compatibility smoke phase.');
 }
 $registrationClasses = [];
@@ -221,6 +221,7 @@ $session = \OCP\Server::get(\OCP\IUserSession::class);
 $user = $users->get($uid);
 if ($user === null) throw new RuntimeException('Compatibility admin is missing.');
 $session->setUser($user);
+$providerEvents = [];
 
 try {
     $appRoots = glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [];
@@ -239,6 +240,32 @@ try {
         }
     }
     $probe = $contract['permissionProbe'];
+    if ($phase === 'providers') {
+        if (!isset($contract['providerRegistrations']) || !is_array($contract['providerRegistrations'])) {
+            throw new RuntimeException('Provider registration expectations are missing for ' . $app);
+        }
+        foreach ($contract['providerRegistrations'] as $owner => $eventClasses) {
+            if (!\OCP\Server::get(\OCP\App\IAppManager::class)->isEnabledForUser($owner)) {
+                echo implode("\t", [$app, $owner, 'owner-unavailable']) . "\n";
+                continue;
+            }
+            foreach ($eventClasses as $eventClass) {
+                if (!isset($providerEvents[$eventClass])) {
+                    $event = new $eventClass();
+                    \OCP\Server::get(\OCP\EventDispatcher\IEventDispatcher::class)->dispatchTyped($event);
+                    if ($event->registrationFailures() !== []) {
+                        throw new RuntimeException('Provider registration failed for ' . $eventClass);
+                    }
+                    $providerEvents[$eventClass] = $event->providers();
+                }
+                if (!isset($providerEvents[$eventClass][$app])) {
+                    throw new RuntimeException('Provider missing after installation: ' . $app . ' / ' . $eventClass);
+                }
+                echo implode("\t", [$app, $eventClass, 'registered']) . "\n";
+            }
+        }
+        continue;
+    }
     if ($phase === 'registrations') {
         foreach ($registrationClasses[$app] ?? [] as $expression => $classes) {
             foreach ($classes as $class) {
@@ -263,6 +290,9 @@ try {
         if (!$service->hasActiveGrant($uid)) {
             throw new RuntimeException('Temporary grant is inactive for ' . $app);
         }
+    }
+    if ($phase === 'grant' && is_callable($contract['grantService'])) {
+        ($contract['grantService'])($uid);
     }
     if ($phase === 'grant' && is_callable($probe) && $probe($uid) !== true) {
         throw new RuntimeException('Protected capability remains unavailable after grant for ' . $app);
@@ -414,6 +444,7 @@ verify_runtime() {
         done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
     fi
     runtime_smokes registrations "$effective_major" > "$result_dir/registrations-$effective_major.tsv"
+    runtime_smokes providers "$effective_major" > "$result_dir/providers-$effective_major.tsv"
     occ background-job:list --output=json > "$result_dir/background-jobs-$effective_major.json"
     php -r '
         $jobs=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);

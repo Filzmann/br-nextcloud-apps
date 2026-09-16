@@ -201,4 +201,37 @@ if ($registration->registrationFailures() !== ['incompatible_app' => 'Processing
     throw new RuntimeException('Ein inkompatibler Provider bleibt nicht kontrolliert diagnostizierbar.');
 }
 
+// Independent schema validation detects drift in the PHP contract. Reuse the
+// app's recipient cases; expected accept/reject results are not derived from
+// the validator under test. Discover real catalogs through the verified registry.
+$schemaCases = require $workspace . '/filzmann_data_protection/tests/fixtures/processing-metadata-recipients.php';
+foreach ($registration->providers() as $appId => $registeredProvider) {
+    $schemaCases['catalog ' . $appId] = ['valid' => true, 'payload' => $registeredProvider->catalog()->toArray()];
+}
+$schemaCheck = <<<'PY'
+import json, sys
+from jsonschema import Draft202012Validator
+with open(sys.argv[1], encoding='utf-8') as source:
+    schema = json.load(source)
+Draft202012Validator.check_schema(schema)
+validator = Draft202012Validator(schema)
+for name, case in json.load(sys.stdin).items():
+    if validator.is_valid(case['payload']) != case['valid']:
+        raise SystemExit('Processing schema/runtime contract differs: ' + name)
+print('Real processing catalogs and shared recipient cases match the canonical schema.')
+PY;
+$process = proc_open(
+    ['python3', '-c', $schemaCheck, $workspace . '/docs/contracts/privacy-processing-metadata.schema.json'],
+    [0 => ['pipe', 'r'], 1 => STDOUT, 2 => STDERR],
+    $pipes,
+);
+if (!is_resource($process)) {
+    throw new RuntimeException('Processing schema validator could not start (requires python3-jsonschema).');
+}
+fwrite($pipes[0], json_encode($schemaCases, JSON_THROW_ON_ERROR));
+fclose($pipes[0]);
+if (proc_close($process) !== 0) {
+    throw new RuntimeException('Processing schema validation failed (requires python3-jsonschema).');
+}
+
 echo "Processing-Metadata-Provider-V1-Vertrag geprüft: adroom, adplaner, adcalendar, adurlaub, adrecruitment, brstunden, brtop, adbqplanung, filzmann_permission_matrix\n";
