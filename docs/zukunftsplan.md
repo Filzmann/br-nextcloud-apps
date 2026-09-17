@@ -274,8 +274,16 @@ kleinste notwendige Verbindung beschreibt.
 | ZM-03 | Personalbedarfsprognose | eigenständige Auswertung auf freigegebenen Aggregaten, keine zweite Personal- oder Planungswahrheit | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
 | ZM-04 | Kapazitäts-/Fallbackplanung | Produktgrenze noch nicht entscheidbar | zuerst klären, ob lokale Erweiterung, gebündelte Bibliothek oder eigenständige Laufzeit-App gemäß ADR 0001 |
 | ZM-05 | Aggregierte Berichte | nur datensparsame, zweckgebundene und berechtigte Projektionen aus kanonischen Quellen | Berichtsempfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
-| ZM-06 | suiteweite Lokalisierung | systemweiter Rolloutentscheid im Root; technische IDs, Status, API-Schlüssel und ISO-Werte bleiben sprachneutral; App-Umsetzung erfolgt später app-lokal | Pilot-App, unterstützte Locales, persönliche oder organisationsweite Dokumentsprache, Fallback und Rohtext-Gate |
 | ZM-07 | Recruitment–BQ-Integration | optionaler versionierter Capability-/Eventvertrag; beide Apps bleiben ohne Provider fachlich nutzbar | kleinster Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
+| ZM-06 | suiteweite Lokalisierung | bewusst zurückgestellt und niedrigste Priorität; technische IDs, Status, API-Schlüssel und ISO-Werte bleiben sprachneutral; App-Umsetzung erfolgt später app-lokal | erst nach erneuter ausdrücklicher Freigabe: Pilot-App, unterstützte Locales, persönliche oder organisationsweite Dokumentsprache, Fallback und Rohtext-Gate |
+
+Prioritätsentscheid vom 17. September 2026: `ZM-06` steht hinter allen
+anderen derzeit bekannten Vorhaben und wird vorerst nicht umgesetzt. Neue
+Funktionen und Codeänderungen berücksichtigen an den jeweils berührten
+Stellen die spätere Lokalisierbarkeit und halten insbesondere technische
+Kennungen und Fachwerte von sichtbaren Texten getrennt. Daraus entsteht kein
+eigenständiger Lokalisierungs- oder Übersetzungsumfang; der systemweite
+Rollout beginnt erst nach einer erneuten ausdrücklichen Freigabe.
 
 ### Fachlicher Zielrahmen der noch nicht freigegebenen Module
 
