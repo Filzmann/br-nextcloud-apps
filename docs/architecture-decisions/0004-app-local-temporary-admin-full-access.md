@@ -94,13 +94,23 @@ Ende der Freigabe als administrativ konfigurierbarer Standardwert. Das
 tatsächliche Ende ist der frühere Zeitpunkt aus geplantem Ende und wirksamem
 Widerruf. Mitglieder der Gruppe `Datenschutzbeauftragte` dürfen den Wert
 verkürzen oder verlängern; Änderungen werden anhand dieses ursprünglichen
-Triggers auch auf bereits vorhandene Historieneinträge angewendet. Die
-fachliche Maßnahme nach Fristablauf, Sperren sowie Backup-/Restore-Verhalten
-sind noch nicht entschieden. Bis diese Punkte samt Policyversion,
-Wirksamkeitszeitpunkt, sicherer rückwirkender Neuberechnung, Nebenläufigkeit,
-Fehlerdiagnostik und Roll-forward appweise freigegeben und getestet sind,
-bleibt jede automatische Löschung, Anonymisierung oder Einschränkung
-blockiert.
+Triggers auch auf bereits vorhandene Historieneinträge angewendet. Nach
+Fristablauf wird der Historieneintrag vollständig gelöscht; es bleibt weder
+eine anonymisierte Spur noch eine Statistik. Eine aktive rechtliche oder
+datenschutzrechtliche Sperre verhindert die Löschung; nur Mitglieder von
+`Datenschutzbeauftragte` dürfen sie begründet und auditierbar aufheben. Nach
+einem Restore wird die Frist vom ursprünglichen tatsächlichen Ende neu
+bewertet, ohne eine Freigabe zu reaktivieren. Abgelaufene ungesperrte
+Nachweise werden erneut zur automatischen Löschung eingeplant; eine manuelle
+Einzelfreigabe ist dafür nicht vorgesehen.
+
+Diese fachliche Entscheidung ist noch nicht als Retention-Ausführung
+implementiert. Bis Policyversion und Wirksamkeitszeitpunkt,
+Ausführungsreihenfolge, Atomarität, Nebenläufigkeit und Idempotenz,
+Backupgrenze, Sperrdurchsetzung, Auditvollständigkeit, automatische
+Wiederholungen, datensparsame Fehlermeldung, 30-tägiger technischer
+Fehlernachweis, Fehlerrückbau sowie Provider-/Consumer-Verhalten appweise
+freigegeben und getestet sind, bleibt jede automatische Löschung blockiert.
 
 Jede App belegt mindestens:
 

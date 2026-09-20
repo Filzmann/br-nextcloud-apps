@@ -356,6 +356,46 @@ oder fehlende Konfiguration, unbekannte Ereignisse und widersprüchliche Daten
 führen zu keiner destruktiven Aktion. Läufe sind gebatcht, wiederholbar,
 nebenläufigkeitssicher und je Provider fehlerisoliert.
 
+### Beschlossene Retention-Leitplanken und offener Ausführungsvertrag
+
+Fachliche Retentionwerte werden app-eigen und versioniert geführt. Nur
+Mitglieder der kanonischen Nextcloud-Gruppe `Datenschutzbeauftragte` dürfen
+sie konfigurieren. Eine Änderung gilt anhand des ursprünglichen fachlichen
+Triggers auch für bereits vorhandene Daten. Die Änderungshistorie der
+Retentionkonfiguration wird 24 Monate aufbewahrt und mindestens jährlich
+durch diese Gruppe überprüft. Dieser Auditvertrag ist noch nicht
+implementiert.
+
+Für beendete Raumbuchungen gilt ein konfigurierbarer Standardwert von einem
+Jahr ab Buchungsende; für app-lokale Adminfreigabehistorien gelten sechs
+Monate ab tatsächlichem Freigabeende. Nach Fristablauf ist jeweils `DELETE`
+vorgesehen, ohne anonymisierten Restbestand oder statistische Ableitung. Eine
+aktive rechtliche oder datenschutzrechtliche Sperre verhindert die Löschung
+und begrenzt die Nutzung auf den dokumentierten Sperrzweck. Nur Mitglieder
+von `Datenschutzbeauftragte` dürfen eine Sperre begründet und auditierbar
+aufheben.
+
+Nach einer Wiederherstellung bewertet die Fachapp den ursprünglichen Trigger
+mit der dann wirksamen Policy erneut. Bereits abgelaufene und nicht gesperrte
+Daten werden erneut zur Löschung eingeplant; eine wiederhergestellte
+Adminfreigabehistorie reaktiviert niemals fachlichen Zugriff. Die spätere
+Ausführung erfolgt automatisch ohne manuelle Einzelfreigabe. Nach
+automatischen Wiederholungsversuchen erhält `Datenschutzbeauftragte` eine
+datensparsame Fehlermeldung nur mit App, Datenklasse, Zeitpunkt und technischer
+Referenz. Der technische Fehlernachweis wird 30 Tage aufbewahrt und enthält
+keine Fachinhalte oder unnötigen Personenkennungen.
+
+Diese Entscheidungen aktivieren keine Löschung. Vor einer ausführenden
+Vertragsversion bleiben Policyversion und Wirksamkeitszeitpunkt,
+Ausführungsreihenfolge, Atomarität, Nebenläufigkeit und Idempotenz, die
+betriebliche Backupgrenze, technische Sperrdurchsetzung, Auditvollständigkeit,
+Fehlerrückbau sowie Provider-/Consumer-Verhalten appweise zu definieren und
+positiv wie negativ zu testen. Bis dahin bleibt der öffentliche V1-Vertrag
+bei `REVIEW`. Die zentrale Datenschutz-App darf Läufe koordinieren, löscht
+aber niemals selbst in Datenbanken, Dateien oder sonstigen Speichern einer
+Fachapp; die app-eigenen Provider und Policies bleiben die einzige fachliche
+Quelle und Ausführungsgrenze.
+
 ## `SubjectLifecycleProvider`
 
 Der konzeptionelle Minimalvertrag lautet:

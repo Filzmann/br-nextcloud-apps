@@ -24,7 +24,7 @@ for source in \
     docs/zukunftsplan.md \
     .agents/skills/create-nextcloud-app/SKILL.md \
     .agents/skills/verify-workspace/SKILL.md; do
-    rg -Fq "$privacy_contract" "$workspace/$source" \
+    grep -Fq -- "$privacy_contract" "$workspace/$source" \
         || fail "$source verweist nicht auf $privacy_contract"
 done
 
@@ -59,11 +59,11 @@ for contract in \
         || fail "Normative Quelle enthält den Vertrag nicht: $contract"
 done
 
-rg -Fq 'resources/privacy-processing.json' "$workspace/$app_structure" \
+grep -Fq -- 'resources/privacy-processing.json' "$workspace/$app_structure" \
     || fail "$app_structure enthält den kanonischen app-lokalen Katalogpfad nicht"
 
 for source in AGENTS.md README.md docs/privacy-provider-guide.md; do
-    rg -Fq 'privacy-processing-metadata.schema.json' "$workspace/$source" \
+    grep -Fq -- 'privacy-processing-metadata.schema.json' "$workspace/$source" \
         || fail "$source verweist nicht auf das Processing-Metadata-Schema"
 done
 
