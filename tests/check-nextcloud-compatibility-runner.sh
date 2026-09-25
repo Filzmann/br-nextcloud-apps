@@ -16,6 +16,10 @@ fail() {
 grep -Fq 'omit_containers:' "$real_driver" || fail 'Der Runtime-Driver isoliert den Datenbankcontainer nicht.'
 grep -Fq -- '--database=sqlite' "$real_driver" || fail 'Der Runtime-Driver verwendet keine isolierte SQLite-Datenbank.'
 grep -Fq 'nextcloud-compatibility-smoke.php' "$real_driver" || fail 'Der Runtime-Driver nutzt den app-lokalen Smoke-Vertrag nicht.'
+grep -Fq 'runtime_smokes providers "$effective_major" > "$result_dir/providers-$suffix.tsv"' "$real_driver" \
+    || fail 'Der Runtime-Driver prüft Provider-Discovery nicht in jedem Lifecycle-Zustand.'
+grep -Fq 'NC_COMPAT_ROLLBACK_APPS_ROOT' "$real_driver" \
+    || fail 'Der Runtime-Driver besitzt keinen expliziten Rollback-Snapshotvertrag.'
 snapshot_line="$(grep -n '^copy_app_snapshots$' "$real_driver" | cut -d: -f1)"
 preflight_line="$(grep -n '^verify_app_tests "\$major"$' "$real_driver" | cut -d: -f1)"
 install_line="$(grep -n '^install_core "\$major"$' "$real_driver" | cut -d: -f1)"
@@ -44,6 +48,15 @@ namespace OCP {
             return match ($id) {
                 'OCP\IUserManager' => new class { public function get(string $uid): object { return new \stdClass(); } },
                 'OCP\IUserSession' => new class { public function setUser(object $user): void {} },
+                'OCP\IGroupManager' => new class {
+                    public function get(string $group): ?object { return null; }
+                    public function createGroup(string $group): object {
+                        return new class($group) {
+                            public function __construct(private string $group) {}
+                            public function addUser(object $user): void { file_put_contents(getenv('GRANT_GROUP_LOG'), $this->group . "\n", FILE_APPEND); }
+                        };
+                    }
+                },
                 'OCP\App\IAppManager' => new class {
                     public function isEnabledForUser(string $app): bool { return getenv('DISABLED_OWNER') !== $app; }
                 },
@@ -66,6 +79,11 @@ namespace {
             return getenv('PROVIDER_FAULT') === 'incompatible' ? ['demoapp' => 'Provider incompatible.'] : [];
         }
     }
+    class SyntheticLegacyRegistryEvent {
+        public function providers(): array {
+            return ['demoapp' => new \stdClass(), 'otherapp' => new \stdClass()];
+        }
+    }
 }
 PHP
 for app in demoapp otherapp; do
@@ -74,15 +92,20 @@ for app in demoapp otherapp; do
 <?php
 return [
     'uiPath' => '/', 'preGrantUiStatuses' => [200], 'postGrantUiStatuses' => [200],
-    'grantService' => null, 'permissionProbe' => null, 'apiSmokes' => [],
-    'providerRegistrations' => ['demo_owner' => [SyntheticRegistryEvent::class]],
+    'grantService' => null, 'grantManagerGroups' => ['demo-privacy-group'], 'permissionProbe' => null, 'apiSmokes' => [],
+    'providerSetup' => static function(): void { file_put_contents(getenv('PROVIDER_SETUP_LOG'), "setup\n", FILE_APPEND); },
+    'providerRegistrations' => ['demo_owner' => [SyntheticRegistryEvent::class, SyntheticLegacyRegistryEvent::class]],
 ];
 PHP
 done
+PROVIDER_SETUP_LOG="$stage/provider-setup.log" php "$stage/runtime/compatibility-grants.php" setup-providers > "$stage/provider-setup.tsv"
+[[ "$(wc -l < "$stage/provider-setup.log")" -eq 2 ]] || fail 'App-lokales Provider-Setup wurde nicht vollständig ausgeführt.'
 PROVIDER_DISPATCH_LOG="$stage/dispatch.log" php "$stage/runtime/compatibility-grants.php" providers > "$stage/providers.tsv"
-[[ "$(wc -l < "$stage/dispatch.log")" -eq 1 ]] || fail 'A registry was dispatched more than once.'
+[[ "$(wc -l < "$stage/dispatch.log")" -eq 2 ]] || fail 'Registries were not dispatched exactly once each.'
 grep -Fqx $'demoapp\tSyntheticRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Provider registration was not proved.'
 grep -Fqx $'otherapp\tSyntheticRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Second provider registration was not proved.'
+grep -Fqx $'demoapp\tSyntheticLegacyRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Legacy provider registration was not proved.'
+grep -Fqx $'otherapp\tSyntheticLegacyRegistryEvent\tregistered' "$stage/providers.tsv" || fail 'Second legacy provider registration was not proved.'
 for fault in missing incompatible; do
     if PROVIDER_FAULT="$fault" PROVIDER_DISPATCH_LOG="$stage/dispatch.log" php "$stage/runtime/compatibility-grants.php" providers > "$stage/provider-fault.log" 2>&1; then
         fail "A $fault provider was accepted after installation."
@@ -98,13 +121,14 @@ from pathlib import Path
 import sys
 p = Path(sys.argv[1])
 p.write_text(p.read_text().replace(
-    "'grantService' => null, 'permissionProbe' => null",
-    "'grantService' => static function(string $uid): void { file_put_contents(getenv('GRANT_LOG'), $uid); }, 'permissionProbe' => static fn(string $uid): bool => is_file(getenv('GRANT_LOG'))"
+    "'grantService' => null, 'grantManagerGroups' => ['demo-privacy-group'], 'permissionProbe' => null",
+    "'grantService' => static function(string $uid): void { file_put_contents(getenv('GRANT_LOG'), $uid); }, 'grantManagerGroups' => ['demo-privacy-group'], 'permissionProbe' => static fn(string $uid): bool => is_file(getenv('GRANT_LOG'))"
 ))
 PY
 GRANT_LOG="$stage/grant.log" php "$stage/runtime/compatibility-grants.php" pre > /dev/null
 [[ ! -e "$stage/grant.log" ]] || fail 'The pre-grant probe changed access.'
-GRANT_LOG="$stage/grant.log" php "$stage/runtime/compatibility-grants.php" grant > /dev/null
+GRANT_LOG="$stage/grant.log" GRANT_GROUP_LOG="$stage/grant-groups.log" php "$stage/runtime/compatibility-grants.php" grant > /dev/null
+[[ "$(wc -l < "$stage/grant-groups.log")" -eq 2 ]] || fail 'The app-local grant-manager group setup did not run.'
 [[ "$(cat "$stage/grant.log")" == compat-admin ]] || fail 'The app-local native grant setup did not run.'
 
 # Every included app supplies its own expectations; the Parent has no app list.

@@ -197,7 +197,7 @@ write_runtime_smoke_runner() {
 <?php
 define('OC_CONSOLE', true);
 $phase = $argv[1] ?? '';
-if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'providers', 'apis'], true)) {
+if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'setup-providers', 'providers', 'apis'], true)) {
     throw new RuntimeException('Unknown compatibility smoke phase.');
 }
 $registrationClasses = [];
@@ -229,6 +229,10 @@ try {
     foreach ($appRoots as $appRoot) {
     $app = basename($appRoot);
     if ($app === 'localbase') continue;
+    if (in_array($phase, ['describe', 'apis'], true)
+        && !\OCP\Server::get(\OCP\App\IAppManager::class)->isEnabledForUser($app)) {
+        continue;
+    }
     $contractPath = $appRoot . '/tests/nextcloud-compatibility-smoke.php';
     if (!is_file($contractPath)) {
         throw new RuntimeException('Compatibility smoke contract is missing for ' . $app);
@@ -240,6 +244,13 @@ try {
         }
     }
     $probe = $contract['permissionProbe'];
+    if ($phase === 'setup-providers') {
+        if (isset($contract['providerSetup']) && is_callable($contract['providerSetup'])) {
+            ($contract['providerSetup'])();
+        }
+        echo implode("\t", [$app, 'setup-complete']) . "\n";
+        continue;
+    }
     if ($phase === 'providers') {
         if (!isset($contract['providerRegistrations']) || !is_array($contract['providerRegistrations'])) {
             throw new RuntimeException('Provider registration expectations are missing for ' . $app);
@@ -253,7 +264,7 @@ try {
                 if (!isset($providerEvents[$eventClass])) {
                     $event = new $eventClass();
                     \OCP\Server::get(\OCP\EventDispatcher\IEventDispatcher::class)->dispatchTyped($event);
-                    if ($event->registrationFailures() !== []) {
+                    if (method_exists($event, 'registrationFailures') && $event->registrationFailures() !== []) {
                         throw new RuntimeException('Provider registration failed for ' . $eventClass);
                     }
                     $providerEvents[$eventClass] = $event->providers();
@@ -283,6 +294,23 @@ try {
     }
     if ($phase === 'pre' && is_callable($probe) && $probe($uid) !== false) {
         throw new RuntimeException('Protected capability is unexpectedly available before grant for ' . $app);
+    }
+    if ($phase === 'grant' && isset($contract['grantManagerGroups'])) {
+        $grantManagerGroups = is_callable($contract['grantManagerGroups'])
+            ? ($contract['grantManagerGroups'])()
+            : $contract['grantManagerGroups'];
+        if (!is_array($grantManagerGroups)) {
+            throw new RuntimeException('Grant-manager groups are invalid for ' . $app);
+        }
+        $groups = \OCP\Server::get(\OCP\IGroupManager::class);
+        foreach ($grantManagerGroups as $groupId) {
+            if (!is_string($groupId) || trim($groupId) === '') {
+                throw new RuntimeException('Grant-manager group is invalid for ' . $app);
+            }
+            $group = $groups->get($groupId) ?? $groups->createGroup($groupId);
+            if ($group === null) throw new RuntimeException('Grant-manager group could not be created for ' . $app);
+            $group->addUser($user);
+        }
     }
     if ($phase === 'grant' && is_string($contract['grantService'])) {
         $service = \OCP\Server::get($contract['grantService']);
@@ -317,9 +345,10 @@ runtime_smokes() {
 verify_runtime_smoke_coverage() {
     local phase="$1"
     local file="$2"
+    local excluded_app="${3:-}"
     local expected actual expected_rows rows
     expected="$(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
-        | grep -Fvx 'localbase' | sort || true)"
+        | grep -Fvx 'localbase' | { if [[ -n "$excluded_app" ]]; then grep -Fvx "$excluded_app"; else cat; fi; } | sort || true)"
     actual="$(cut -f1 "$file" | sed '/^$/d' | sort -u)"
     expected_rows="$(printf '%s\n' "$expected" | sed '/^$/d' | wc -l)"
     rows="$(sed '/^$/d' "$file" | wc -l)"
@@ -331,23 +360,84 @@ verify_runtime_smoke_coverage() {
 verify_consumer_runtime() {
     local effective_major="$1"
     local suffix="$2"
+    local excluded_app="${3:-}"
     local base_url="https://$project_name.$project_tld"
     local app path expected_statuses status
 
-    runtime_smokes describe "$effective_major" > "$result_dir/runtime-smokes-$suffix.tsv"
-    verify_runtime_smoke_coverage describe "$result_dir/runtime-smokes-$suffix.tsv"
+    runtime_smokes setup-providers "$effective_major" > "$result_dir/provider-setup-$suffix.tsv"
+    runtime_smokes providers "$effective_major" > "$result_dir/providers-$suffix.tsv"
+    runtime_smokes describe "$effective_major" > "$result_dir/runtime-smokes-$suffix-all.tsv"
+    if [[ -n "$excluded_app" ]]; then
+        awk -F $'\t' -v excluded="$excluded_app" '$1 != excluded' "$result_dir/runtime-smokes-$suffix-all.tsv" \
+            > "$result_dir/runtime-smokes-$suffix.tsv"
+    else
+        cp "$result_dir/runtime-smokes-$suffix-all.tsv" "$result_dir/runtime-smokes-$suffix.tsv"
+    fi
+    verify_runtime_smoke_coverage describe "$result_dir/runtime-smokes-$suffix.tsv" "$excluded_app"
     while IFS=$'\t' read -r app path expected_statuses probe; do
         status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/ui-$app-$suffix.html" --write-out '%{http_code}' "$base_url$path")"
         [[ ",$expected_statuses," == *",$status,"* ]] \
             || fail "$app UI lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
     done < "$result_dir/runtime-smokes-$suffix.tsv"
 
-    runtime_smokes apis "$effective_major" > "$result_dir/api-smokes-$suffix.tsv"
+    runtime_smokes apis "$effective_major" > "$result_dir/api-smokes-$suffix-all.tsv"
+    if [[ -n "$excluded_app" ]]; then
+        awk -F $'\t' -v excluded="$excluded_app" '$1 != excluded' "$result_dir/api-smokes-$suffix-all.tsv" \
+            > "$result_dir/api-smokes-$suffix.tsv"
+    else
+        cp "$result_dir/api-smokes-$suffix-all.tsv" "$result_dir/api-smokes-$suffix.tsv"
+    fi
     while IFS=$'\t' read -r app path expected_statuses; do
         status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/api-$app-$suffix.json" --write-out '%{http_code}' "$base_url$path")"
         [[ ",$expected_statuses," == *",$status,"* ]] \
             || fail "$app API lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
     done < "$result_dir/api-smokes-$suffix.tsv"
+}
+replace_lifecycle_snapshots() {
+    local snapshots_root="$1"
+    local effective_major="$2"
+    local provider="$3"
+    local phase="$4"
+    local provider_already_disabled="$5"
+    local source app destination expected_version
+    [[ -d "$snapshots_root" ]] || fail "Lifecycle-Snapshotverzeichnis fehlt: $snapshots_root"
+    mapfile -t lifecycle_sources < <(find "$snapshots_root" -mindepth 1 -maxdepth 1 -type d -print | sort)
+    ((${#lifecycle_sources[@]} > 0)) || fail "Lifecycle-Snapshots fehlen: $snapshots_root"
+
+    for source in "${lifecycle_sources[@]}"; do
+        app="$(basename "$source")"
+        destination="$project/html/custom_apps/$app"
+        [[ -d "$destination" ]] || fail "Lifecycle-App ist nicht installiert: $app"
+        if [[ "$app" == "$provider" && "$provider_already_disabled" == 1 ]]; then
+            continue
+        fi
+        occ app:disable "$app" >> "$result_dir/lifecycle-$provider-$phase-disable-$effective_major.log" 2>&1
+    done
+    for source in "${lifecycle_sources[@]}"; do
+        app="$(basename "$source")"
+        destination="$project/html/custom_apps/$app"
+        rm -rf "$destination"
+        install_app_snapshot "$source" "$destination" "$effective_major"
+    done
+    for app in localbase "$provider"; do
+        [[ -d "$snapshots_root/$app" ]] || continue
+        occ app:enable "$app" >> "$result_dir/lifecycle-$provider-$phase-enable-$effective_major.log" 2>&1
+    done
+    for source in "${lifecycle_sources[@]}"; do
+        app="$(basename "$source")"
+        [[ "$app" == localbase || "$app" == "$provider" ]] && continue
+        occ app:enable "$app" >> "$result_dir/lifecycle-$provider-$phase-enable-$effective_major.log" 2>&1
+    done
+    occ app:list --output=json > "$result_dir/lifecycle-$provider-$phase-apps-$effective_major.json"
+    for source in "${lifecycle_sources[@]}"; do
+        app="$(basename "$source")"
+        expected_version="$(php -r '$xml=simplexml_load_file($argv[1]); if ($xml === false) exit(2); echo (string)$xml->version;' "$source/appinfo/info.xml")"
+        php -r '
+            $apps=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            $actual=$apps["enabled"][$argv[2]]??null;
+            if($actual!==$argv[3])throw new RuntimeException("Lifecycle app version mismatch: ".var_export($actual,true));
+        ' "$result_dir/lifecycle-$provider-$phase-apps-$effective_major.json" "$app" "$expected_version"
+    done
 }
 
 verify_optional_provider_lifecycle() {
@@ -356,11 +446,12 @@ verify_optional_provider_lifecycle() {
     [[ -n "$provider" ]] || return 0
     [[ "$provider" =~ ^[a-z][a-z0-9_]*$ ]] || fail "Ungültige optionale Provider-App-ID: $provider"
     local reinstall_source="$apps_root/$provider"
-    local update_source="${NC_COMPAT_UPDATE_APPS_ROOT:-}/$provider"
+    local update_root="${NC_COMPAT_UPDATE_APPS_ROOT:-}"
+    local rollback_root="${NC_COMPAT_ROLLBACK_APPS_ROOT:-}"
     [[ -d "$reinstall_source" && -d "$project/html/custom_apps/$provider" ]] \
         || fail "Optionaler Lifecycle-Provider fehlt im Prüflauf: $provider"
 
-    if [[ -n "${NC_COMPAT_UPDATE_APPS_ROOT:-}" && -d "$update_source" && "$provider" == localbase ]]; then
+    if [[ -n "$update_root" && -d "$update_root/localbase" && "$provider" == localbase ]]; then
         local organization_state
         organization_state="$(php -r '
             require $argv[1];
@@ -372,22 +463,9 @@ verify_optional_provider_lifecycle() {
             > "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json"
     fi
 
-    occ app:disable "$provider" > "$result_dir/lifecycle-$provider-disable-$effective_major.log" 2>&1
-    verify_consumer_runtime "$effective_major" "$provider-disabled-$effective_major"
-
-    if [[ -n "${NC_COMPAT_UPDATE_APPS_ROOT:-}" && -d "$update_source" ]]; then
-        local update_version
-        update_version="$(php -r '$xml=simplexml_load_file($argv[1]); if ($xml === false) exit(2); echo (string)$xml->version;' "$update_source/appinfo/info.xml")"
-        rm -rf "$project/html/custom_apps/$provider"
-        install_app_snapshot "$update_source" "$project/html/custom_apps/$provider" "$effective_major"
-        occ app:enable "$provider" > "$result_dir/lifecycle-$provider-update-$effective_major.log" 2>&1
-        occ app:list --output=json > "$result_dir/lifecycle-$provider-update-apps-$effective_major.json"
-        php -r '
-            $apps=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
-            $actual=$apps["enabled"][$argv[2]]??null;
-            if($actual!==$argv[3])throw new RuntimeException("Updated app version mismatch: ".var_export($actual,true));
-        ' "$result_dir/lifecycle-$provider-update-apps-$effective_major.json" "$provider" "$update_version"
-        if [[ "$provider" == localbase ]]; then
+    if [[ -n "$update_root" ]]; then
+        replace_lifecycle_snapshots "$update_root" "$effective_major" "$provider" update 0
+        if [[ "$provider" == localbase && -f "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json" ]]; then
             occ config:app:get "$provider" ad_organization_definition \
                 > "$result_dir/lifecycle-$provider-update-state-after-$effective_major.json"
             cmp -s "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json" \
@@ -395,19 +473,26 @@ verify_optional_provider_lifecycle() {
                 || fail "Persistierter LocalBase-Organisationszustand änderte sich beim In-place-Update."
         fi
         verify_consumer_runtime "$effective_major" "$provider-updated-$effective_major"
-        reinstall_source="$update_source"
+        [[ -d "$update_root/$provider" ]] && reinstall_source="$update_root/$provider"
     fi
+
+    occ app:disable "$provider" > "$result_dir/lifecycle-$provider-disable-$effective_major.log" 2>&1
+    verify_consumer_runtime "$effective_major" "$provider-disabled-$effective_major" "$provider"
 
     occ app:remove "$provider" > "$result_dir/lifecycle-$provider-remove-$effective_major.log" 2>&1
     [[ ! -e "$project/html/custom_apps/$provider" ]] \
         || fail "Providercode blieb nach app:remove vorhanden: $provider"
-    verify_consumer_runtime "$effective_major" "$provider-removed-$effective_major"
+    verify_consumer_runtime "$effective_major" "$provider-removed-$effective_major" "$provider"
 
     install_app_snapshot "$reinstall_source" "$project/html/custom_apps/$provider" "$effective_major"
     occ app:enable "$provider" > "$result_dir/lifecycle-$provider-reenable-$effective_major.log" 2>&1
     verify_consumer_runtime "$effective_major" "$provider-reenabled-$effective_major"
-}
 
+    if [[ -n "$rollback_root" ]]; then
+        replace_lifecycle_snapshots "$rollback_root" "$effective_major" "$provider" rollback 0
+        verify_consumer_runtime "$effective_major" "$provider-rollback-$effective_major"
+    fi
+}
 verify_app_tests() {
     local effective_major="$1"
     local app app_root
@@ -444,7 +529,6 @@ verify_runtime() {
         done < <(find "$project/html/custom_apps" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
     fi
     runtime_smokes registrations "$effective_major" > "$result_dir/registrations-$effective_major.tsv"
-    runtime_smokes providers "$effective_major" > "$result_dir/providers-$effective_major.tsv"
     occ background-job:list --output=json > "$result_dir/background-jobs-$effective_major.json"
     php -r '
         $jobs=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);

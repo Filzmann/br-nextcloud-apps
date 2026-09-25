@@ -4,8 +4,10 @@
 - Entscheidung: 2026-08-23
 - Geltungsbereich: app-übergreifende Auskunft, Providerabdeckung,
   Retention-Koordination und öffentliche Entwicklerverträge
-- Umsetzung: begonnen; App-Identität, Repository und erster Contract-Kern sind
-  angelegt, der verifizierte Pilot liegt weiterhin in LocalBase
+- Umsetzung: fortgeschritten; die Standalone-App besitzt den öffentlichen V1-Kern
+  und ist kanonischer Owner. Der LocalBase-Retention-Pilot wurde nach grüner
+  Lifecycle- und Rückbaumatrix entfernt; der getrennte PersonalData-Pilot bleibt
+  bis zur Projektion der LocalBase-eigenen Personenwerte bestehen
 
 ## Kontext
 
@@ -122,8 +124,9 @@ Runtime-Migration weder kopiert noch transformiert.
 
 ## Folgen
 
-- LocalBase bleibt verifizierter Pilot, ist aber nicht die dauerhafte
-  Zielruntime des Datenschutzvertrags.
+- LocalBase ist nicht die dauerhafte Zielruntime des Datenschutzvertrags. Der
+  Retention-Pilot ist entfernt; der verbleibende PersonalData-Pilot wird erst
+  nach verlustfreier Projektion der LocalBase-eigenen Personenwerte abgebaut.
 - Die neue App ist kein Bestandteil eines Fachapp-Archivs und keine
   stillschweigende Voraussetzung fachlicher Grundfunktionen.
 - Behörden können über ein konfiguriertes Coverage-Profil festlegen, welche

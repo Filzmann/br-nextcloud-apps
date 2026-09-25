@@ -449,6 +449,12 @@ erst danach Infrastruktur und Fachapps. App-lokale Dateien namens
 `nextcloud-compatibility-smoke.php` definieren UI- und
 Berechtigungsgrenzen, damit der Parent keine fachlichen Seiten- oder
 Rechteannahmen dupliziert.
+Der optionale Kategorie-B-Lifecycle prüft dieselben app-lokalen Verträge auch
+vor und nach gemeinsam versionierten App-Updates, bei deaktiviertem und
+physisch entferntem Provider, nach Neuinstallation sowie gegen einen expliziten
+vorwärtsversionierten Rollback-Snapshot. Provider-Setups und erforderliche
+native Testrollen werden dabei ausschließlich vom jeweiligen App-Smoke
+deklariert; fehlende Owner bleiben als `owner-unavailable` sichtbar.
 
 Wenn der lokal auflösbare Name `nextcloud-dev` benötigt wird, übernimmt
 `--reserved-ddev-root nextcloud-dev` dessen Registrierung einmal für die
