@@ -30,11 +30,16 @@ from pathlib import Path
 import sys
 root = Path(sys.argv[1])
 architecture = (root / 'docs/architecture.md').read_text()
-phase = architecture.split('## Entwicklungsphase und Kompatibilitätsbedarf\n', 1)[1].split('\n## Repository- und Produktgrenzen', 1)[0].strip()
+governance = (root / 'docs/parent-governance-contract.md').read_text()
+phase = governance.split('### Entwicklungsphase und Kompatibilitätsbedarf\n', 1)[1].split('\n### Prüfaufwand', 1)[0].strip()
 agents = (root / 'AGENTS.md').read_text()
 efficiency = agents.split('## Test-, UI- und Datenqualität\n\n', 1)[1].split('\n### Testgetriebene', 1)[0].strip()
-projection = (root / 'docs/parent-governance-contract.md').read_text()
-assert phase in projection, 'Development-phase projection differs from canonical architecture'
+projection = governance
+architecture_phase = architecture.split('## Entwicklungsphase und Kompatibilitätsbedarf\n', 1)[1].split('\n## Repository- und Produktgrenzen', 1)[0].strip()
+assert phase in projection, 'Development-phase block missing from canonical governance contract'
+assert '[`Parent-Governance-Vertrag`](parent-governance-contract.md)' in architecture_phase, 'Architecture does not reference the canonical governance contract'
+assert 'kanonische Lifecycle-Quelle' in architecture_phase, 'Architecture does not identify the canonical lifecycle source'
+assert phase not in architecture_phase, 'Architecture duplicates the canonical lifecycle block'
 assert efficiency in projection, 'Check-efficiency projection differs from canonical AGENTS.md'
 PY
 

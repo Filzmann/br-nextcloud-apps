@@ -1,454 +1,68 @@
 # Systemweiter Zukunftsplan
 
-Stand: 2. September 2026
+Stand: 28. September 2026
 
 Diese Datei ist die einzige aktive systemweite Planungsquelle des Workspaces.
-Sie bündelt openDesk-/Nextcloud-Future-Readiness, app-übergreifende
-Migrationen, Datenschutz-Rollout, Delivery-Gates und noch nicht freigegebene
-Suite-Module. Sie ergänzt die verbindlichen Architekturentscheidungen,
-ersetzt sie aber nicht.
-Insbesondere bleibt die Einteilung von gemeinsamem Code und Laufzeitdiensten
-in [`ADR 0001`](architecture-decisions/0001-shared-code-runtime-and-app-store.md)
-normativ.
+Sie enthält ausschließlich offene, blockierte oder vor einer Umsetzung noch zu
+entscheidende systemweite Arbeit. Architekturentscheidungen, Betriebsanleitungen,
+implementierter Umfang, Nachweise und abgeschlossene Planstände bleiben in ihren
+jeweiligen kanonischen Quellen.
 
-Weitere normative Quellen sind `docs/privacy-architecture.md`,
-`docs/privacy-provider-guide.md`,
-`docs/architecture-decisions/0002-standalone-privacy-platform.md`,
-`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md` und
-`docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md`.
-
-Der Plan bildet den aktuellen Soll-/Ist-Stand ab. Er ist weder eine feste
-openDesk-Kompatibilitätszusage noch ein historisches Auditprotokoll. Eine
-konkrete openDesk- oder Nextcloud-Version wird erst für einen benannten
-Installations- oder Releasekandidaten geprüft.
+Normative Quellen sind insbesondere `AGENTS.md`,
+[`docs/architecture.md`](architecture.md),
+[`docs/privacy-architecture.md`](privacy-architecture.md) und die ADRs unter
+[`docs/architecture-decisions/`](architecture-decisions/). App-spezifische
+Aufgaben gehören ausschließlich in das `ROADMAP.md` der zuständigen App.
 
 ## Planungsgrenzen
 
-| Inhalt | Kanonische Ablage | Darf Aufgaben enthalten? |
-| --- | --- | --- |
-| systemweite Plattform-, Cross-App-, Suite-, Delivery- und Rolloutarbeit | diese Datei | ja |
-| app-spezifische Produktarbeit | `ROADMAP.md` der zuständigen App | ja |
-| dauerhafte Architekturentscheidung | `docs/architecture-decisions/` oder app-lokale Architekturquelle | nein; sie begründet Aufgaben, ersetzt sie aber nicht |
-| dauerhaft geltende Arbeits- und Sicherheitsregel | `AGENTS.md`, Architekturdokument oder Skill | nein |
-| aktueller implementierter App-Umfang | app-lokale `README.md` | nein |
-| abgeschlossene App-Änderung | app-lokale `CHANGELOG.md`, Code, Tests und Git-Historie | nein |
-| abgelöster systemweiter Planstand | ADR, geltende Dokumentation und Git-Historie; keine zweite Plan-Datei | nein |
-| noch nicht bewertete Beobachtung | `docs/learning-candidates.md` | nein |
+| Inhalt | Kanonische Ablage |
+| --- | --- |
+| offene Plattform-, Cross-App-, Suite-, Delivery- und Rolloutarbeit | diese Datei |
+| app-spezifische Produktarbeit | `ROADMAP.md` der zuständigen App |
+| dauerhafte Architekturentscheidung | ADR oder Architekturdokument |
+| Arbeits- und Sicherheitsregel | `AGENTS.md` oder Skill |
+| implementierter Umfang und abgeschlossene Änderung | App-`README.md`, `CHANGELOG.md`, Code, Tests und Git-Historie |
+| noch unbewertete Beobachtung | `docs/learning-candidates.md` |
 
-`offen` bedeutet planbar, aber nicht automatisch freigegeben. `freigegeben`
-benötigt weiterhin einen konkreten Auftrag für jedes betroffene Repository.
-`blockiert` benennt ein noch fehlendes Entscheidungs- oder Nachweisgate.
-Erledigte Details werden aus diesem Plan entfernt. App-lokal werden der
-aktuelle Umfang in `README.md` und Änderungen in `CHANGELOG.md` dokumentiert;
-systemweit belegen Code, Tests, ADRs, geltende Dokumentation und Git-Historie
-den Abschluss.
+`offen` bedeutet planbar, aber nicht automatisch freigegeben. `blockiert`
+benennt ein fehlendes Entscheidungs- oder Nachweisgate. Ein konkreter Auftrag
+für jedes betroffene Repository bleibt erforderlich.
 
-## Zielzustand
+## Offene Future-Readiness
 
-- Jede App bleibt eine standardkonforme, getrennt versionierte Nextcloud-App.
-- Identität, Gruppen, Konfiguration, Persistenz, Dateien, Jobs, HTTP und
-  Logging verwenden dokumentierte Nextcloud-Abstraktionen.
-- Fachliche Inter-App-Kommunikation läuft über kleine, explizite und
-  versionierte öffentliche Verträge. Interne Tabellen, private
-  Konfiguration, Dateipfade, Controller, Assets oder Implementierungsklassen
-  anderer Fachapps sind keine Schnittstellen.
-- Optionale Provider dürfen fehlen, deaktiviert, vorübergehend fehlerhaft
-  oder inkompatibel sein, ohne die fachlich eigenständige Consumer-App
-  unkontrolliert zu brechen.
-- Datenbank- und Dateizugriffe bleiben für PostgreSQL und von Nextcloud
-  verwaltetes Object Storage portabel.
-- Jobs und persistenter Zustand hängen weder von einem bestimmten Host noch
-  von genau einem Webprozess oder einem dauerhaft beschreibbaren
-  Container-Dateisystem ab.
-- Builds und Updates sind reproduzierbar; öffentliche Verträge besitzen
-  Provider- und Consumer-Contract-Tests sowie eine nachvollziehbare
-  Kompatibilitätsstrategie.
-
-## Geprüfter Ist-Bestand
-
-Erster Root-Audit: 1. September 2026; Planungs- und Mindestversionsaudit:
-2. September 2026. Geprüft wurden das Parent-Repository,
-alle in `config/workspace-repositories.tsv` registrierten App-Repositories,
-ihre lokalen Regeln, Architekturunterlagen, Metadaten, Produktionscode und
-relevanten Tests. Vorhandene Fremdänderungen in `adplaner` und `localbase`
-wurden nur gelesen und nicht verändert.
-
-Bereits sauber beziehungsweise als belastbare Grundlage vorhanden:
-
-- IAM- und Gruppenentscheidungen verwenden Nextclouds Benutzer-, Gruppen-
-  und Session-APIs. Es gibt keine fachliche Laufzeitabhängigkeit von Nubus-,
-  LDAP- oder Keycloak-Interna und keine gefundene Annahme einer impliziten
-  Nested-Group-Vererbung.
-- App-eigene Persistenz verwendet `IDBConnection`, Nextclouds QueryBuilder
-  und deklarative Migrationen. Es wurden keine MySQL-/MariaDB-spezifischen
-  SQL-Fragmente oder direkten Zugriffe auf Tabellen anderer Fachapps
-  gefunden.
-- Fachdateien verwenden Nextclouds `IRootFolder`; private Importanlagen
-  verwenden `IAppData`. Temporäre lokale Dateien sind auf begrenzte
-  Verarbeitungsschritte beschränkt und keine persistente Wahrheit.
-- Wiederkehrende Arbeit ist über Nextcloud-Background-Jobs registriert. Es
-  wurde keine fachliche Abhängigkeit von eigenem Host-Cron, systemd oder
-  einem lokalen Prozesszustand gefunden.
-- Die optionale PDF-Textextraktion von `adrecruitment` erkennt Poppler oder
-  Ghostscript ausschließlich über den tatsächlichen PHP-`PATH`, installiert
-  keine Systempakete und fällt bei fehlender Engine, Fehler, Timeout oder
-  Größenüberschreitung ohne Verlust des Mail-/Originalimports aus.
-- Externe HTTP-Zugriffe verwenden den Nextcloud-HTTP-Client. App- und
-  Benutzerkonfiguration verwenden Nextclouds AppConfig/UserConfig; sensible
-  Kalenderzugänge werden zusätzlich über den Nextcloud-Kryptodienst
-  geschützt.
-- Die fachlich führenden Daten bleiben app-lokal. Abwesenheiten,
-  Planungskonflikte, Capabilities, Datenschutz- und Berechtigungsprovider
-  werden bereits über typisierte Eventverträge ausgetauscht. Fehlende
-  optionale Listener liefern leere, `missing`, `partial`, `failed`, `stale`
-  oder `unavailable` Zustände statt fremder Datenfallbacks.
-- `filzmann_data_protection` und `filzmann_permission_matrix` besitzen
-  ausdrücklich öffentliche `PublicApi/V1`-Verträge. Die zentralen Privacy-
-  und Permission-Contract-Tests laden jeweils alle neun realen Provider gegen
-  die echten öffentlichen V1-Klassen.
-- Der AD-Suite-Build, das Repositoryinventar und die Prüfung künftiger
-  Nextcloud-Hauptversionen besitzen bereits reproduzierbare Root-Gates.
-
-Die offizielle openDesk-Dokumentation bestätigt die relevanten
-Plattformgrenzen: Kubernetes-/Helm-Deployment, föderiertes IAM, eine
-PostgreSQL-Option für Nextcloud sowie S3-basierten Nextcloud-Speicher. Die
-Nextcloud-Entwicklerdokumentation bestätigt OCP-Events für
-Inter-App-Kommunikation, OCS für öffentliche HTTP-APIs, QueryBuilder,
-Filesystem/AppData und Nextcloud-Background-Jobs als vorgesehene
-Abstraktionen. Maßgebliche Quellen:
-
-- [openDesk-Architektur](https://docs.opendesk.eu/operations/architecture/)
-- [openDesk-Release-Matrix](https://releases.opendesk.eu/)
-- [openDesk External Services](https://docs.opendesk.eu/operations/external-services/)
-- [openDesk Data Storage](https://docs.opendesk.eu/operations/data-storage/)
-- [Nextcloud Events](https://docs.nextcloud.com/server/latest/developer_manual/basics/events.html)
-- [Nextcloud Controller und OCS](https://docs.nextcloud.com/server/latest/developer_manual/basics/controllers.html)
-- [Nextcloud Storage und Datenbank](https://docs.nextcloud.com/server/latest/developer_manual/basics/storage/index.html)
-
-## Aktuelle Inter-App-Verträge
-
-| Owner / Quelle | Nutzer / Ziel | Zweck | Mechanismus und Nextcloud-Standard | Öffentlicher Vertrag / Version | Autorisierung und Ausfall | Contract-Nachweis | Bewertung |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `adurlaub` | `adcalendar`, `adplaner` | begrenzte read-only Abwesenheitsabfrage | typisierte LocalBase-Events über OCP Event Dispatcher | fachlich als Kalendervertrag V1 dokumentiert, aber noch kein eigener `PublicApi/V1`-Namespace | der aufrufende Fachservice prüft seinen Scope; ohne Listener leer | LocalBase-Eventtests, Provider- und Consumer-Tests vorhanden | F2, FR-02 |
-| `adcalendar`, `adplaner` | `adurlaub`; außerdem interne Planerabfragen | read-only Planungskonflikte vor Genehmigung | `ScheduleConflictQueryEvent` über OCP Event Dispatcher | kleiner expliziter LocalBase-Vertrag, noch ohne unabhängigen Versionshandshake | keine Mutation; fehlender Provider bleibt zulässiger Standalone-Zustand | LocalBase-, Provider- und Consumer-Tests sowie NC-33/34-Standalone-Nachweise vorhanden | F2, FR-02 |
-| AD-Fachapps | LocalBase-Consumer | optionale Integrationsfähigkeiten | `IntegrationCapabilityQueryEvent` über OCP Event Dispatcher | explizite Capability-Schlüssel, leerer Snapshot zulässig, aber kein unabhängiger Versionshandshake | Capability erweitert niemals Rechte | LocalBase- und Listenertests vorhanden | F2, FR-02 |
-| `filzmann_data_protection` als API-Owner und Aggregator | Fachapps als registrierte Provider; Self-Service und Retention-Review als Consumer | Art.-15-Daten und Retention-Vorschau | OCP Event Dispatcher mit app-eigener öffentlicher Provider-API | `OCA\FilzmannDataProtection\PublicApi\V1`, Descriptor-Version `1.0` | Session-Subject, providerweise Fehlerisolation, kein Datenfallback | app-lokale Provider-/Consumer-Tests, synthetisches API-Kit und zentraler Root-Contract-Test gegen alle neun realen Provider | F0 |
-| `filzmann_permission_matrix` als API-Owner und Aggregator | Fachapps als registrierte Provider; Matrixscanner als Consumer | read-only Berechtigungsbeschreibung | OCP Event Dispatcher mit app-eigener öffentlicher Provider-API | `OCA\FilzmannPermissionMatrix\PublicApi\V1`, Descriptor-Version `1.0` | Matrixrechte bleiben lokal; unbekannte/inkompatible Provider werden nicht als erlaubt gewertet | zentraler Contract-Test gegen alle neun realen Provider und app-lokale Tests | F0 |
-| `localbase` | AD-Apps, OrgSuite, BR-Apps und Matrix | Organisation, Kalenderkontext, Produktkatalog, Navigation und technische Hilfen | öffentliche Organisations-API sowie weiterhin direkte interne DI-/PHP-Verträge, OCP-Events und LocalBase-Assets/Template | Organisation als `OCA\\LocalBase\\PublicApi\\V1` Version `1.0`; weitere Verträge noch ohne einheitliche öffentliche Kategorie-B-Grenze | der Matrixconsumer prüft Aktivierung und Version vor der Klassenauflösung fail-closed; andere Consumer behandeln fehlende optionale Provider unterschiedlich | Organisationspilot mit realem Provider-/Consumer-Contract, Nextcloud-34-Fresh-Install mit sowie ohne LocalBase, In-place-Update `0.12.0-dev.1` → `0.12.0-dev.2` bei erhaltenem synthetischem Organisationszustand sowie Provider-Deaktivierung, -Entfernung, -Wiederinstallation und Rückbau auf einen Stand ohne V1 grün; vollständige Kategorie-B-Migrationsmatrix bleibt offen | F2/F3, FR-01 und FR-02 |
-| `orgsuite` | AD-/BR-Fachapps | gemeinsame Navigation und AD-Administration | Nextcloud-Navigation, Template-Event, `IAppManager` und LocalBase-Katalog | kein fachlicher Datenvertrag; OrgSuite ist alleiniger Menüowner | Zielapp prüft Rechte selbst; Einzelproduktzustand ist vorgesehen | Navigations-, Asset- und Entkopplungstests | F0; Kataloganteil Teil von FR-01 |
-| Nextcloud DAV-App | `adcalendar` | persönlicher Nextcloud-CalDAV-Kalender | app-eigener Port mit Adapter auf `OCA\DAV\CalDAV\CalDavBackend` | bewusst begrenzter, aber privater Nextcloud-Runtimevertrag; öffentliche OCP-Verträge decken den benötigten Kalender-Lifecycle nicht vollständig ab | Providerfehler isoliert; führende AD-Daten werden nicht zurückgerollt | Adapter- und Synchronisationstests einschließlich `PropPatch`; eigener Source-/Runtime-Nachweis vor jeder Plattformfreigabe | kontrolliertes F2 |
-| Nextcloud Groupfolders-App | `filzmann_permission_matrix` | read-only Team-Folder-Rechte | app-eigener Port auf private `FolderManager`-Runtime | bewusst auf Groupfolders 22.x/Nextcloud 34 begrenzte ADR-Ausnahme | inkompatibel/unvollständig ergibt `UNKNOWN`/`PARTIAL` | Unit-, Negativ- und Source-Compatibility-Gate | kontrolliertes F2, FR-06 |
-
-Es wurden keine Inter-App-HTTP-Endpunkte gefunden. Die vorhandenen
-JSON-Controller bedienen die jeweilige same-origin Weboberfläche und sind
-deshalb nicht allein wegen ihrer Existenz auf OCS umzustellen. Sobald ein
-Endpoint als externer oder Inter-App-Vertrag veröffentlicht wird, gilt die
-OCS-/OpenAPI-Regel unten.
-
-## Mindestversion Nextcloud 33
-
-### Ergebnis des Kompatibilitätsgates
-
-Der ursprünglich auf Nextcloud 34 begrenzte App-Bereich ist nach realen
-Fresh-Install-, Upgrade- und Runtime-Nachweisen für die lückenlosen Majors 33
-bis 34 freigegeben. [openDesk 1.18.0](https://www.opendesk.eu/de/blog/opendesk-1-18)
-und die [aktuelle Komponententabelle](https://docs.opendesk.eu/operations/introduction/)
-weisen Nextcloud 33.0.7 aus. Der dazu gepinnte
-[offizielle Nextcloud-Quellstand `v33.0.7`](https://github.com/nextcloud/server/tree/v33.0.7)
-wurde als Commit
-`9f1a39b0622a66607fa4ef4848210cb3f34b2fe3` statisch geprüft. Nextcloud 33
-unterstützt laut
-[Systemanforderungen](https://docs.nextcloud.com/server/33/admin_manual/installation/system_requirements.html)
-PHP 8.3; die PHP-Mindestversion der betroffenen Apps muss daher nicht
-abgesenkt werden.
-
-Die statische Vorprüfung gegen 33.0.7 wurde durch die vollständige
-Abschlussmatrix gegen die offiziellen Tags 33.0.8 und 34.0.3, das Upgrade
-33→34 sowie die unmittelbar zuvor aktualisierten `stable33`- und
-`stable34`-Commits ersetzt. Die kompakten Manifeste, Resultate und Logs liegen
-unter `build/compatibility-min33-2026-09-06-final-tags`,
-`build/compatibility-min33-2026-09-06-final-stable33` und
-`build/compatibility-min33-2026-09-06-final-stable34`.
-
-| App | Abschlussnachweis | Ergebnis |
-| --- | --- | --- |
-| `adplaner` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Konfliktpfade, Standalone-Betrieb, Privacy-/PermissionProvider, API, Assets und mobile Oberfläche sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `localbase` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischem Kalender- und Cachezustand grün; DI, Migration, Job, API, Rechte, Assets, UI und repräsentative Consumer-/Capability-Kombination geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `adcalendar` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit 84 synthetischen Facheinträgen sowie 28 DAV-Kalendern/84 DAV-Objekten grün; DI, Migrationen, Job, API, Rechte, DAV-Rename, Privacy-/PermissionProvider, Assets, UI und Standalone-Betrieb geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34; privater DAV-Port bleibt je Plattformfreigabe am Source-/Runtime-Gate |
-| `adurlaub` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `orgsuite` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, Navigation, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `adroom` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `adrecruitment` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 grün; DI, Jobs, App-Suite, API, Rechte, Assets, UI sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-| `adbqplanung` | Nextcloud 33.0.8 Fresh Install und Upgrade auf 34.0.3 mit synthetischen Bestandsdaten grün; DI, Migrationen, Rollen-/Adminschutz, Curriculum, Kalender, Privacy-/PermissionProvider, API, Assets und Oberfläche sowie aktueller `stable33`-/`stable34`-Stand geprüft | erfüllt; App-Metadaten deklarieren 33 bis 34 |
-
-Vier Apps deklarieren bereits `min-version="29"` und brauchen für dieses Ziel
-keine Absenkung: `brtop`, `brstunden`, `filzmann_permission_matrix` und
-`filzmann_data_protection`. Ihre tatsächliche NC-33-Funktion bleibt trotzdem
-Teil einer openDesk-Installationsmatrix.
-
-Die Root-Skripte `scripts/build-ad-suite-release.sh` und
-`scripts/verify-ad-suite-delivery.sh` validieren jetzt einen Bereich: Jede
-enthaltene App muss den festen OpenDesk-Boden 33 und die explizit über
-`NEXTCLOUD_TARGET_MAJOR` benannte Release-Zielmajor enthalten. Standardziel
-des aktuellen Delivery-Pfads bleibt 34. Damit ist die Obergrenze nicht mehr
-fest verdrahtet; Ziel 35 oder eine spätere Major wird erst akzeptiert, wenn
-jede enthaltene App diese Major nachweislich deklariert. Alle acht ursprünglich
-auf 34/34 begrenzten Apps haben das app-lokale MIN-33-Gate abgeschlossen.
-
-### Freigabegate MIN-33
-
-1. Statisch gefundene Quellprobleme app-lokal testgetrieben korrigieren.
-2. Einen isolierten Pfad für die aktuelle Nextcloud-33-Patchversion mit PHP
-   8.3 oder 8.4 bereitstellen;
-   keine bestehende NC-34-DDEV-Instanz umschalten.
-3. Je App Fresh Install, Aktivierung/DI, Migrationen, Kern-API, Jobs,
-   mindestens ein JavaScript- und CSS-Asset sowie die sichtbare Oberfläche
-   prüfen. Persistente Apps erhalten zusätzlich einen Upgradepfad 33 nach 34
-   mit synthetischen Bestandsdaten.
-4. Standalone- und relevante Kombinationen einschließlich LocalBase,
-   OrgSuite, Privacy-App, Permission-Matrix und optional fehlender Provider
-   prüfen.
-5. Erst nach lückenlos grüner Evidenz die jeweilige `info.xml` und
-   Release-Dokumentation ändern und das bereits bereichsbasierte Root-Gate
-   erneut ausführen. Eine rote oder nur statische App bleibt auf 34 begrenzt
-   und blockiert das betroffene Bundle, nicht die ehrliche Einzelbewertung
-   anderer Apps.
-
-## Offene Future-Readiness-Punkte
-
-Prioritäten: P0 blockiert einen belastbaren Installations-/Releasekandidaten,
-P1 gehört vor einen openDesk-Piloten, P2 wird beim Berühren des Bereichs
-geschlossen.
-
-| ID | Klasse / Priorität | Apps / Grenze | Notwendige Änderung und Tests | Status / Gate |
-| --- | --- | --- | --- | --- |
-| FR-01 | F3 / P0 | `localbase` und alle heutigen Consumer; Packaging und unabhängige Installation | Die in ADR 0001 angenommene Kategorie-A/B/C-Migration inkrementell ausführen: zustandslose Hilfen reproduzierbar und namespace-isoliert bündeln, Kategorie-B-Dienste eigenständig lassen, lokale Fachlogik lokal halten. Je Pilot und Consumer Provider-/Consumer-Contracts sowie saubere Installations-, Update-, Deinstallations- und Rollbackmatrix ausführen. | teilweise umgesetzt am 2026-09-07: erster Kategorie-B-Pilot `localbase` → `filzmann_permission_matrix` ist öffentlich versioniert; Fresh Install mit und ohne Provider, In-place-Update mit erhaltenem Organisationszustand sowie Deaktivierung, Entfernung, Wiederinstallation und Rückbau auf einen Providerstand ohne V1 sind auf Nextcloud 34 grün. Kategorie-A-Pakete und weitere Consumer bleiben offen und benötigen jeweils Schreibfreigabe |
-| FR-02 | F2 / P0 | `localbase`, AD-/BR-Consumer, OrgSuite und Matrix; öffentliche Runtime-API | Owner, kleinste API, `PublicApi/V1`-Grenze, Aktivierungs-/Versionshandshake, Fehlersemantik und additive Kompatibilität der Organisations-, Kalender-, Capability- und Katalogverträge festlegen. Keine parallele zweite Datenquelle schaffen. | teilweise umgesetzt am 2026-09-06: Organisationssnapshot V1 besitzt mit LocalBase einen Owner, verwendet die kanonische Organisationsquelle und ist mit der Matrix fail-closed nachgewiesen; Kalender-, Capability- und Katalogverträge sowie weitere Organisationsconsumer bleiben offen |
-| FR-03 | F2 / P0 | alle Apps; reale openDesk-/Nextcloud-Laufzeit | Das vorstehende Gate `MIN-33` appweise ausführen und anschließend den echten Versionsbereich in den App-Metadaten abbilden; das Root-Delivery-Gate prüft bereits Boden 33 plus explizite Zielmajor. | erledigt am 2026-09-06; alle acht ursprünglich auf 34/34 begrenzten Apps deklarieren nach app-lokalen Fresh-Install-/Upgrade-Nachweisen 33 bis 34; Abschlussmatrix und Stable-Nachweise liegen unter den drei vorstehend genannten `final-*`-Verzeichnissen, `verify-nextcloud-future-compatibility` bleibt für jede künftige Obergrenze verbindlich |
-| FR-04 | F2 / P1 | alle Apps mit Tabellen/Migrationen; PostgreSQL | Einen reproduzierbaren PostgreSQL-Pfad für Fresh Install, Upgrade mit synthetischen Bestandsdaten und relevante Repository-/Transaktionsfälle etablieren. Der statische Audit fand keine DBMS-spezifische SQL-Logik, die heutige Evidenz beweist aber keine vollständige PostgreSQL-Laufzeit. | erledigt am 2026-09-27: der isolierte PostgreSQL-16-Pfad ist für Fresh Install sowie das reale Nextcloud-Upgrade 33.0.8 → 34.0.3 grün. `brtop`, `adrecruitment` und `adcalendar` belegen app-lokal synthetischen Bestandsdatenerhalt, gebundene Repository-Lese-/Schreibpfade und Rollback- beziehungsweise Konfliktfälle; vor und nach dem Upgrade bleibt `dbtype=pgsql`, der Zielstatus meldet kein ausstehendes DB-Upgrade. Evidenz: `build/fr04-postgresql-2026-09-27-final1` und `build/fr04-postgresql-upgrade-2026-09-27-2`. Der reproduzierbare Harness bleibt das verbindliche Gate vor einem openDesk-Piloten |
-| FR-06 | F2 / P1 | `filzmann_permission_matrix`; Groupfolders | Die eng begrenzte private 22.x-Ausnahme nur solange fortführen, wie kein öffentlicher Upstream-Vertrag existiert. Bei jedem betroffenen Release offizielles Quellkompatibilitätsgate und Negativfälle ausführen; neue Versionen bleiben bis zur Entscheidung `UNKNOWN`. | kontrolliert offen; ADR 0003 und Gate sind umgesetzt, keine pauschale Freigabe künftiger Versionen |
-| FR-08 | F2 / P1 | `brtop`, `adrecruitment`, `adcalendar`; Object Storage und horizontale Ausführung | Die bereits verwendeten Nextcloud-Datei-/AppData-/DAV-Abstraktionen in einer S3/Object-Storage-Zielmatrix und, soweit zustandsrelevant, mit getrennten Web-/Jobprozessen prüfen. Belegen, dass Dateiexport, Importanlage und Kalenderabgleich keine lokalen Pfade oder Prozessspeicher als Wahrheit voraussetzen. | erledigt am 2026-09-27: der isolierte Nextcloud-34-/MinIO-Pfad belegt app-spezifisch über getrennte Web- und Jobprozesse den BRTop-Dateiexport, den idempotenten Recruitment-Mailimport samt unverändert lesbarem AppData-Anhang sowie die AD-Kalender-DAV-Reparatur. Der zusätzliche WebDAV-/CLI-Basisnachweis und die drei App-Nachweise sind grün; Evidenz: `build/fr08-object-storage-2026-09-27-final7` und `build/fr08-app-specific-2026-09-27-1`. Bei einer abweichenden Zielhostingarchitektur wird der Lauf gegen diese Zielumgebung wiederholt |
-| FR-09 | F2 / P2 | künftige öffentliche HTTP- oder externe Inter-App-APIs | Vor Veröffentlichung prüfen, ob ein vorhandener Nextcloud-Standard genügt. Eigene Daten-APIs bevorzugt als versionierte OCS-Endpunkte mit expliziten Typen, Fehlern, Authentifizierung/Autorisierung und OpenAPI-Schema bereitstellen. Provider-/Consumer-Tests müssen alte/neue Kombinationen und unbekannte additive Felder abdecken. | ereignisgetriggert; aktuell kein solcher Inter-App-HTTP-Vertrag gefunden |
-| FR-10 | F2 / P0 | `localbase`, `adroom`, `adurlaub`, `filzmann_data_protection`; Retention-API | Den LocalBase-Piloten `RetentionProviderRegistryEvent` kontrolliert auf den bereits vorhandenen Standalone-Vertrag `OCA\FilzmannDataProtection\PublicApi\V1\RegisterRetentionProvidersEvent` migrieren. Owner, Descriptor-/Versionsprüfung, `REVIEW`-Semantik und fehlende beziehungsweise inkompatible Provider festlegen; alte/neue Kombinationen, Update, Deinstallation und Rollback testen. | erledigt am 2026-09-24: `adroom` und `adurlaub` konsumieren den Standalone-V1-Vertrag; Owner-, Versions-, Duplicate-, Fehler-, Paging- und reine `REVIEW`-Semantik sind durch Provider-/Consumer-Tests belegt. Die reale Nextcloud-34-/SQLite-Matrix belegt den alten LocalBase-Piloten, das gemeinsame In-place-Update, deaktivierte und entfernte Privacy-App mit sichtbarem `owner-unavailable`, Neuinstallation sowie einen vorwärtsversionierten Rückbau auf den alten Pilotvertrag. Der physische LocalBase-Retention-Pilot wurde anschließend nach grünem Negativ-Contract-Test entfernt |
-| FR-12 | F2 / P2 | Parent-Governance und alle getrennten App-Repositories | Die Root-Regel „Improve what you touch“ bei der nächsten ausdrücklich freigegebenen Governance-Projektion in den lokal vollständigen App-Regelblock übernehmen und die Parent-Projektionschecks entsprechend erweitern. App-lokale Arbeit darf nicht vom Vorhandensein des Parent-Workspaces abhängen. | erledigt am 2026-09-05; Governance-Vertrag V2 ist in alle registrierten App-Repositories projiziert und der Parent-Projektionscheck prüft Entwicklungsphase sowie Prüfaufwand gegen die kanonischen Root-Quellen |
-
-Am 26. September 2026 wurden außerdem folgende Gates bestätigt:
-
-- Öffentliche App-Store-Veröffentlichungen sind derzeit für keine Workspace-App
-  freigegeben; eine spätere Freigabe wird pro App separat entschieden. Die
-  Berechtigungsmatrix und BR-Apps bleiben ausdrücklich ohne aktuelles
-  Store-Ziel. LocalBase-Hilfsfunktionen werden perspektivisch als
-  reproduzierbar gebundelte, namespace-isolierte Kategorie-A-Bibliotheken
-  entkoppelt; eine zusätzliche Runtime-App nur für Hilfsfunktionen ist kein
-  zulässiges Store-Modell. Persistente Kategorie-B-Dienste behalten ihre
-  eigenständige Laufzeitgrenze bis zu einer kontrollierten Migration.
-- Google, Apple, Kopano, manuelles CalDAV, reale Recruitment-Mailadapter und
-  ein späterer Versand von BQ-Anfragen benötigen jeweils eine gesonderte
-  Anbieterfreigabe einschließlich Datenumfang, Verarbeitungsort,
-  Auftragsverarbeitung beziehungsweise Drittlandprüfung sowie Widerrufs-,
-  Restore- und Secret-Vertrag. Vorher bleiben diese produktiven Wege
-  deaktiviert; vorhandener Entwicklungscode ist keine Betriebsfreigabe.
-- Das Root-Schema für Processing-Metadaten bleibt kanonisch. Eine Abweichung
-  der PHP-Runtime wird durch Contract-Tests sichtbar gemacht und in der
-  Runtime korrigiert; das Schema wird dafür nicht gelockert.
+| ID | Priorität | Grenze | Nächster Schritt / Gate |
+| --- | --- | --- | --- |
+| FR-01 | P0 | `localbase` und heutige Consumer | Die Kategorie-A/B/C-Migration aus ADR 0001 je eindeutigem Vertrag fortsetzen. Für jeden Pilot und Consumer sind Owner, Installations-, Update-, Deinstallations- und Rückbauverhalten sowie Provider-/Consumer-Contracts nachzuweisen. |
+| FR-02 | P0 | Öffentliche Organisations-, Kalender-, Capability- und Katalogverträge | Für jeden Vertrag kleinste öffentliche V1-Grenze, Aktivierungs-/Versionshandshake, Fehlersemantik und additive Kompatibilität entscheiden und testbar machen. Keine zweite Datenquelle einführen. |
+| FR-06 | P1 | Groupfolders-Ausnahme der Berechtigungsmatrix | Die private 22.x-Ausnahme nur mit dem in ADR 0003 vorgesehenen Quellkompatibilitäts- und Negativgate fortführen. Unbekannte Versionen bleiben `UNKNOWN`. |
+| FR-09 | P2 | künftige externe oder Inter-App-HTTP-APIs | Vor Veröffentlichung prüfen, ob ein Nextcloud-Standard genügt; andernfalls versionierten OCS-/OpenAPI-Vertrag mit Autorisierung, Fehlersemantik und Kombinations-Contracts freigeben. |
 
 ## Datenschutz, Berechtigungen und Adminzugriff
 
-| ID | Priorität | Systemweite Aufgabe | Status / Gate |
+| ID | Priorität | Systemweite Aufgabe | Gate |
 | --- | --- | --- | --- |
-| DP-01 | P0 | Den LocalBase-Retention-Piloten kontrolliert auf `filzmann_data_protection` migrieren und LocalBase erst nach grüner Installations-, Update-, Deinstallations- und Rückbaumatrix abbauen. | erledigt am 2026-09-24: Ownerwechsel und beide Consumer sind auf Standalone V1 migriert; die reale Nextcloud-34-Lifecycle- und vorwärtsversionierte Rückbaumatrix ist grün. Danach wurden LocalBase-Registry, DTOs, Aggregator, Endpoint und Dry-Run-UI testgetrieben physisch entfernt. Der getrennte PersonalData-Pilot bleibt DP-03 |
-| DP-03 | P1 | LocalBase-eigene persönliche UI-Werte und Demo-Registry vollständig inventarisieren; OrgSuite-Nichtanwendbarkeit bei Scopeänderungen neu bewerten. | erledigt am 2026-09-28: Die aktive UID begrenzt die UI-Werte, Reset und Kontolöschung bereinigen sie über native UserConfig; die Demo-Registry entfernt verwaiste synthetische Konten. Standalone-V1-PersonalData- und ProcessingMetadata-Provider, Katalog und technische Bereinigung sind getestet. OrgSuite persistiert weiterhin keine eigenen Personenwerte und bewertet dies bei Scopeänderung neu. |
-| DP-04 | P1 | Für die app-lokale Adminfreigabehistorie den konfigurierbaren Sechsmonats-Standard ab tatsächlichem Freigabeende, `DELETE` ohne Reststatistik, Sperr- und Restore-Regel appweise projizieren. Nach Restore darf keine Freigabe reaktiviert werden; abgelaufene ungesperrte Nachweise sind erneut zur Löschung einzuplanen. | für die derzeit beauftragten Apps `filzmann_data_protection` und `adroom` am 2026-09-28 als versionierte, DPO-geschützte `REVIEW`-Policy samt Provider- und Runtime-Nachweisen umgesetzt. Die Ausführung bleibt bewusst durch DP-07 blockiert: keine automatische oder manuelle Löschung und kein `execute()`-Pfad. Weitere App-Historien benötigen jeweils einen eigenen Auftrag. |
-| DP-05 | P0 | ADR 0004 appweise umsetzen: Nextcloud-Adminstatus erteilt keinen fachlichen Vollzugriff. Ausschließlich Mitglieder von `Datenschutzbeauftragte` erteilen und widerrufen eine app-lokale, UID-genaue und höchstens 24 Stunden gültige Freigabe für ein bestätigtes natives Administrationskonto. Eintrittsmeldung und Direktlink folgen der festgelegten Rollenmatrix ohne Offenlegung gegenüber gewöhnlichen oder anderen unberechtigten Konten. | für die derzeit beauftragten Apps `filzmann_data_protection` und `adroom` am 2026-09-28 umgesetzt und mit Allow-/Deny-/Manipulations-, Provider-, UI- sowie Nextcloud-34-Runtime-Nachweisen belegt. Weitere Apps werden nur bei eigener Scope- und Schreibfreigabe bewertet. |
-| DP-06 | P1 | Native Files-/Share-/Groupfolders-/Calendar-Rechte zuerst über öffentliche Verträge vervollständigen, danach Fremd-Apps read-only inventarisieren. | teilweise; unbekannte Abdeckung bleibt `UNKNOWN`, `UNSUPPORTED`, `partial` oder `missing` |
-| DP-07 | P2 | Lifecycle, Retention-Ausführung und ein Vollständigkeits-/Release-Gate erst nach belastbarer Beschäftigungsquelle und vollständigem Ausführungsvertrag einführen. Dieser muss Policyversion und Wirksamkeitszeitpunkt, Reihenfolge, Atomarität, Nebenläufigkeit, Idempotenz, Backupgrenze, Sperrdurchsetzung, Audit, Wiederholungen, datensparsame Fehlerdiagnostik mit 30-tägigem Fehlernachweis, Fehlerrückbau sowie Provider-/Consumer-Verhalten abdecken. | entschieden: bis dahin weder globaler Lifecycle-Lauf noch globale automatische Retention. Jede Fachapp führt ausschließlich ihre eigenen freigegebenen Maßnahmen aus; das Datenschutz-Center bleibt Registry, Review, Policyprojektion und spätere Koordination. Runtime blockiert bis zur appweisen Freigabe und positiven wie negativen Tests; Preview bleibt `REVIEW` |
-| DP-08 | P1 | Das Root-Schema `docs/contracts/privacy-processing-metadata.schema.json` appweise als jeweils einen app-lokalen Processing-Katalog einführen und über einen kleinen versionierten `ProcessingMetadataProvider` der Standalone-Privacy-App nutzbar machen. Bestehende V1-Projektionen und Retention-Policies werden aus dem Katalog abgeleitet, nicht als zweite Wahrheit kopiert. | Root-Schema, Harness- und Runtime-Vertrag, eigener Katalog von `filzmann_data_protection` sowie die realen Consumer `adroom`, `adplaner`, `adcalendar`, `adurlaub`, `adrecruitment`, `brstunden`, `brtop`, `adbqplanung` und `filzmann_permission_matrix` mit zentralem Consumer-Contract-Test umgesetzt am 2026-09-09; `adroom` besitzt zusätzlich die subjectgebundene Adminlayout-Projektion. Weitere App-Kataloge, vollständiges Coverage-Gate und Ableitung der übrigen bestehenden Projektionen benötigen getrennte Schreibfreigaben für jeden jeweiligen Consumer; fachliche Lücken bleiben `PRIVACY-DECISION-REQUIRED` |
-| DP-09 | P1 | Retention-Fristen als app-eigene, versionierte Datenschutzkonfiguration führen. Die vollständige fachliche Matrix für Recruitment, BRTop, AdPlaner, BRStunden, AD Kalender, AD Urlaub, BQ-Planer, Berechtigungsmatrix, Raumbuchungen und Adminfreigabehistorien steht ausschließlich in `docs/privacy-architecture.md` und den jeweiligen app-eigenen Processing-Katalogen. Änderungen werden anhand des ursprünglichen Triggers auch auf vorhandene Daten angewendet. Fachliche Datenschutzkonfiguration und begründete, mit Prüftermin versehene Sperren liegen ausschließlich bei `Datenschutzbeauftragte`; Konfigurationsänderungen werden 24 Monate auditierbar gehalten und mindestens jährlich überprüft. | fachliche Fristen, Maßnahmen, Owner und Sperrgrenze am 2026-09-26 ergänzt; app-lokale Ausführung bleibt offen. Die Policies sind keine Rechtszertifizierung und ersetzen weder offene Rechtsgrundlagen, betriebliche Backupentscheidungen noch den vollständigen Ausführungsvertrag aus DP-07. |
+| DP-06 | P1 | Native Files-, Share-, Groupfolders- und Calendar-Rechte zuerst über öffentliche Verträge vervollständigen; Fremd-App-Abdeckung danach ausschließlich read-only inventarisieren. | Fehlende Details bleiben sichtbar `UNKNOWN`, `UNSUPPORTED`, `partial` oder `missing`. |
+| DP-07 | P2 | Einen Lifecycle- und Retention-Ausführungsvertrag erst nach belastbarer Beschäftigungsquelle und vollständiger Policy-, Nebenläufigkeits-, Backup-, Sperr-, Audit- und Rückbauentscheidung einführen. | Bis dahin keine globale automatische Retention oder zentrale Löschung; Preview bleibt `REVIEW`. |
+| DP-08 | P1 | Die noch fehlenden app-lokalen Processing-Kataloge und die systemweite Coverage-Prüfung in einzelnen, freigegebenen App-Aufträgen vervollständigen. | Fachliche Lücken bleiben `PRIVACY-DECISION-REQUIRED`; Root-Schema und app-lokaler Katalog bleiben die einzige Wertquelle. |
+| DP-09 | P1 | App-eigene Retention-Policies mit fachlicher Freigabe, Ausführung und Wiederherstellungsgrenze vervollständigen. | Konkrete Datenklassen, Fristen, Owner und Rechtsgrundlagen werden ausschließlich im jeweiligen app-lokalen Processing-Katalog geführt. |
+| DP-10 | P1 | Eine mögliche schreibende Matrix-Bedienoberfläche erst nach Erweiterung von [ADR 0003](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md) (`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`) und einer Owner-/Source-of-Truth-Matrix bewerten. | Öffentlicher opt-in Verwaltungsvertrag, Audit, CSRF sowie Allow-/Deny-/Manipulations- und Lifecycle-Tests sind vor jeder Umsetzung erforderlich. |
 
-| DP-10 | P1 | Die Berechtigungsmatrix von der reinen read-only Inventur zu einer optionalen zentralen Bedienoberfläche für Gruppe→Fähigkeit weiterentwickeln. Nextcloud bleibt die alleinige Quelle für Konten und Gruppenmitgliedschaften. Jede Fachapp beschreibt stabile fachliche Fähigkeiten (z. B. matrix.view, matrix.review_changes, matrix.manage) sowie sichere Default-Zuordnungen und bleibt Eigentümerin ihrer Zuordnungen, Objekt-Scopes und personenbezogenen Delegationen. Die Matrix darf gruppenbezogene Zuordnungen nur über einen kleinen öffentlichen, versionierten und opt-in Verwaltungsvertrag der jeweiligen App lesen oder ändern; weder Fremdtabellen noch fremde AppConfig werden direkt gelesen oder mutiert. Fremd-Apps ohne passenden öffentlichen Detailprovider werden ausschließlich anhand der nativen App-Gruppenbeschränkung inventarisiert: Ist eine Gruppe dort eingetragen, lautet der positive Befund nur „App nutzen“; ohne Einschränkung „App für alle angemeldeten Konten nutzbar“. CRUD-, Admin- oder fachliche Freigaben bleiben ohne belastbaren Detailvertrag UNKNOWN/UNSUPPORTED und werden nie aus App-Verfügbarkeit abgeleitet. | beschlossen als Zielbild am 2026-09-24; aktuell read-only. Vor jeder Umsetzung: ADR 0003 auf den schreibenden Steuerungsumfang erweitern, Owner- und Source-of-Truth-Matrix je Fähigkeit entscheiden, öffentlichen V1-Provider- und Verwaltungsvertrag einschließlich Aktivierungs-/Versionshandshake, Audit, CSRF, Allow-/Deny-/Manipulations-, Provider-/Consumer-, Update-/Deinstallations-/Rollbacktests festlegen. Personen- oder objektspezifische Delegationen (z. B. Recruitment-Vertretungen) bleiben zunächst ausdrücklich app-lokal. |
+## Vorgemerkte Suite-Module
 
-Die Pflicht, PersonalDataProvider und PermissionProvider bei jeder betroffenen
-App-Änderung mitzupflegen, ist bereits dauerhafte Governance und keine offene
-Planaufgabe. Die umgesetzte Portfoliozuordnung der Berechtigungsmatrix und die
-explizite RC-Bereinigung werden nur in ADR, Code, Tests und Git-Historie belegt.
+Diese Vorhaben sind nicht freigegeben. Vor Arbeit sind Produktgrenze, Owner,
+Daten, Rechte, Datenschutz, Runtimegrenze und Releaseweg zu entscheiden.
 
-## Vorgemerkte Suite-Module und Querschnittsvorhaben
+| ID | Vorhaben | Nächste Entscheidung |
+| --- | --- | --- |
+| ZM-01 | Schichtvermittlung | Bedarf, Rollen, Zustände, Eskalation und kleinster optionaler Vertrag |
+| ZM-02 | DPA-Fallsteuerung | Fachowner, Rechtsgrundlage, Datenklassen, Audit- und Retentionvertrag |
+| ZM-03 | Personalbedarfsprognose | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
+| ZM-04 | Kapazitäts-/Fallbackplanung | Lokale Erweiterung, gebundelte Bibliothek oder Laufzeit-App gemäß ADR 0001 |
+| ZM-05 | Aggregierte Berichte | Empfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
+| ZM-06 | Suiteweite Lokalisierung | Nach erneuter Freigabe: Pilot-App, Locales, Sprachquelle, Fallback und Rohtext-Gate |
+| ZM-07 | Recruitment–BQ-Integration | Minimaler Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
 
-Die folgenden Vorhaben sind nicht freigegeben. Eine Freigabe beginnt mit
-Owner-, Produktgrenzen-, Daten-, Rechte-, Datenschutz-, Standalone- und
-Releaseentscheidung; ein Tabellen-, Controller- oder Assetzugriff zwischen
-Fachapps bleibt ausgeschlossen.
-
-Für alle personalbezogenen Zukunftsmodule gelten bereits vor einer
-Produktentscheidung harte Schutzgrenzen: keine Leistungs-, Kooperations-
-oder Vermittelbarkeitsscores, Rankings, Blacklists, Diagnosen oder
-individuellen Ausfallprognosen; keine automatischen Sanktions-, Einstellungs-
-oder Teamentscheidungen und keine stillschweigende Erweiterung von Abruf-,
-Kapazitäts- oder Verfügbarkeitspflichten. DPA-Fallsteuerung,
-Schichtvermittlung, Ausfallgeld, Kapazitätsplanung und AZK-Ausgleich bleiben
-getrennte Fachkontexte, bis ein ausdrücklich freigegebener Vertrag ihre
-kleinste notwendige Verbindung beschreibt.
-
-| ID | Vorhaben | Zielgrenze | Nächste Entscheidung |
-| --- | --- | --- | --- |
-| ZM-01 | Schichtvermittlung | mögliche eigenständige Fachapp für Anfragen, Angebote und nachvollziehbare Vermittlung; AdPlaner bleibt Owner der Dienstplanung | Bedarf, Rollen, Zustände, Eskalation und kleinster optionaler Vertrag |
-| ZM-02 | DPA-Fallsteuerung | mögliche eigenständige App für dokumentierte Fall- und Maßnahmensteuerung; keine Vermischung mit Datenschutz-Center oder Berechtigungsmatrix | Fachowner, Rechtsgrundlage, Datenklassen, Audit- und Retentionvertrag |
-| ZM-03 | Personalbedarfsprognose | eigenständige Auswertung auf freigegebenen Aggregaten, keine zweite Personal- oder Planungswahrheit | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
-| ZM-04 | Kapazitäts-/Fallbackplanung | Produktgrenze noch nicht entscheidbar | zuerst klären, ob lokale Erweiterung, gebündelte Bibliothek oder eigenständige Laufzeit-App gemäß ADR 0001 |
-| ZM-05 | Aggregierte Berichte | nur datensparsame, zweckgebundene und berechtigte Projektionen aus kanonischen Quellen | Berichtsempfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
-| ZM-07 | Recruitment–BQ-Integration | optionaler versionierter Capability-/Eventvertrag; beide Apps bleiben ohne Provider fachlich nutzbar | kleinster Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
-| ZM-06 | suiteweite Lokalisierung | bewusst zurückgestellt und niedrigste Priorität; technische IDs, Status, API-Schlüssel und ISO-Werte bleiben sprachneutral; App-Umsetzung erfolgt später app-lokal | erst nach erneuter ausdrücklicher Freigabe: Pilot-App, unterstützte Locales, persönliche oder organisationsweite Dokumentsprache, Fallback und Rohtext-Gate |
-
-Prioritätsentscheid vom 17. September 2026: `ZM-06` steht hinter allen
-anderen derzeit bekannten Vorhaben und wird vorerst nicht umgesetzt. Neue
-Funktionen und Codeänderungen berücksichtigen an den jeweils berührten
-Stellen die spätere Lokalisierbarkeit und halten insbesondere technische
-Kennungen und Fachwerte von sichtbaren Texten getrennt. Daraus entsteht kein
-eigenständiger Lokalisierungs- oder Übersetzungsumfang; der systemweite
-Rollout beginnt erst nach einer erneuten ausdrücklichen Freigabe.
-
-### Fachlicher Zielrahmen der noch nicht freigegebenen Module
-
-Die Vormerkungen beruhen auf folgenden Annahmen, die vor einer Umsetzung
-fachlich bestätigt oder ersetzt werden müssen:
-
-- Für DPA-Fälle, Ausfallgeld und Kapazitätslisten ist im Workspace noch keine
-  belastbare digitale führende Quelle nachgewiesen. Tabellen- oder
-  CSV-Bestände werden deshalb zunächst nur inventarisiert und nicht als
-  stillschweigend kanonisch importiert.
-- AdPlaner bleibt Owner der Wunschdienstplanung; eine spätere
-  Schichtvermittlung verwaltet nur die konkrete offene Schicht und ihren
-  Vermittlungsverlauf.
-- AD Recruitment bleibt Owner von Bewerbung, Eignungsentscheidung,
-  BQ-Zuordnung und Einstellungsfreigabe. Der BQ-Planer bleibt Owner der
-  Kursdurchführung; ZM-07 darf nur notwendige stabile Referenzen und
-  terminliche Zustände verbinden.
-- Eine DPA-Fallsteuerung dient der mittelfristigen tragfähigen
-  Wiederanbindung an feste Teams. Sie ist weder ein Akut-Springerpool noch
-  eine BEM- oder Gesundheitsakte.
-
-#### ZM-01 – Schichtvermittlung
-
-Der spätere Fachprozess beginnt mit einer eindeutig referenzierten offenen
-Schicht und einem begrenzten Suchauftrag. Er kann Suchstufen, zulässige
-Kontakte, Kontaktzeitpunkt, Ergebnis, Wiedervorlage, begründeten
-Stufenübergang, genehmigten Sonderzuschlag und abschließenden
-Besetzungsstatus nachvollziehbar halten. Er wählt keine Personen automatisch
-aus, wertet Ablehnungen nicht als Leistungsmerkmal und verändert keine
-Wunschdienst-, Urlaubs- oder Arbeitszeitdaten. AdPlaner erhält höchstens den
-fachlich bestätigten Besetzungsstand über einen kleinen optionalen Vertrag.
-
-Vor einer Freigabe sind Owner, Rollen, erlaubte Zustände und Übergänge,
-Kontaktkanäle, Eskalationsgrenzen, Audit, Retention, Nebenläufigkeit und der
-Standalone-Fall ohne AdPlaner festzulegen. Tests müssen mindestens erlaubte
-und verbotene Übergänge, Wiederholung, parallele Bearbeitung, fehlenden
-Provider und ausbleibende Fremdmutation abdecken.
-
-#### ZM-02 – DPA-Fallsteuerung
-
-Ein späterer Fall kann stabile Beschäftigtenreferenz, fachliche
-Zuständigkeit, vereinbarten Stundenrahmen, sachliche Einsatzbedingungen,
-Teamoptionen, Kennenlernen, Einarbeitung, Wiedervorlagen, Ergebnis und
-Abschluss enthalten. Diagnosen, BEM-Inhalte, Freitextgesundheitsdaten,
-Rankings und automatische Teamzuordnungen bleiben ausgeschlossen. Eine
-Akutschicht darf die DPA nur über einen getrennten, eng begrenzten
-Integrationsfall anfragen; sie ändert den DPA-Fall nicht still.
-
-Vor einer Freigabe werden erlaubte Ausgangs- und Zielzustände,
-Verantwortungswechsel, fachliche Vorbedingungen, Stundenbedeutung,
-Aufbewahrung, Drittpersonenbezug, Auskunft, Audit und Sperren spezifiziert.
-Statusübergänge benötigen einen zuständigen Anwendungsservice und positive,
-negative, Fehler-, Wiederholungs- und Nebenläufigkeitstests.
-
-#### ZM-03 – Personalbedarfsprognose
-
-Eine Prognose darf nur freigegebene, zweckgebundene Aggregate aus
-kanonischen Quellen verwenden. Denkbar sind rollierende Bedarfskorridore,
-8–12-Wochen-Checkpoints, Szenarien sowie Forecast-vs.-Ist auf ausreichend
-großen Gruppen. Personenprognosen, Krankheitswahrscheinlichkeiten,
-automatische Einstellungsentscheidungen und aus Einzelpersonen rückauflösbare
-Strukturhinweise sind ausgeschlossen.
-
-Vor einer Freigabe werden Kennzahl, Datenowner, Zeitbezug, Aktualität,
-Mindestmenge, Korrekturweg, Unsicherheitsdarstellung und Fehlinterpretations-
-schutz entschieden. Jede Ableitung bleibt reproduzierbar und gegen ihre
-Quellen prüfbar.
-
-#### ZM-04 und ZM-05 – Kapazität, Übergangsbestände und Berichte
-
-Ausfallgeld, freiwillige Mehrkapazität, DPA-Stunden und AZK-Ausgleich werden
-nicht in ein gemeinsames Stundenkonto verschmolzen. Erst ein bestätigter
-Fachprozess entscheidet, ob Kapazitäts-/Fallbackplanung app-lokal,
-gemeinsam gebündelt oder als eigenständige Laufzeit-App geführt wird.
-Excel-/CSV-Dateien sind höchstens ein kontrollierter Übergang: Quelle,
-Spalten, stabile IDs, Dubletten, fehlerhafte Zeilen, Vorschau, Bestätigung,
-Idempotenz, Importprotokoll und Rückbau müssen vor dem ersten Import
-feststehen; Originaldateien werden nicht zur dauerhaften Parallelwahrheit.
-
-Aggregierte Berichte lesen ausschließlich freigegebene öffentliche
-Projektionen. Empfänger, Zweck, Granularität, Mindestmengen, Exportrechte,
-Aufbewahrung und Reidentifikationsrisiko werden pro Bericht entschieden.
-Operative Fremdtabellenabfragen und Personen-Dashboards sind ausgeschlossen.
-
-### Freigabereihenfolge für neue systemweite Module
-
-| Gate | Vor jeder Implementierung nachzuweisen |
-| --- | --- |
-| ZM-G0 Fachentscheidung | Begriffe, Fachowner, kanonische Quellen, stabile IDs, Produktgrenze, Standalone-Verhalten und ausdrücklich ausgeschlossene Zwecke |
-| ZM-G1 Schutzvertrag | Rollen, serverseitige Berechtigungen, Datenschutzklassen, Drittpersonenbezug, Auskunft, Retention, Audit, Sperren und Rückbau |
-| ZM-G2 Zustands-/Schnittstellenvertrag | Zustände und Übergänge, kleinste optionale Provider-/Consumer-API, Versionierung, Fehlerzustände, fehlender Provider und additive Evolution |
-| ZM-G3 Datenübergang | Bestandsinventar, Importvorschau, Validierung, Idempotenz, Migration, Roll-forward/Rollback und synthetische Upgradefälle |
-| ZM-G4 Repositoryfreigabe | App-Klassifikation nach ADR 0001, expliziter Auftrag, erst dann gegebenenfalls `create-nextcloud-app`; keine vorsorgliche App oder LocalBase-Abhängigkeit |
-| ZM-G5 Pilot und Abnahme | genau ein kleiner testgetriebener Pilot, Provider-/Consumer-Contracts, Installation/Upgrade/Deinstallation, Plattformmatrix, Datenschutz-, Sicherheits- und fachliche Abnahme |
-
-Der BQ-Planer selbst ist ein vorhandenes Produkt. Seine Produktpakete,
-Privacy-Aufgaben und Bundle-Reife stehen ausschließlich in
-`adbqplanung/ROADMAP.md`; im Root verbleiben nur die Cross-App- und
-Delivery-Grenzen.
-
-## Verbindliche Regeln
-
-1. **Vorhandenes zuerst.** Vor einer Änderung werden bestehender Owner,
-   kanonische Quelle, Nextcloud-Standard und vorhandene Tests identifiziert.
-2. **Nextcloud-Standard vor Eigenbau.** OCP/Public APIs, OCP Event Dispatcher,
-   OCS, WebDAV/CalDAV, Files/Sharing, User/Group, AppConfig/UserConfig,
-   Notifications, Activity und Background Jobs werden entsprechend ihrem
-   vorgesehenen Zweck bevorzugt. Eine Abweichung braucht eine belegte Lücke
-   und eine freigegebene Architekturentscheidung.
-3. **Inter-App-Vertrag statt Implementierungszugriff.** Fachapps lesen oder
-   verändern keine fremden Tabellen, Repositories, privaten
-   Konfigurationsschlüssel, Dateipfade, Controller oder Assets. Eine fremde
-   PHP-Klasse ist nur als ausdrücklich öffentliche, versionierte Runtime-API
-   zulässig.
-4. **Kleine öffentliche Verträge.** Jeder eigene Vertrag benennt Owner,
-   Consumer, Zweck, Schema/DTO, Authentifizierung, Autorisierung,
-   Fehlerzustände, Version, Kompatibilität und Deinstallationsverhalten.
-5. **Additive Evolution.** Erst erweitern, Consumer migrieren und alte/neue
-   Kombinationen verifizieren; erst danach eine alte Variante entfernen.
-6. **Ausfall ist ein Vertragszustand.** Optionale Provider dürfen fehlen,
-   deaktiviert, inkompatibel oder fehlerhaft sein. Der Consumer bleibt soweit
-   fachlich möglich nutzbar und behauptet weder Vollständigkeit noch
-   konfliktfreie Daten.
-7. **Vertrag testen.** Relevante Schnittstellen besitzen Provider- und
-   Consumer-Contract-Tests für Erfolg, Validierung, Autorisierung,
-   Fehler/Timeout, fehlenden Provider und Versionsverhalten. Tests frieren
-   keine private Implementierung ein.
-8. **Plattformneutral bleiben.** IAM kommt aus Nextcloud; QueryBuilder und
-   Migrationen bleiben DB-portabel; Dateien liegen hinter Nextcloud Storage;
-   wiederkehrende Arbeit läuft als Nextcloud-Job; lokaler Prozess- oder
-   Containerzustand ist keine persistente Wahrheit; Secrets liegen in
-   Nextcloud-Konfiguration beziehungsweise der Zielumgebung.
-9. **Kompatibilität beweisen, nicht vermuten.** `info.xml` wird nur aus
-   reproduzierbarer Evidenz geändert. Ein openDesk-Pilot prüft die konkrete
-   Zielumgebung, ohne sie als dauerhafte Architekturannahme festzuschreiben.
-10. **Improve what you touch.** Bei App-Arbeit werden nur die für diese App
-    und die berührte Architekturgrenze relevanten Punkte dieses Plans
-    geprüft. Ein isolierter UI-Text erzeugt keine künstliche Plattformarbeit.
-
-## Abgeschlossene Planstände
-
-Abgelöste Pläne werden nicht als zweite, zwangsläufig veraltende
-Dokumentwahrheit im Arbeitsbaum gehalten. Dauerhafte Entscheidungen bleiben
-als ADR beziehungsweise geltender Fachvertrag erhalten; umgesetzte Ergebnisse
-werden durch Code und Tests belegt. Der frühere Wortlaut bleibt bei Bedarf in
-der Git-Historie nachvollziehbar.
+Für alle personalbezogenen Zukunftsmodule gelten vor einer Produktentscheidung:
+keine Leistungs- oder Vermittlungsscores, Rankings, Blacklists, Diagnosen,
+individuellen Ausfallprognosen oder automatischen Personalentscheidungen.

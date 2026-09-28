@@ -384,154 +384,18 @@ einen reproduzierbaren Neubau der exakten Quellcommits wiederherstellbar.
 
 DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `scripts/verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
 
-### Zuständigkeit und Kosten der Prüfungen
+### Auswahl der Verifikation
 
-Der ergänzende [systemische Harness-Audit vom 9./10. September 2026](harness-audit-2026-09-09.md)
-klassifiziert Regeln und Testgruppen samt Beweisgrenzen. Er dokumentiert die
-entfernte zweite Instruktionsprüfung in `scripts/check-apps`, den gestärkten
-Majorfolgen-Test sowie verbleibende Schema-/Runtime- und Fresh-Install-Lücken.
-Er ist ein datierter Befundbericht, keine zusätzliche Regel- oder Aufgabenquelle.
+Wähle den kleinsten bestehenden Prüfeinstieg, der die zusätzliche Fehlerklasse
+nachweist. `scripts/check-workspace-structure` prüft Strukturarbeit,
+`scripts/check-fast` Parent-Änderungen und `scripts/check-full` den gesamten
+Workspace. App- und Delivery-Arbeit folgen den jeweiligen lokalen Skills und
+Gates. Ein Diagnosemodus ist kein Release-Urteil.
 
-Bestandsaudit vom 5. September 2026. Die Kosten sind relative Einordnungen,
-keine gemessenen Laufzeitversprechen. Für den Abschluss wird ein passender
-umfassender Einstieg gewählt; dessen Teilprüfungen werden nicht unmittelbar
-vorher auf demselben unveränderten Stand nochmals gestartet.
-
-| Primärer Nachweis | Zweck und Umfang | Auslöser | Kosten / Abgrenzung |
-| --- | --- | --- | --- |
-| `scripts/check-workspace-structure` | Manifest, lokale Regeln/Skills, Tracking, TOML/YAML, Markdown-Struktur | Strukturarbeit; enthalten in Fast und App-Einstieg | niedrig bis mittel; Git-Abfragen je Repository, keine Container |
-| `scripts/check-fast` | Parent-Shellsyntax, Diff/Artefakte, Struktur, Dokumentreferenzen, Governance-, Architektur-, CI-, Coverage-Baseline-, Installer- und Archivverträge | Parent-Arbeit | mittel; synthetische Datei-/Archiv-/ACL-Tests, keine realen App-Installationen |
-| app-lokale PHP-/JS-Testläufer | Syntax und Fach-/Unit-/Contract-Smokes; PHP-Prozesse isoliert | App-Arbeit und App-CI | mittel; Syntax ist bereits enthalten, keine vorgelagerten identischen Linterläufe nötig |
-| `scripts/check-full` | Fast plus alle registrierten App-Testläufer und reale öffentliche Providerklassen in den zentralen Contracts | vollständige Workspace-Verifikation | höher; übernimmt Struktur aus Fast; kein Paketbau, keine Runtime-Freigabe |
-| App-CI | PHP 8.3 mit Coverage, PHP 8.5 ohne Coverage; JS mit Coverage | PR und Push auf main | höher; verschiedene Runtimes sind eigenständige Nachweise; Coverage ersetzt dort bereits einen separaten identischen Testlauf |
-| LocalBase-Consumer-CI | Consumer-Suiten gegen den geprüften LocalBase-Stand | LocalBase-Änderung | hoch; anderer Providerinput als in unabhängigen App-CIs, daher keine nachgewiesene Doppelung |
-| `scripts/measure-ad-suite-php-coverage.sh` und `scripts/measure-ad-suite-js-coverage.sh` | Coverage aller registrierten Apps gegen zentrale Baselines | gezielte Coverage-Abnahme | hoch; führen Suiten aus; PHP benötigt DDEV/Xdebug, JS c8; nicht zusätzlich ohne eigenen Beweisbedarf starten |
-| `scripts/check-ad-suite-delivery` | striktes Fast, enthaltene Produkte, App-Tests, einmaliger temporärer Paketbau und Archivprüfung | konkrete Suite-Delivery | hoch; baut intern mit bereits geprüften Tests; sauberer Commitstand erforderlich |
-| optionale Delivery-Smokes | DDEV-Status/Inventar, HTTP/CSRF, Rollenmatrix oder echte Integrationsfälle | ausdrücklich beauftragte lokale Laufzeitprüfung | hoch; verschiedene Fehlerklassen, keine vollständige Neuinstallation |
-| `scripts/verify-nextcloud-compatibility` mit `scripts/run-nextcloud-ddev-compatibility-stage` | gepinnte Plattformmatrix, Fresh Install, DI/Jobs, app-lokale Rechte-Smokes, Runtime, Assets/UI und anwendbare Upgrades gemäß `verify-nextcloud-future-compatibility` | Supportbereich / RC-Veröffentlichung | sehr hoch; prüft exakte Commits und verwaltet die reservierte lokale DDEV-Registrierung mit Wiederherstellung |
-| `scripts/check-privacy-app-compatibility` | physisch fehlende und inkompatible optionale Privacy-App | Änderung dieser Runtimegrenze | hoch; Mountwechsel benötigen Neustarts; kein historischer API-Adapter und kein Fresh-Install-Ersatz |
-
-Die Dokumentreferenz-Fixtures prüfen den Prüfer einschließlich seiner
-Fehlerfälle; der anschließende Scan prüft die echten Dokumente. Ebenso
-ergänzen Installer-Fakes, echte Runtime-Smokes und Archivprüfungen einander.
-App-lokale Provider-Fakes und die zentralen Tests gegen reale öffentliche
-Providerklassen sichern verschiedene Grenzen. Diese Prüfungen bleiben erhalten.
-
-Belegte Doppelarbeit wurde im optionalen Delivery-DDEV-Statuspfad entfernt:
-`occ app:list` wird einmal statt je enthaltene App ausgeführt; alle erwarteten
-Apps werden gegen diesen unmittelbar gelesenen Stand geprüft. Im derzeitigen
-Full-Suite-Katalog entfallen dadurch sechs von sieben Inventaraufrufen,
-einschließlich DDEV-Aufruf und Nextcloud-Bootstrap. Das ist kein Cache über
-verschiedene Läufe oder Zustandsänderungen hinweg.
-
-Die App-CIs installieren gesperrtes Coverage-Tooling in getrennten Jobs.
-Ein gemeinsamer Cache könnte Downloads sparen, ist aber ohne Änderung dieser
-eigenständigen Repositories nicht umgesetzt. Lock-Dateien und Runtime müssen
-Teil eines künftigen Cache-Schlüssels sein. Alte lokale Coverage-Ausgaben mit
-`REUSE_COVERAGE=1` besitzen keinen automatischen Quellstandnachweis und sind
-kein ungeprüft wiederverwendbares Freigabeergebnis.
-
-Ein konfigurierter `core.hooksPath`, getrackter Precommit-/Preflight-Wrapper
-oder gesonderter allgemeiner PHPStan-/ESLint-Lauf wurde im registrierten
-Bestand nicht gefunden. Die eingebauten Syntaxprüfungen sind keine vollständige
-statische Analyse gegen einen gepinnten OCP-Stand.
-
-### Fresh Install und externe Testkonten
-
-Der Skill `verify-nextcloud-future-compatibility` bleibt der zuständige
-Workflow für isolierte Neuinstallationen je gepinntem Plattformstand. Der
-getrackte Einstieg `scripts/verify-nextcloud-compatibility` prüft Archive und
-Commit-Identitäten, erzwingt lückenlose Majors und ruft für Fresh Install und
-benachbarte Upgrades `scripts/run-nextcloud-ddev-compatibility-stage` auf.
-Der Driver prüft die exakten App-Snapshots im PHP-/Node-Container vor der
-Core-Installation, installiert anschließend einen leeren Core und aktiviert
-erst danach Infrastruktur und Fachapps. App-lokale Dateien namens
-`nextcloud-compatibility-smoke.php` definieren UI- und
-Berechtigungsgrenzen, damit der Parent keine fachlichen Seiten- oder
-Rechteannahmen dupliziert.
-Der optionale Kategorie-B-Lifecycle prüft dieselben app-lokalen Verträge auch
-vor und nach gemeinsam versionierten App-Updates, bei deaktiviertem und
-physisch entferntem Provider, nach Neuinstallation sowie gegen einen expliziten
-vorwärtsversionierten Rollback-Snapshot. Provider-Setups und erforderliche
-native Testrollen werden dabei ausschließlich vom jeweiligen App-Smoke
-deklariert; fehlende Owner bleiben als `owner-unavailable` sichtbar.
-
-Wenn der lokal auflösbare Name `nextcloud-dev` benötigt wird, übernimmt
-`--reserved-ddev-root nextcloud-dev` dessen Registrierung einmal für die
-gesamte Matrix. Der Runner erfasst den vorherigen Laufzustand, verwendet für
-die isolierten Stufen SQLite ohne gemeinsamen Datenbankcontainer und stellt
-Registrierung sowie ursprünglichen Laufzustand auch nach einem Fehler wieder
-her. Frühere appweise Nachweise im Zukunftsplan sind keine neue Ausführung und
-beweisen nicht die Neuinstallierbarkeit aller aktuellen Apps.
-Insbesondere sind `RUN_DDEV_CHECKS=1`, Installer-Fakes und der isolierte
-Urlaubsschema-Test kein vollständiger Nextcloud-/Workspace-Reinstall.
-Nach ausdrücklicher Freigabe wurde im bestehenden Workflow am 5. September
-2026 ein lokaler Einzelnachweis ausgeführt: Nextcloud 34.0.2, PHP 8.3.21,
-separate temporäre Codekopie ohne Bestandskonfiguration oder Nutzerdaten,
-leere SQLite-Datenbank. Alle zwölf aktuellen App-Kopien wurden bei Fresh
-Install und erneutem Aufbau aktiviert; die beiden vollständigen Schemata
-sind identisch. Alle App-Migrationen sind angewendet, alle sechs deklarierten
-Jobs registriert und über DI auflösbar. Die korrekte Aktivierungsreihenfolge
-beginnt mit Infrastruktur; ein vorläufiger Lauf mit Fachapps zuerst meldete
-vorübergehend fehlende LocalBase-Kommandodienste.
-
-Fünf vorhandene Integrations-Smokes bestanden in der neuen Kopie:
-Monatsplanstatus, Terminserien, Standarddienst-/Urlaubsintegration,
-DAV-Abgleich und Recruitment-Durchstich. Der Urlaubsschema-Smoke scheiterte
-unter SQLite an den global eindeutigen Namen seiner parallelen Testindizes;
-derselbe bestehende Test bestand anschließend in DDEV/MariaDB mit seinen
-selbstbereinigenden synthetischen Tabellen. Das ist eine Grenze des
-Testaufbaus, kein fehlgeschlagener Fresh Install der Urlaubs-App.
-
-Quellhashes, Schemavergleich, Aufrufe und Logs liegen als lokale, ignorierte
-Prüfartefakte unter `build/harness-audit-2026-09-05/`. Config-Dateien und
-Datenbanken werden dort nicht übernommen. Dieser lokale NC-34-/SQLite-
-Nachweis ist keine gepinnte Mehrversionsmatrix und keine vollständige
-Installationsabnahme mit authentifizierter Oberfläche und HTTPS-Assets.
-Dieser weitergehende Gesamtnachweis bleibt **nicht vollständig verifiziert**.
-
-Die lokalen Demo-Packs verwenden bereits die gemeinsame
-`localbase/lib/Service/DemoAccountProvisioningService.php` und native
-Nextcloud-Benutzer/Gruppen. Die Organisationsdefinition und Rollenquellen
-sind explizit. Dies reproduziert synthetische lokale Fälle, belegt aber keine
-Wiederherstellung realer externer Staging-Testkonten. Die Serverinstanz und
-deren Konten wurden für diesen Audit nicht ausgelesen.
-
-Vor einem destruktiven Staging-Reinstall werden nur die tatsächlich nötigen
-externen Testidentitäten, Gruppenmitgliedschaften, app-eigenen Rollenwerte
-und nicht reproduzierbaren Testdaten gezielt inventarisiert. Neutrale
-Sollkonfiguration gehört bei Bedarf in vorhandene Setup-/Test-Fixtures;
-reale Zuordnungen und notwendige Sicherungen bleiben geschützt außerhalb von
-Git. Bestehende native Provisionierung wird verwendet; insbesondere wird die
-lokale Passwortkonvention niemals auf Staging übernommen. Ein allgemeiner
-Legacy-Pfad oder ein neues Benutzerverwaltungssystem folgt daraus nicht.
-
-### Einordnung der Entwicklungsaltlasten
-
-Der Audit vom 5. September 2026 umfasst den Parent und lesend die registrierten
-Subrepositories. App-Code wurde nicht zur Bereinigung freigegeben. Die
-folgenden konkreten Funde bleiben daher erhalten; eine Entfernung braucht den
-zusammenhängenden app-lokalen beziehungsweise benannten Cross-App-Auftrag.
-
-| Fund | Einordnung und Entscheidung |
-| --- | --- |
-| pauschale Upgrade-/Migrationspflichten in Root-Architektur und ADR 0001; verpflichtender eigener Deprecation-Releasezyklus | im Parent auf konkret zu erhaltende Zustände begrenzt; rein interne Entwicklungsstände folgen der zentralen Phasenregel |
-| `localbase/lib/Organization/AdOrganizationDefinition.php`, interne Formate 1–3 → 4 | historischer Formatadapter; aktueller Zielvertrag und alle Consumer müssen beim Entfernen gemeinsam geprüft werden; vorhandene Organisationskonfiguration gezielt reproduzierbar machen |
-| `brtop/lib/Service/BrtopSettingsService.php`, `brtop/lib/Service/BrGroupsService.php`, `localbase/lib/Organization/BrGroupSettingsService.php` | alte BRTop-Gruppenquelle; Initialisierungsmethode wird auch von BRStunden für den aktuellen Gruppenvertrag verwendet. Kein pauschales Löschen anhand des Namens `Legacy` |
-| `adurlaub/tests/integration/MigrationSchemaSmoke.php` | Altschema-Übernahme alter Importfelder ist ein Entwicklungsaltlast-Kandidat; derselbe Test prüft aber auch das aktuelle leere Schema, Indizes und Integrität. Fresh-Anteil bleibt notwendig |
-| `adrecruitment/lib/Service/HiringMasterDataService.php`, Statusmail-/Dokumentkommentar-Übergänge | frühere interne Formate; aktueller Mail-Klartext als Versandalternative und sicheres Escaping sind eigenständige Anforderungen, keine entbehrliche Legacy-Schicht |
-| nummerierte Nextcloud-Migrationen und Jobregistrierung | erzeugen auch beim Fresh Install das aktuelle Schema/Jobs. Erst vollständigen Zielaufbau beweisen, dann rein historische Schritte appweise konsolidieren |
-| Groupfolders-Source-Gate, DAV-Adapter und Negativtests alter Rollengruppen | Plattform-/Rechtegrenzen; bleiben einschließlich inkompatibler und verweigerter Fälle erhalten |
-| LocalBase-Privacy-Pilot und Retention-Dry-Run | noch aktuell konsumierte öffentliche Verträge; ADR 0002 und Privacy-Rollout gelten, kein unkontrolliertes Entfernen während des Parent-Audits |
-
-Der schnelle Parent-Check prüft eindeutig ausgeschriebene technische Pfade in
-der aktuellen Betriebs-, Architektur- und Vertragsdokumentation gegen den
-Workspace. Nicht mehr vorhandene exakte Pfade blockieren. Bloße technische
-Basenames ohne Repositorykontext bleiben wegen möglicher Mehrdeutigkeit eine
-Warnung. Sämtliche aktuellen Markdown-Dateien unter `docs/` werden geprüft;
-abgelöste Planarchive werden nicht als zweite Dokumentwahrheit mitgeführt.
-
-Wenn an einer App gearbeitet wird, bewusst in deren Workspace-Folder bzw. Repo-Kontext wechseln und die lokale `AGENTS.md` samt lokalem Skill lesen. Der Parent startet mit `sandbox_mode = "workspace-write"` und `approval_policy = "on-request"`, damit ausdrücklich beauftragte Änderungen sowie gezieltes Staging und Committen innerhalb des Workspaces möglich sind. Dieser technische Schreibzugriff erteilt keine fachliche Schreibfreigabe und ersetzt weder Repository-Grenzen noch Git-Regeln. Externe Connector-/MCP-Systeme bleiben separat durch Auftrag und Rollenregeln begrenzt. Parent-only-Aenderungen duerfen weiterhin nur Meta-/DDEV-/Dokumentationsdateien betreffen. Schreibende Cross-App-Arbeit ist ein ausdrücklich beauftragter Sonderlauf; `.gitignore` ersetzt diese Grenze nicht.
+DDEV-, HTTP- und Rollen-Smokes werden nur bei ausdrücklich beauftragter
+Laufzeitprüfung ausgeführt. Der Umfang und die Beweisgrenze jedes aktuellen
+Checks stehen in dessen Ausgabe und im zuständigen Skill; historische
+Auditberichte sind keine Betriebsanleitung.
 
 ## Git-Regeln
 
