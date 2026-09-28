@@ -15,6 +15,35 @@ fail() {
 [[ -x "$real_driver" ]] || fail 'Der getrackte DDEV-Runtime-Driver fehlt oder ist nicht ausführbar.'
 grep -Fq 'omit_containers:' "$real_driver" || fail 'Der Runtime-Driver isoliert den Datenbankcontainer nicht.'
 grep -Fq -- '--database=sqlite' "$real_driver" || fail 'Der Runtime-Driver verwendet keine isolierte SQLite-Datenbank.'
+grep -Fq 'NC_COMPAT_DATABASE' "$real_driver" || fail 'Der Runtime-Driver besitzt keinen expliziten Datenbankmodus.'
+grep -Fq 'type: postgres' "$real_driver" || fail 'Der Runtime-Driver kann keinen isolierten PostgreSQL-Container konfigurieren.'
+grep -Fq -- '--database=pgsql' "$real_driver" || fail 'Der Runtime-Driver installiert Nextcloud nicht gegen PostgreSQL.'
+grep -Fq 'NC_COMPAT_OBJECT_STORAGE' "$real_driver" || fail 'Der Runtime-Driver besitzt keinen expliziten Object-Storage-Modus.'
+grep -Fq '0d7408fc9969caf07de6a8c3a84f9fbb10a6739e' "$real_driver" \
+    || fail 'Der Runtime-Driver pinnt den freigegebenen offiziellen MinIO-Quellcommit nicht.'
+grep -Fq 'docker.io/library/golang@sha256:7772cb5322baa875edd74705556d08f0eeca7b9c4b5367754ce3f2f00041ccee' "$real_driver" \
+    || fail 'Der Runtime-Driver pinnt den MinIO-Builder nicht per unveränderlichem Digest.'
+grep -Fq "'class' => '\\\\OC\\\\Files\\\\ObjectStore\\\\S3'" "$real_driver" \
+    || fail 'Der Runtime-Driver konfiguriert Nextcloud nicht gegen den nativen S3-Object-Store.'
+grep -Fq 'tmpfs:' "$real_driver" || fail 'Der Runtime-Driver hält die isolierten MinIO-Daten nicht flüchtig.'
+grep -Fq 'compatibility-object-storage.php' "$real_driver" \
+    || fail 'Der Runtime-Driver besitzt keinen getrennten HTTP-/FPM-Object-Storage-Schreiber.'
+grep -Fq 'runtime_smokes object-storage-job' "$real_driver" \
+    || fail 'Der Runtime-Driver liest den Object-Storage-Zustand nicht in einem neuen Jobprozess.'
+grep -Fq 'compatibility-app-object-storage.php' "$real_driver" \
+    || fail 'Der Runtime-Driver besitzt keinen app-spezifischen Object-Storage-Webprozess.'
+grep -Fq 'object-storage-app-web-' "$real_driver" \
+    || fail 'Der Runtime-Driver führt app-spezifische Object-Storage-Setups nicht über PHP-FPM aus.'
+grep -Fq "'objectStorageJobVerify'" "$real_driver" \
+    || fail 'Der Runtime-Driver führt keine app-spezifischen Object-Storage-Prüfungen im frischen Jobprozess aus.'
+grep -Fq -- "--header 'OCS-APIRequest: true'" "$real_driver" \
+    || fail 'Der Runtime-Driver kennzeichnet authentifizierte API-Smokes nicht als tokenfreien Nextcloud-API-Client.'
+grep -Fq 'env OC_PASS=compat-target-development-only php occ user:add' "$real_driver" \
+    || fail 'Der Runtime-Driver legt das synthetische Zielkonto nicht mit einer containerlokalen Passwortübergabe an.'
+grep -Fq 'verify_postgresql_upgrade_runtime postgresql-upgrade-seed' "$real_driver" \
+    || fail 'Der Runtime-Driver legt vor einem PostgreSQL-Upgrade keine app-spezifischen Bestandsdaten an.'
+grep -Fq 'verify_postgresql_upgrade_runtime postgresql-upgrade-verify' "$real_driver" \
+    || fail 'Der Runtime-Driver prüft app-spezifische Bestandsdaten nach dem PostgreSQL-Upgrade nicht.'
 grep -Fq 'nextcloud-compatibility-smoke.php' "$real_driver" || fail 'Der Runtime-Driver nutzt den app-lokalen Smoke-Vertrag nicht.'
 grep -Fq 'runtime_smokes providers "$effective_major" > "$result_dir/providers-$suffix.tsv"' "$real_driver" \
     || fail 'Der Runtime-Driver prüft Provider-Discovery nicht in jedem Lifecycle-Zustand.'
@@ -30,6 +59,13 @@ overlay_line="$(grep -n '^install_app_snapshots "\$major"$' "$real_driver" | cut
     || fail 'Commit-Preflight, leere Core-Installation und App-Overlay sind falsch geordnet.'
 [[ "$(grep -Ec '^[[:space:]]*write_runtime_smoke_runner$' "$real_driver")" -eq 2 ]] \
     || fail 'Der Runtime-Smoke-Bootstrap wird nach einem Core-Upgrade nicht erneuert.'
+seed_line="$(grep -n 'verify_postgresql_upgrade_runtime postgresql-upgrade-seed' "$real_driver" | tail -n 1 | cut -d: -f1)"
+stop_line="$(grep -n 'ddev stop.*ddev-stop-before-upgrade' "$real_driver" | cut -d: -f1)"
+upgrade_line="$(grep -n 'occ upgrade.*upgrade-' "$real_driver" | cut -d: -f1)"
+verify_line="$(grep -n 'verify_postgresql_upgrade_runtime postgresql-upgrade-verify' "$real_driver" | tail -n 1 | cut -d: -f1)"
+[[ -n "$seed_line" && -n "$stop_line" && -n "$upgrade_line" && -n "$verify_line" \
+    && "$seed_line" -lt "$stop_line" && "$upgrade_line" -lt "$verify_line" ]] \
+    || fail 'PostgreSQL-Seed und -Verifikation umschließen das reale Core-Upgrade nicht.'
 
 # Exercise the generated runtime program, not just a keyword in its source.
 mkdir -p "$stage/runtime/lib"
@@ -95,6 +131,8 @@ return [
     'grantService' => null, 'grantManagerGroups' => ['demo-privacy-group'], 'permissionProbe' => null, 'apiSmokes' => [],
     'providerSetup' => static function(): void { file_put_contents(getenv('PROVIDER_SETUP_LOG'), "setup\n", FILE_APPEND); },
     'providerRegistrations' => ['demo_owner' => [SyntheticRegistryEvent::class, SyntheticLegacyRegistryEvent::class]],
+    'postgresqlUpgradeSeed' => static function(string $uid): void { file_put_contents(getenv('POSTGRESQL_SEED_LOG'), $uid . "\n", FILE_APPEND); },
+    'postgresqlUpgradeVerify' => static function(string $uid): void { file_put_contents(getenv('POSTGRESQL_VERIFY_LOG'), $uid . "\n", FILE_APPEND); },
 ];
 PHP
 done
@@ -130,6 +168,10 @@ GRANT_LOG="$stage/grant.log" php "$stage/runtime/compatibility-grants.php" pre >
 GRANT_LOG="$stage/grant.log" GRANT_GROUP_LOG="$stage/grant-groups.log" php "$stage/runtime/compatibility-grants.php" grant > /dev/null
 [[ "$(wc -l < "$stage/grant-groups.log")" -eq 2 ]] || fail 'The app-local grant-manager group setup did not run.'
 [[ "$(cat "$stage/grant.log")" == compat-admin ]] || fail 'The app-local native grant setup did not run.'
+POSTGRESQL_SEED_LOG="$stage/postgresql-seed.log" php "$stage/runtime/compatibility-grants.php" postgresql-upgrade-seed > "$stage/postgresql-seed.tsv"
+[[ "$(wc -l < "$stage/postgresql-seed.log")" -eq 2 ]] || fail 'App-lokale PostgreSQL-Bestandsdaten wurden nicht vollständig angelegt.'
+POSTGRESQL_VERIFY_LOG="$stage/postgresql-verify.log" php "$stage/runtime/compatibility-grants.php" postgresql-upgrade-verify > "$stage/postgresql-verify.tsv"
+[[ "$(wc -l < "$stage/postgresql-verify.log")" -eq 2 ]] || fail 'App-lokale PostgreSQL-Bestandsdaten wurden nicht vollständig nachgeprüft.'
 
 # Every included app supplies its own expectations; the Parent has no app list.
 php -r '
@@ -145,6 +187,18 @@ php -r '
         }
     }
 ' "$workspace"
+
+for app in brtop adrecruitment adcalendar; do
+    contract="$workspace/$app/tests/nextcloud-compatibility-smoke.php"
+    grep -Fq "'objectStorageWebSetup'" "$contract" \
+        || fail "$app besitzt kein app-spezifisches Object-Storage-Websetup."
+    grep -Fq "'objectStorageJobVerify'" "$contract" \
+        || fail "$app besitzt keinen app-spezifischen Object-Storage-Jobnachweis."
+    grep -Fq "'postgresqlUpgradeSeed'" "$contract" \
+        || fail "$app besitzt kein app-spezifisches PostgreSQL-Upgrade-Setup."
+    grep -Fq "'postgresqlUpgradeVerify'" "$contract" \
+        || fail "$app besitzt keinen app-spezifischen PostgreSQL-Upgrade-Nachweis."
+done
 
 make_server() {
     local major="$1"

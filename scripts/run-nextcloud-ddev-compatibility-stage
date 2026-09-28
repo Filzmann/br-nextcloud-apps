@@ -44,6 +44,25 @@ project_name="${NC_COMPAT_PROJECT_NAME:-nccompat${major}$(basename "$project" | 
 project_tld="${NC_COMPAT_PROJECT_TLD:-ddev.site}"
 admin_user='compat-admin'
 admin_password='compat-admin-development-only'
+database_mode="${NC_COMPAT_DATABASE:-sqlite}"
+[[ "$database_mode" == sqlite || "$database_mode" == postgresql ]] \
+    || fail "Unbekannter NC_COMPAT_DATABASE-Modus: $database_mode"
+object_storage_mode="${NC_COMPAT_OBJECT_STORAGE:-0}"
+[[ "$object_storage_mode" == 0 || "$object_storage_mode" == 1 ]] \
+    || fail "NC_COMPAT_OBJECT_STORAGE muss 0 oder 1 sein."
+minio_source_root="${NC_COMPAT_MINIO_SOURCE_ROOT:-}"
+minio_commit='0d7408fc9969caf07de6a8c3a84f9fbb10a6739e'
+minio_builder='docker.io/library/golang@sha256:7772cb5322baa875edd74705556d08f0eeca7b9c4b5367754ce3f2f00041ccee'
+
+validate_object_storage_source() {
+    [[ "$object_storage_mode" == 1 ]] || return 0
+    [[ -n "$minio_source_root" && -d "$minio_source_root/.git" ]] \
+        || fail 'NC_COMPAT_MINIO_SOURCE_ROOT muss auf einen offiziellen, ausgecheckten MinIO-Quellstand zeigen.'
+    [[ "$(git -C "$minio_source_root" rev-parse HEAD)" == "$minio_commit" ]] \
+        || fail "MinIO-Quellstand ist nicht der gepinnte Commit $minio_commit."
+    [[ -f "$minio_source_root/go.mod" && -f "$minio_source_root/go.sum" ]] \
+        || fail 'Der gepinnte MinIO-Quellstand enthält keine vollständigen Go-Modul-Locks.'
+}
 
 cleanup() {
     (cd "$project" && ddev stop --unlist) >/dev/null 2>&1 || true
@@ -67,6 +86,23 @@ $CONFIG = [
     ],
 ];
 PHP
+    if [[ "$object_storage_mode" == 1 ]]; then
+        cat >> "$project/html/config/compatibility.config.php" <<'PHP'
+$CONFIG['objectstore'] = [
+    'class' => '\\OC\\Files\\ObjectStore\\S3',
+    'arguments' => [
+        'bucket' => 'nextcloud-compatibility',
+        'autocreate' => true,
+        'key' => 'compatibility-access-key',
+        'secret' => 'compatibility-secret-key',
+        'hostname' => 'objectstore',
+        'port' => 9000,
+        'use_ssl' => false,
+        'use_path_style' => true,
+    ],
+];
+PHP
+    fi
 }
 
 copy_app_snapshots() {
@@ -121,6 +157,21 @@ install_app_snapshot() {
 
 write_ddev_config() {
     mkdir -p "$project/.ddev"
+    if [[ "$database_mode" == postgresql ]]; then
+        cat > "$project/.ddev/config.yaml" <<YAML
+name: $project_name
+type: php
+docroot: html
+php_version: "8.3"
+webserver_type: apache-fpm
+database:
+  type: postgres
+  version: "16"
+use_dns_when_possible: true
+project_tld: $project_tld
+YAML
+        return
+    fi
     cat > "$project/.ddev/config.yaml" <<YAML
 name: $project_name
 type: php
@@ -137,6 +188,32 @@ project_tld: $project_tld
 YAML
 }
 
+write_object_storage_config() {
+    [[ "$object_storage_mode" == 1 ]] || return 0
+    cat > "$project/.ddev/Dockerfile.object-storage" <<EOF
+FROM $minio_builder AS build
+WORKDIR /src
+COPY . .
+RUN go build -tags kqueue -trimpath -ldflags='-s -w' -o /minio .
+FROM scratch
+COPY --from=build /minio /minio
+ENTRYPOINT ["/minio"]
+EOF
+    cat > "$project/.ddev/docker-compose.object-storage.yaml" <<EOF
+services:
+  objectstore:
+    build:
+      context: $minio_source_root
+      dockerfile: $project/.ddev/Dockerfile.object-storage
+    command: server /data --address :9000
+    environment:
+      MINIO_ROOT_USER: compatibility-access-key
+      MINIO_ROOT_PASSWORD: compatibility-secret-key
+    tmpfs:
+      - /data
+EOF
+}
+
 start_project() {
     (cd "$project" && ddev start -y) > "$result_dir/ddev-start.log" 2>&1
 }
@@ -145,13 +222,30 @@ occ() {
     (cd "$project" && ddev exec -d /var/www/html/html php occ "$@") </dev/null
 }
 
+create_compat_target() {
+    (cd "$project" && ddev exec -d /var/www/html/html \
+        env OC_PASS=compat-target-development-only php occ user:add --password-from-env \
+        --display-name='Compatibility target' compat-target) </dev/null
+}
+
 install_core() {
     local effective_major="$1"
+    if [[ "$database_mode" == postgresql ]]; then
+        OC_PASS="$admin_password" occ maintenance:install \
+            --database=pgsql --database-host=db --database-name=db \
+            --database-user=db --database-pass=db \
+            --admin-user="$admin_user" --admin-pass="$admin_password" \
+            --no-interaction > "$result_dir/install-$effective_major.log" 2>&1
+        occ config:system:set trusted_domains 1 --value="$project_name.$project_tld" >/dev/null
+        create_compat_target >/dev/null
+        return
+    fi
     OC_PASS="$admin_password" occ maintenance:install \
         --database=sqlite \
         --admin-user="$admin_user" --admin-pass="$admin_password" \
         --no-interaction > "$result_dir/install-$effective_major.log" 2>&1
     occ config:system:set trusted_domains 1 --value="$project_name.$project_tld" >/dev/null
+    create_compat_target >/dev/null
 }
 
 enable_apps() {
@@ -197,7 +291,7 @@ write_runtime_smoke_runner() {
 <?php
 define('OC_CONSOLE', true);
 $phase = $argv[1] ?? '';
-if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'setup-providers', 'providers', 'apis'], true)) {
+if (!in_array($phase, ['pre', 'grant', 'describe', 'registrations', 'setup-providers', 'providers', 'apis', 'object-storage-job', 'postgresql-upgrade-seed', 'postgresql-upgrade-verify'], true)) {
     throw new RuntimeException('Unknown compatibility smoke phase.');
 }
 $registrationClasses = [];
@@ -292,6 +386,31 @@ try {
         }
         continue;
     }
+    if ($phase === 'object-storage-job') {
+        if (isset($contract['objectStorageJobVerify'])) {
+            if (!is_callable($contract['objectStorageJobVerify'])) {
+                throw new RuntimeException('Object-storage job verifier is invalid for ' . $app);
+            }
+            ($contract['objectStorageJobVerify'])($uid);
+            echo implode("\t", [$app, 'object-storage-job-verified']) . "\n";
+        } else {
+            echo implode("\t", [$app, 'object-storage-not-applicable']) . "\n";
+        }
+        continue;
+    }
+    if (in_array($phase, ['postgresql-upgrade-seed', 'postgresql-upgrade-verify'], true)) {
+        $key = $phase === 'postgresql-upgrade-seed' ? 'postgresqlUpgradeSeed' : 'postgresqlUpgradeVerify';
+        if (isset($contract[$key])) {
+            if (!is_callable($contract[$key])) {
+                throw new RuntimeException('PostgreSQL upgrade callback is invalid for ' . $app . ': ' . $key);
+            }
+            ($contract[$key])($uid);
+            echo implode("\t", [$app, $phase, 'verified']) . "\n";
+        } else {
+            echo implode("\t", [$app, $phase, 'not-applicable']) . "\n";
+        }
+        continue;
+    }
     if ($phase === 'pre' && is_callable($probe) && $probe($uid) !== false) {
         throw new RuntimeException('Protected capability is unexpectedly available before grant for ' . $app);
     }
@@ -333,6 +452,76 @@ try {
     fwrite(STDERR, get_class($error) . ': ' . $error->getMessage() . "\n");
     exit(1);
 }
+PHP
+}
+
+write_app_object_storage_probe() {
+    [[ "$object_storage_mode" == 1 ]] || return 0
+    cat > "$project/html/compatibility-app-object-storage.php" <<'PHP'
+<?php
+declare(strict_types=1);
+
+if (($_SERVER['PHP_AUTH_USER'] ?? '') !== 'compat-admin'
+    || ($_SERVER['PHP_AUTH_PW'] ?? '') !== 'compat-admin-development-only') {
+    header('WWW-Authenticate: Basic realm="Nextcloud compatibility"');
+    http_response_code(401);
+    exit;
+}
+
+require __DIR__ . '/lib/base.php';
+header('Content-Type: text/plain; charset=utf-8');
+$uid = 'compat-admin';
+$users = \OCP\Server::get(\OCP\IUserManager::class);
+$session = \OCP\Server::get(\OCP\IUserSession::class);
+$user = $users->get($uid);
+if ($user === null) throw new RuntimeException('Compatibility admin is missing.');
+$session->setUser($user);
+
+try {
+    $appRoots = glob(__DIR__ . '/custom_apps/*', GLOB_ONLYDIR) ?: [];
+    sort($appRoots);
+    foreach ($appRoots as $appRoot) {
+        $app = basename($appRoot);
+        if ($app === 'localbase') continue;
+        $contract = require $appRoot . '/tests/nextcloud-compatibility-smoke.php';
+        if (isset($contract['objectStorageWebSetup'])) {
+            if (!is_callable($contract['objectStorageWebSetup'])) {
+                throw new RuntimeException('Object-storage web setup is invalid for ' . $app);
+            }
+            ($contract['objectStorageWebSetup'])($uid);
+            echo implode("\t", [$app, 'object-storage-web-setup']) . "\n";
+        } else {
+            echo implode("\t", [$app, 'object-storage-not-applicable']) . "\n";
+        }
+    }
+} catch (\Throwable $error) {
+    http_response_code(500);
+    echo $error::class . ': ' . $error->getMessage() . "\n";
+}
+PHP
+}
+
+write_object_storage_probe() {
+    [[ "$object_storage_mode" == 1 ]] || return 0
+    cat > "$project/html/compatibility-object-storage.php" <<'PHP'
+<?php
+define('OC_CONSOLE', true);
+require __DIR__ . '/lib/base.php';
+
+$uid = 'compat-admin';
+$users = \OCP\Server::get(\OCP\IUserManager::class);
+$session = \OCP\Server::get(\OCP\IUserSession::class);
+$user = $users->get($uid);
+if ($user === null) throw new RuntimeException('Compatibility admin is missing.');
+$session->setUser($user);
+$root = \OCP\Server::get(\OCP\Files\IRootFolder::class);
+$folder = $root->getUserFolder($uid);
+$name = 'compatibility-object-storage.txt';
+$file = $folder->get($name);
+if (!$file instanceof \OCP\Files\File) throw new RuntimeException('Object-storage probe is not a file.');
+if ($file->getContent() !== 'object-storage-web-write') throw new RuntimeException('Object-storage probe content differs.');
+$file->delete();
+echo "object-storage-job-read-and-cleaned\n";
 PHP
 }
 
@@ -388,7 +577,9 @@ verify_consumer_runtime() {
         cp "$result_dir/api-smokes-$suffix-all.tsv" "$result_dir/api-smokes-$suffix.tsv"
     fi
     while IFS=$'\t' read -r app path expected_statuses; do
-        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" --output "$result_dir/api-$app-$suffix.json" --write-out '%{http_code}' "$base_url$path")"
+        status="$(curl --silent --show-error --insecure --user "$admin_user:$admin_password" \
+            --header 'OCS-APIRequest: true' --output "$result_dir/api-$app-$suffix.json" \
+            --write-out '%{http_code}' "$base_url$path")"
         [[ ",$expected_statuses," == *",$status,"* ]] \
             || fail "$app API lieferte HTTP $status statt einem von $expected_statuses auf Nextcloud $effective_major."
     done < "$result_dir/api-smokes-$suffix.tsv"
@@ -564,23 +755,63 @@ verify_runtime() {
     verify_consumer_runtime "$effective_major" "$effective_major"
 }
 
+verify_object_storage_runtime() {
+    [[ "$object_storage_mode" == 1 ]] || return 0
+    local effective_major="$1"
+    local base_url="https://$project_name.$project_tld"
+    curl --fail --silent --show-error --insecure --user "$admin_user:$admin_password" \
+        --request PUT --data 'object-storage-web-write' \
+        "$base_url/remote.php/dav/files/$admin_user/compatibility-object-storage.txt" \
+        > "$result_dir/object-storage-web-write-$effective_major.log"
+    curl --fail --silent --show-error --insecure --user "$admin_user:$admin_password" \
+        "$base_url/compatibility-app-object-storage.php" \
+        > "$result_dir/object-storage-app-web-$effective_major.tsv"
+    verify_runtime_smoke_coverage object-storage-web "$result_dir/object-storage-app-web-$effective_major.tsv"
+    runtime_smokes object-storage-job "$effective_major" \
+        > "$result_dir/object-storage-job-contract-$effective_major.tsv"
+    verify_runtime_smoke_coverage object-storage-job "$result_dir/object-storage-job-contract-$effective_major.tsv"
+    (cd "$project" && ddev exec -d /var/www/html/html php compatibility-object-storage.php) </dev/null \
+        > "$result_dir/object-storage-job-$effective_major.log"
+    grep -Fqx 'object-storage-job-read-and-cleaned' "$result_dir/object-storage-job-$effective_major.log" \
+        || fail 'Der neue Jobprozess konnte den über HTTP geschriebenen Object-Storage-Wert nicht lesen und bereinigen.'
+}
+
+verify_postgresql_upgrade_runtime() {
+    [[ "$mode" == upgrade && "$database_mode" == postgresql ]] || return 0
+    local phase="$1"
+    local effective_major="$2"
+    local output="$result_dir/$phase-$effective_major.tsv"
+    local dbtype
+    dbtype="$(occ config:system:get dbtype)"
+    [[ "$dbtype" == pgsql ]] || fail "PostgreSQL-Upgrade-Smoke lief unerwartet gegen $dbtype."
+    printf '%s\n' "$dbtype" > "$result_dir/postgresql-dbtype-$effective_major.txt"
+    runtime_smokes "$phase" "$effective_major" > "$output"
+    verify_runtime_smoke_coverage "$phase" "$output"
+}
+
 copy_server "$initial_server"
+validate_object_storage_source
 copy_app_snapshots
 validate_app_smoke_contracts
 write_ddev_config
+write_object_storage_config
 start_project
 verify_app_tests "$major"
 install_core "$major"
 install_app_snapshots "$major"
 enable_apps "$major"
 write_runtime_smoke_runner
+write_app_object_storage_probe
+write_object_storage_probe
 prepare_runtime_permissions "$major"
 verify_runtime "$major"
+verify_object_storage_runtime "$major"
 if [[ "$mode" == fresh ]]; then
     verify_optional_provider_lifecycle "$major"
 fi
 
 if [[ "$mode" == upgrade ]]; then
+    verify_postgresql_upgrade_runtime postgresql-upgrade-seed "$major"
     (cd "$project" && ddev stop) > "$result_dir/ddev-stop-before-upgrade.log" 2>&1
     find "$project/html" -mindepth 1 -maxdepth 1 \
         ! -name config ! -name data ! -name custom_apps -exec rm -rf {} +
@@ -589,6 +820,7 @@ if [[ "$mode" == upgrade ]]; then
     write_runtime_smoke_runner
     start_project
     occ upgrade > "$result_dir/upgrade-$major-$target_major.log" 2>&1
+    verify_postgresql_upgrade_runtime postgresql-upgrade-verify "$target_major"
     verify_runtime "$target_major"
 fi
 
