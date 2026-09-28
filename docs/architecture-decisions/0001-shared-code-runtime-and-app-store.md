@@ -7,6 +7,7 @@
 - Ergänzung Entwicklungsphase: 2026-09-05
 - Ergänzung erster Kategorie-B-Pilot: 2026-09-06
 - Ergänzung Provider-Lifecycle des ersten Piloten: 2026-09-07
+- Ergänzung Veröffentlichungs- und LocalBase-Zielrichtung: 2026-09-26
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
@@ -101,9 +102,11 @@ Die fünf im Produktkatalog als `product` und `standalone` geführten Apps
 `adcalendar`, `adplaner`, `adurlaub`, `adroom` und `adrecruitment` sind die
 verifizierten Kandidaten für getrennte Produktveröffentlichungen
 (`localbase/resources/ad-product-catalog.json`,
-`ad-suite/docs/ARCHITECTURE.md`). Ob auch die BR-Apps öffentlich angeboten
-werden sollen, ist derzeit nicht entscheidbar; ihre Metadaten und die direkte
-OrgSuite-/LocalBase-Kopplung reichen für diese Produktentscheidung nicht aus.
+`ad-suite/docs/ARCHITECTURE.md`). Die BR-Apps besitzen derzeit ebenso wie die
+übrigen Workspace-Apps kein freigegebenes öffentliches Store-Ziel. Eine
+spätere Veröffentlichung bleibt eine gesonderte Entscheidung je App;
+Metadaten und heutige OrgSuite-/LocalBase-Kopplung ersetzen diese Freigabe
+nicht.
 
 Ergänzung vom 2026-08-15: `adbqplanung` ist als sechstes AD-Fachprodukt in
 denselben Kategorie-B-Laufzeitvertrag für Produktkatalog und Navigation
@@ -489,10 +492,22 @@ Organisationszustand und weiterhin funktionsfähiger Matrix grün. Offen bleiben
 die Paketextraktion, Namespace-Isolierung, die übrigen öffentlichen API-Grenzen
 sowie die Lifecycle-Nachweise der weiteren Consumer.
 
+Öffentliche App-Store-Veröffentlichungen sind derzeit nicht freigegeben und
+werden später je App einzeln entschieden. Das strategische LocalBase-Ziel ist
+keine pauschale Umbenennung der heutigen Misch-App: zustandslose technische
+Hilfen werden schrittweise als reproduzierbar gebundelte,
+namespace-isolierte Kategorie-A-Bibliotheken aus der Runtime-Pflicht gelöst.
+Eine zusätzliche Nextcloud-App nur für solche Hilfsfunktionen ist unzulässig.
+Die in der Klassifikation belegten persistenten Organisations-, Kalender-,
+Administrations- und Jobanteile bleiben Kategorie B, bis ihr eigenständiger
+Owner und eine kontrollierte Consumer-Migration nachgewiesen sind. Weder eine
+Paketextraktion noch die Abschaltung der heutigen LocalBase-App ist damit als
+bereits umgesetzt behauptet.
+
 Noch zu entscheiden sind insbesondere Governance und Maintainerkreis,
-öffentliche Zumutbarkeit dieser Zusatz-App, genaue
+die spätere öffentliche Zumutbarkeit verbleibender Kategorie-B-Dienste, genaue
 Composer-/Frontend-Paketgrenzen, Prefixing-Werkzeug, Lizenzfreigabe aller
-gebündelten Bestandteile, Store-Ziel der BR-Apps, Umgang mit Demo-Packs und
+gebündelten Bestandteile, konkrete Store-Ziele je App, Umgang mit Demo-Packs und
 Produktkatalog sowie die Deinstallationspolitik für zentrale AppConfig-Daten.
 
 Verworfen sind eine pauschale LocalBase-Einstufung, bloßes Umbenennen,

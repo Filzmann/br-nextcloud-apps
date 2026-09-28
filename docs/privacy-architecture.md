@@ -1,6 +1,6 @@
 # App-übergreifende Datenschutzarchitektur
 
-Stand: 9. September 2026
+Stand: 26. September 2026
 
 Dieses Dokument ist die normative Root-Quelle für app-übergreifende
 Datenschutzauskunft, Datenlebenszyklen, Aufbewahrung, Löschung und
@@ -57,6 +57,30 @@ Die Fachapp entscheidet und testet selbst:
   löscht, anonymisiert oder von einer Person entkoppelt;
 - welche fachliche Information nach einer zulässigen Anonymisierung erhalten
   bleiben muss.
+
+Die fachliche Verantwortungsgrenze ist wie folgt entschieden:
+
+- `Datenschutzbeauftragte` verantwortet fachlich den zentralen
+  Auskunftsdienst, die Retention-Policies und die app-lokalen
+  Adminfreigabehistorien. Ausschließlich diese native Nextcloud-Gruppe darf
+  die zentrale Admin-Auskunft lesen; ein nativer Nextcloud-Adminstatus allein
+  erteilt weder Leserecht noch Bypass.
+- `IT-Administration` verantwortet ausschließlich den technischen
+  Nextcloud-Betrieb, Plattformzugang und die betriebliche Backupumgebung. Sie
+  ist dadurch weder fachliche Datenownerin noch automatisch zur Auskunft oder
+  Retentionentscheidung berechtigt.
+- Jede Fachapp bleibt Ownerin ihrer eigenen Daten und führt jede freigegebene
+  Löschung, Anonymisierung oder Personenentkopplung selbst aus. Fachliche
+  Owner sind: Betriebsrat für BRTop und BRStunden, Personalreferat für AD
+  Recruitment, zuständige Führungskraft der Organisationseinheit für AD
+  Kalender, zuständige Einsatzbegleitung für AdPlaner, ausschließlich die
+  zuständige Führungskraft für AD Urlaub sowie
+  Personalreferat/BQ-Koordination für den BQ-Planer und das Sekretariat für
+  den AD Raumplaner. LocalBase ist technische Infrastruktur ohne eigene
+  fachliche Personenverarbeitung. Für den AD Raumplaner entscheiden die
+  Datenschutzbeauftragten, welche konfigurierten Nextcloud-Nutzergruppen zur
+  jeweiligen Organisation gehören; fachliche Raumverwaltung und Datenowner-
+  Verantwortung verbleiben beim Sekretariat.
 
 Die zentrale Komponente kennt registrierte Provider, ruft sie einzeln auf,
 aggregiert ihre Antworten, grenzt Fehler je Provider ein und weist
@@ -366,6 +390,28 @@ Retentionkonfiguration wird 24 Monate aufbewahrt und mindestens jährlich
 durch diese Gruppe überprüft. Dieser Auditvertrag ist noch nicht
 implementiert.
 
+Die am 26. September 2026 fachlich bestätigten app-lokalen Regeln sind:
+
+| App / Datenklasse | Trigger und Frist | Maßnahme und Besonderheiten |
+| --- | --- | --- |
+| `adrecruitment` / reguläre Bewerbungsakte einschließlich Interview, BQ-Bezug, Kommunikation und Unterlagen | sechs Monate ab fachlichem Abschluss; bei Einstellungsfreigabe sechs Monate ab Freigabe | vollständige Löschung; § 26 Abs. 1 BDSG ist die vorläufige fachliche Grundlage des Auswahlverfahrens, vorbehaltlich abschließender Rechtsprüfung. Der Pool ist eine getrennte Verarbeitung auf freiwilliger, versioniert nachweisbarer Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO, zwölf Monate ab Erteilung/Erneuerung; Widerruf beendet die Nutzung sofort. SBV-Daten bleiben getrennt und gelangen nicht in den Pool. |
+| `brtop` / Protokolle, Beschlüsse und Anwesenheitsnachweise | Ende der betroffenen Amtsperiode plus drei volle Kalenderjahre | vollständige Löschung nach Frist; Einladungen, Ladungssnapshots, reine Agendaentwürfe und Abwesenheitsvorschläge drei Jahre, soweit sie nicht Teil eines verabschiedeten Protokolls/Beschlusses sind. Erzeugte Dateien folgen der Frist ihrer führenden Daten. Inhalte mit noch ungeklärter Spezialfrist bleiben bis zur gesonderten Fachentscheidung eingeschränkt und werden weder automatisch gelöscht noch automatisch als Volltext ausgegeben. |
+| `adplaner` / Monatsplanung | zwölf Monate nach Ende des Planmonats | vollständige Löschung ohne anonymisierten Restbestand; freie Tagesnotizen nur für aktuellen und folgenden Planungsmonat und Löschung 30 Tage nach Monatsende. Aktive persönliche Präferenzen, Belastungsgrenzen und regelmäßige Schichten enden mit der Planungsaktivität; die technische Ausführung wartet auf eine belastbare Quelle. Gesundheits-, Diagnose- und unnötige Drittpersonenangaben sind in Tagesnotizen unzulässig. |
+| `brstunden` / Stunden und Fortbildung | drei volle Kalenderjahre nach Ende des Bezugsjahrs | vollständige Löschung der personenbezogenen Werte und Bearbeitungsbezüge ohne Einzel- oder Jahresaggregate; freiwillige Notizen nach zwölf Monaten, aggregierte Reminder-Laufwerte nach 90 Tagen. PDFs bleiben transiente persönliche Downloads ohne App-Kopie. |
+| `adcalendar` / führende Dienste, Termine und Meetings | 24 Monate nach Ende des Bezugsjahrs | vollständige Löschung; persönliche Defaults nur bis Reset oder Kontolöschung. Interne und externe Kalender sind abgeleitete Darstellungen ohne eigene Retention und werden nach Opt-out/Kontolöschung bereinigt beziehungsweise nach Restore aus den führenden Daten neu abgeglichen. Externe Anbieter bleiben bis zur anbieterbezogenen Freigabe deaktiviert. |
+| `adurlaub` / Zeitraum, Status und Bearbeitungsreferenzen | drei volle Kalenderjahre nach Ende des Jahres, in dem der Urlaub endet | vollständige Löschung ohne Reststatistik; freiwillige Notiz sechs Monate nach Urlaubsende. Abgeleitete Abwesenheitsintervalle werden nicht separat historisiert. Bis zum vollständig getesteten Ausführungs- und Restorevertrag bleibt V1 `REVIEW`. |
+| `adbqplanung` / externe Dozentinnenprofile und Lehranfragen | zwölf Monate nach letzter Absage/Ablehnung oder Ende der letzten bestätigten Lehrveranstaltung | Profil und Anfrage werden gelöscht, sofern kein aktiver oder künftig bestätigter Lehrbezug besteht; historische Curriculum-/Modulstruktur bleibt erhalten, der Personenbezug wird entfernt. Externe Betroffenenrechte verwenden denselben dokumentierten, bereits verifizierten Kontaktkanal, niemals bloßen Name-/E-Mail-Abgleich. |
+| `filzmann_permission_matrix` / Exportmetadaten und Auditprotokolle | jeweils 180 Tage ab Ereignis | Zielmaßnahme ist vollständige Löschung ohne Reststatistik; bis zum getesteten Ausführungs- und Restorevertrag bleibt der öffentliche Vertrag `REVIEW`. |
+| app-lokale Adminfreigabehistorien | sechs Monate ab tatsächlichem Freigabeende | vollständige Löschung ohne Reststatistik; Restore reaktiviert keinen Zugriff und bewertet den ursprünglichen Trigger erneut. |
+
+Rechtliche oder datenschutzrechtliche Sperren gelten ausschließlich für den
+konkret dokumentierten Zweck und Umfang. Nur `Datenschutzbeauftragte` dürfen
+sie begründet und auditierbar setzen beziehungsweise aufheben; jede Sperre
+besitzt einen Prüftermin. Die Regeln sind fachliche Policies und keine
+Rechtszertifizierung. Nicht entschiedene Rechtsgrundlagen, betriebliche
+Backupfristen und sichere technische Ausführungsdetails bleiben ausdrücklich
+offen.
+
 Für beendete Raumbuchungen gilt ein konfigurierbarer Standardwert von einem
 Jahr ab Buchungsende; für app-lokale Adminfreigabehistorien gelten sechs
 Monate ab tatsächlichem Freigabeende. Nach Fristablauf ist jeweils `DELETE`
@@ -418,6 +464,13 @@ imaginären Austrittsdaten in LocalBase, OrgSuite oder einer Fachapp erzeugt.
 Unbekannte, fehlende oder widersprüchliche Ereignisse lösen höchstens
 `REVIEW`, niemals automatische Löschung oder Anonymisierung aus.
 
+Bis eine belastbare Beschäftigungsquelle und vollständig getestete
+app-lokale Ausführungsverträge vorliegen, gibt es keinen globalen
+Lifecycle-Lauf und keine globale automatische Retention-Ausführung. Das
+Datenschutz-Center darf ausschließlich Registry, Review, Policyprojektion und
+spätere Koordination bereitstellen; destruktive Maßnahmen verbleiben auch
+dann in der datenbesitzenden Fachapp.
+
 ## Self-Service-Auskunft
 
 Die zentrale persönliche Ansicht wird als Nextcloud-native persönliche
@@ -448,11 +501,10 @@ einen eigenen Speicher-, Rechte- und Löschvertrag.
 
 Die Admin-Auskunft verwendet denselben Aggregator, aber einen getrennten
 serverseitigen `PrivacyAccessService`. App-Administration oder Sichtbarkeit
-eines Adminmenüs erteilt keinen Auskunftszugriff. Vorgesehen ist eine
-dedizierte, über native Nextcloud-Gruppen konfigurierte Datenschutzrolle;
-ohne explizite Zuordnung wird verweigert. Ob Nextcloud-Admins zusätzlich
-automatisch oder nur nach Zuordnung lesen dürfen, bleibt vor der Runtime als
-ausdrückliche Produkt- und Sicherheitsentscheidung offen.
+eines Adminmenüs erteilt keinen Auskunftszugriff. Ausschließlich Mitglieder
+der nativen Nextcloud-Gruppe `Datenschutzbeauftragte` dürfen lesen; ohne diese
+Mitgliedschaft wird verweigert. Native Nextcloud-Administration erteilt
+keinen automatischen Zugriff und keinen Bypass.
 
 Berechtigte Personen wählen eine typisierte Zielperson, erhalten dieselben
 Provider- und Vollständigkeitsstatus und können das aggregierte Ergebnis
@@ -585,31 +637,36 @@ Der Processing-Metadata-Rollout ist anschließend appweise fortgeführt worden:
 Verarbeitungen `shift_planning_management` und
 `temporary_admin_full_access`. Der Katalog wird aus der bereits vorhandenen
 PersonalDataProvider- und Dateninventur abgeleitet, enthält keine
-personenbezogenen Laufzeitdaten und weist ungeklärte Rechtsgrundlagen,
-Retention-, Backup- und Betroffenenrechtsregeln ausdrücklich als
-`PRIVACY-DECISION-REQUIRED` aus.
+personenbezogenen Laufzeitdaten und hält Rechtsgrundlagen, Backup,
+Betroffenenrechte und app-lokale Ausführung sichtbar offen. Einsatzbegleitung
+ist fachlicher Owner; Zwölfmonats- und 30-Tage-Regel sind beschlossen.
 
 `adcalendar` veröffentlicht als dritter realer Katalog-Consumer die getrennten
 Verarbeitungen für führende Kalendereinträge, persönliche Kalenderstandards,
 verschlüsselte externe Verbindungen, abgeleitete interne und externe
 Zielkalender sowie temporäre Adminfreigaben. Secrets werden weder entschlüsselt
 noch als Laufzeitdaten in den Katalog übernommen; offene Anbieter-,
-Drittland-, Retention-, Backup- und Restoreentscheidungen bleiben sichtbar.
+Drittland-, Backup- und Restoreentscheidungen bleiben sichtbar. Die
+24-Monats-, Reset-/Kontolösch- und Ableitungsregeln sind beschlossen; externe
+Anbieter bleiben bis zur jeweiligen Einzelfreigabe deaktiviert.
 
 `adurlaub` veröffentlicht als vierter realer Katalog-Consumer die getrennten
 Verarbeitungen `vacation_management` und `temporary_admin_full_access`.
 Freiwillige Urlaubsnotizen bleiben als mögliche Drittpersonenklasse sichtbar,
 verlassen AD Urlaub aber nicht über Consumer-Verträge. Die vorhandene
-administrative Retention-Vorschau bleibt ausdrücklich `REVIEW`-only und wird
-nicht als freigegebene Lösch- oder Aufbewahrungsregel dargestellt.
+administrative Retention-Vorschau bleibt bis zum getesteten app-lokalen
+Ausführungsvertrag ausdrücklich `REVIEW`-only. Die Policy löscht Notizen nach
+sechs Monaten und den Urlaub nach drei vollen Kalenderjahren.
 
 `adrecruitment` veröffentlicht als fünfter realer Katalog-Consumer sieben
 getrennte Verarbeitungen für Bewerbungsakte, Interviews/BQ,
 Posteingang/Dokumente, Einstellungsfreigabe, Statusmail, Bewerberpool und
 temporäre Adminfreigaben. Der Katalog weist insbesondere die fehlende sicher
 authentifizierte Bewerber-Selbstauskunft, `retention_state` ohne ausführende
-Policy sowie ungeklärte Mailanbieter-, Drittland-, Backup- und
-Restoreentscheidungen ausdrücklich aus.
+Wirkung sowie ungeklärte Mailanbieter-, Drittland-, Backup- und
+Restoreentscheidungen ausdrücklich aus. Sechs Monate für die reguläre Akte,
+zwölf Monate für den Einwilligungspool und sofortige Löschung bei Widerruf
+sind beschlossen.
 
 `brstunden` veröffentlicht als sechster realer Katalog-Consumer die getrennten
 Verarbeitungen `monthly_hours_management`, `monthly_reminder_communication`
@@ -806,27 +863,25 @@ an einer fremden App.
 `nötig` bedeutet geplant, nicht implementiert. Fristen und Maßnahmen sind
 bewusst nicht vorweggenommen.
 
-Keines der App-Repositories besitzt am 9. September 2026 bereits einen
-app-lokalen, gegen das neue Root-Schema validierten Processing-Katalog. Die
-vorhandenen Provider enthalten schmalere, teils datensatzbezogene Metadaten;
-sie sind Implementierungsbeleg, aber noch keine einmalig nutzbare
-Processing-Policyquelle. Bis zur jeweils ausdrücklich beauftragten
-app-lokalen Migration gelten folgende echte Entscheidungslücken:
+Die app-lokalen Processing-Kataloge sind inzwischen gegen das Root-Schema
+validiert. Provider und Kataloge ersetzen jedoch weder noch offene fachliche
+Entscheidungen noch die jeweils getesteten app-lokalen Ausführungsverträge.
+Folgende echte Entscheidungslücken und Ausführungsgates bleiben bestehen:
 
 | App / Verarbeitung | `PRIVACY-DECISION-REQUIRED` | Technische Relevanz | Blockierend | Fachliche Zuständigkeit |
 | --- | --- | --- | --- | --- |
-| `brtop` / Sitzungen, Ladungen und Dokumente | Zweck-/Empfängerabgrenzung und Retention für Gremieninhalte, Pfade, Anhänge und Nachweise | bestimmt Katalog, vollständige Art.-15-Projektion, Datei-/RetentionProvider und Anonymisierung | ja für Aufnahme dieser Inhalte, nein für bestehende Teilprojektion | ungeklärt |
-| `adplaner` / Schichtplanung | Retention, Empfänger und Erforderlichkeit freier Tagesnotizen | bestimmt Katalog, Datenminimierung, Providerprojektion und Lösch-/Anonymisierungsweg | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
-| `brstunden` / Stunden- und Fortbildungsnachweise | Retention und zulässiger Aggregaterhalt nach Entfernen des Personenbezugs | bestimmt Katalog und Retention-/Anonymisierungsvertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
-| `localbase` / persönliche UI-Werte und Demo-Registry | Zweck, Retention und Löschzuständigkeit für UI-Werte und Demokontenregister | bestimmt eigenen Katalog und fehlende Providerabdeckung | ja für Vollständigkeitsbehauptung, nein für heutige Fachapps | ungeklärt |
-| `filzmann_permission_matrix` / Snapshot-, Export- und Auditnachweise | fachliche Maßnahme nach Ablauf der vorhandenen REVIEW-Fristen | bestimmt späteren ausführenden Retention-Contract; die bestehenden 180-Tage-Previews bleiben REVIEW | ja für Ausführung, nein für Preview und Auskunft | ungeklärt |
-| `filzmann_data_protection` / Adminfreigabehistorie | Maßnahme, Sperren und Backup-/Restore-Verhalten nach der beschlossenen, konfigurierbaren Standardfrist von sechs Monaten ab tatsächlichem Freigabeende | bestimmt eigenen Katalog und RetentionProvider; Friständerungen gelten anhand des ursprünglichen Triggers auch für vorhandene Historie | ja für Retention-Ausführung, nein für Aggregation | Frist entschieden; Maßnahme und Ausführung ungeklärt |
-| `adcalendar` / Dienste, Termine, Einstellungen und Verbindungen | Retention, Empfänger und Behandlung abgeleiteter DAV-/Providerkalender nach Restore | bestimmt Katalog, Retention und Backup-/Restore-Vertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | ungeklärt |
-| `adurlaub` / Urlaubsverwaltung | fachliche Frist, zentrale REVIEW-Berechtigung und Behandlung freiwilliger Notizen | bestimmt Katalog und Migration des Retention-Piloten | ja für Standalone-Retention und Ausführung, nein für Auskunft | ungeklärt |
+| `brtop` / Sitzungen, Ladungen und Dokumente | Rechtsgrundlage, Empfänger, Backup/Share-Grenze und Ausführung; Policy: Legislaturende plus drei volle Jahre, vorbereitende Inhalte drei Jahre mit Übernahmeausnahme | bestimmt vollständige Art.-15-/Dateiprojektion und app-lokale Ausführung | ja für Inhaltsaufnahme und Ausführung, nein für bestehende Teilprojektion | Policy und Owner Betriebsrat entschieden; Ausführung offen |
+| `adplaner` / Schichtplanung | Rechtsgrundlage, Empfänger und app-lokale Ausführung; Policy: Monatsdaten 12 Monate, freie Tagesnotizen 30 Tage nach Monatsende | bestimmt Providerprojektion und Löschweg | ja für automatische Maßnahme, nein für bestehende Auskunft | Policy und Owner Einsatzbegleitung entschieden; Ausführung offen |
+| `brstunden` / Stunden- und Fortbildungsnachweise | Rechtsgrundlage, Backup/Restore und app-lokale Ausführung; Policy: Nachweise drei volle Kalenderjahre, Notizen 12 Monate, Reminderaggregate 90 Tage, PDFs flüchtig | bestimmt Katalog und Löschvertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | Policy und Owner Betriebsrat entschieden; Ausführung offen |
+| `localbase` / persönliche UI-Werte und Demo-Registry | Rechtsgrundlage, Standalone-Provider/Katalog sowie Kontolösch- und Restore-Test | bestimmt eigene Providerabdeckung | ja für Vollständigkeitsbehauptung, nein für heutige Fachapps | Löschung bei Reset/Kontolöschung beziehungsweise Ende des synthetischen Kontos entschieden; Umsetzung offen |
+| `filzmann_permission_matrix` / Snapshot-, Export- und Auditnachweise | fachlicher Owner der Matrixdaten sowie getestete Ausführung und Backup/Restore | bestimmt späteren ausführenden Retention-Contract; 180-Tage-Ziel bleibt bis dahin REVIEW | ja für Ausführung, nein für Preview und Auskunft | vollständige Löschung nach 180 Tagen entschieden; Ausführung offen |
+| `filzmann_data_protection` / Adminfreigabehistorie | Rechtsgrundlage, Backupgrenze und getesteter Ausführungsvertrag | bestimmt eigenen Katalog und RetentionProvider | ja für Retention-Ausführung, nein für Aggregation | DPO-Owner, vollständige Löschung sechs Monate nach tatsächlichem Ende und Holds entschieden; Ausführung offen |
+| `adcalendar` / Dienste, Termine, Einstellungen und Verbindungen | Rechtsgrundlage, Backup/Restore, app-lokale Ausführung und Freigabe jedes externen Anbieters | bestimmt Katalog und Retentionvertrag | ja für automatische Maßnahme, nein für bestehende Auskunft | 24 Monate nach Bezugsjahr, Account/Reset und keine unabhängige Ableitungshistorie entschieden; Ausführung offen |
+| `adurlaub` / Urlaubsverwaltung | Rechtsgrundlage, Backup/Restore und getestete V1-Ausführung | bestimmt Katalog und Migration des Retention-Piloten | ja für Standalone-Retention und Ausführung, nein für Auskunft | drei volle Kalenderjahre, Notizen sechs Monate, Owner nur Führungskraft entschieden; REVIEW bis Ausführungsnachweis |
 | `orgsuite` / Navigation und Adminadapter | derzeit keine eigene personenbezogene Verarbeitung belegt; bei Scopeänderung erneut entscheiden | begründete Nichtanwendbarkeit, kein leerer Scheinprovider | nein | nicht anwendbar im heutigen Scope |
-| `adroom` / Raumbuchung | fachliche Frist, Trigger und Maßnahme für Buchungen | bestimmt Katalog und Migration des Retention-Piloten | ja für automatische Maßnahme, nein für Auskunft | ungeklärt |
-| `adrecruitment` / Bewerbungsakten und interne Bearbeitung | Rechtsgrundlage, Fristen, Sperren, externer Subject-Vertrag und differenzierte Maßnahmen | bestimmt Katalog, Bewerberauskunft, Retention und AppData-Anhänge | ja für externen Subject- und Retention-Scope, nein für bestehende interne Teilprojektion | ungeklärt |
-| `adbqplanung` / PFK- und Dozentinnenplanung | Retention-Trigger/-Maßnahmen und sicherer externer Subject-Vertrag | bestimmt Katalog, externe Auskunft und Retention | ja für externen Subject- und Retention-Scope, nein für interne Auskunft | ungeklärt |
+| `adroom` / Raumbuchung | Rechtsgrundlage, Backup/Restore und getestete app-lokale Ausführung; Policy: vollständige Löschung ein Jahr nach Buchungsende | bestimmt Katalog und Migration des Retention-Piloten | ja für automatische Maßnahme, nein für Auskunft | Policy und Owner Sekretariat entschieden; Ausführung offen |
+| `adrecruitment` / Bewerbungsakten und interne Bearbeitung | rechtliche Endprüfung, externer Subject-Vertrag, Backup/Mailanbieter und getestete app-lokale Ausführung | bestimmt Bewerberauskunft, Retention und AppData-Anhänge | ja für externen Subject- und Retention-Scope, nein für bestehende interne Teilprojektion | Personalreferat-Owner, sechs Monate regulär, zwölf Monate Pool mit Einwilligung und sofortiger Widerrufslöschung entschieden; Ausführung offen |
+| `adbqplanung` / PFK- und Dozentinnenplanung | interner PFK-Lifecycle, Rechtsgrundlage, verifizierter externer Subject-Kanal, Kommunikationsanbieter und Ausführung | bestimmt externe Auskunft und Retention | ja für externen Subject- und Retention-Scope, nein für interne Auskunft | BQ-/Personalreferat-Owner; externe Profile/Anfragen zwölf Monate nach letztem Bezug mit Entfernung historischer Personenreferenz entschieden; Ausführung offen |
 
 Rechtsgrundlagen, Backupfristen, konkrete fachliche Verantwortlichkeiten und
 bislang nicht ausdrücklich festgelegte Empfänger werden bei der app-lokalen
@@ -836,18 +891,18 @@ Nichtanwendbarkeit und wird bei jeder Scopeänderung neu bewertet.
 
 | App | personenbezogene Daten laut aktuellem Code | PersonalDataProvider nötig | RetentionProvider nötig | Lifecycle-Abhängigkeit | Anonymisierung sinnvoll | Priorität | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `brtop` | Nextcloud-UIDs, Namen und E-Mails von Mitgliedern/Empfänger*innen, Vertretungen, Abwesenheiten, personenbezogene TOP-/Protokollinhalte, Dokument- und Anhangspfade sowie erzeugte Dateien im persönlichen Files-Bereich; keine gezielte Team-Folder-API | ja | ja | Konto, Mitgliedschaft und später Beschäftigungsende; Legislaturende ist ein eigener Fachtrigger | für einzelne historische Referenzen möglich; Ladungs- und Dokumentnachweise brauchen Fachentscheidung | hoch | Standalone-V1-Metadatenprovider umgesetzt: explizite UID-Bezüge werden subjectgebunden projiziert. Datei-/Anhangpfade, Dateiinhalte und Gremieninhalte bleiben ausgeschlossen und als Teilantwort sichtbar; eine spätere sichere Inhaltslösung bleibt offen. Keine Retention-Policy |
-| `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider auf Standalone V1 migriert; Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen werden subjectgebunden projiziert. Fremde UIDs und freie Tagesnotiztexte werden nicht ausgegeben; keine Retention-Policy |
-| `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen; Abrechnungs-PDFs werden nur im Response erzeugt und nicht appseitig in Files/Team Folders gespeichert | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | Aggregaterhalt mit entfernter Personenreferenz denkbar, fachlich offen | hoch | PersonalDataProvider auf Standalone V1 umgesetzt: eigene Stunden, Fortbildungszeiten und Notizen werden vollständig ausgewiesen; reine Bearbeitungsbezüge auf fremden Sätzen bleiben neutral und geben keine Drittpersonendaten preis. Fachliche Einzellöschung vorhanden, keine Retention-Policy |
+| `brtop` | Nextcloud-UIDs, Namen und E-Mails von Mitgliedern/Empfänger*innen, Vertretungen, Abwesenheiten, personenbezogene TOP-/Protokollinhalte, Dokument- und Anhangspfade sowie erzeugte Dateien im persönlichen Files-Bereich; keine gezielte Team-Folder-API | ja | ja | Konto, Mitgliedschaft und später Beschäftigungsende; Legislaturende ist ein eigener Fachtrigger | für einzelne historische Referenzen möglich; Ladungs- und Dokumentnachweise brauchen Fachentscheidung | hoch | Standalone-V1-Metadatenprovider umgesetzt: explizite UID-Bezüge werden subjectgebunden projiziert. Datei-/Anhangpfade, Dateiinhalte und Gremieninhalte bleiben ausgeschlossen und als Teilantwort sichtbar; Retention-Policy entschieden, sichere app-lokale Ausführung und Restore bleiben offen |
+| `adplaner` | Assistenz- und Bearbeiter-UIDs, Schichtwünsche/-zuweisungen, freie Tagesnotizen | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | bei historischen Zuweisungen und Bearbeiterreferenzen prüfbar | hoch | PersonalDataProvider auf Standalone V1 migriert; Schichtwünsche/-zuweisungen und alle gespeicherten Bearbeitungsreferenzen werden subjectgebunden projiziert. Fremde UIDs und freie Tagesnotiztexte werden nicht ausgegeben; Retention-Policy entschieden, sichere app-lokale Ausführung und Restore bleiben offen |
+| `brstunden` | Mitglieds- und Bearbeiter-UIDs, Monats-/Fortbildungsminuten, freie Notizen; Abrechnungs-PDFs werden nur im Response erzeugt und nicht appseitig in Files/Team Folders gespeichert | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | kein anonymisierter oder statistischer Restbestand nach Fristablauf | hoch | PersonalDataProvider auf Standalone V1 umgesetzt: eigene Stunden, Fortbildungszeiten und Notizen werden vollständig ausgewiesen; reine Bearbeitungsbezüge auf fremden Sätzen bleiben neutral und geben keine Drittpersonendaten preis. Fachliche Retention-Policy entschieden, sichere app-lokale Ausführung und Restore bleiben offen |
 | `localbase` | Native Nextcloud-Kontoprofildaten im verbleibenden PersonalData-Piloten sowie app-eigene persönliche Adminlayout-/Zoomwerte und eine Demokonto-Registry mit UID, Owner-App-ID und Backendklasse; Organisations-, Kalender-, Capability- und Produktkatalogwerte enthalten keine kopierten Mitgliederlisten | ja für app-eigene Personenwerte | zu prüfen: native UserConfig-Bereinigung versus Demo-Registry | Kontolebenszyklus für persönliche Werte; kein Beschäftigungsende | für Demo-Registry nicht der primäre Weg; persönliche Werte eher löschen | mittel | Retention-Pilot nach grüner Lifecyclematrix physisch entfernt. App-eigene Speicher sind inventarisiert, aber noch nicht über einen Standalone-V1-Provider und Processing-Katalog abgedeckt; die verbleibende PersonalData-Registry und UI bleiben deshalb bis zur verlustfreien Migration bestehen. OrgSuite persistiert keine eigenen Personenwerte |
 | `filzmann_permission_matrix` | Snapshot-/Export-Ersteller-UIDs und Audit-UIDs; `include_users` ist konfigurierbar, im aktuellen Snapshotcode sind jedoch keine persistierten Benutzerlisten belegt | ja | ja | Kontolebenszyklus und eigener Auditnachweis | für ältere Ersteller-/Auditbezüge prüfbar; Beweiswert beachten | hoch, IKT/Datenschutz | PersonalDataProvider und öffentlicher Standalone-V1-Preview-Provider implementiert: eigene Art.-15-Bezüge bleiben kontextuell erhalten; Exportmetadaten und Auditprotokolle werden nach getrennt konfigurierbaren, standardmäßig 180-tägigen Fristen ausschließlich als `REVIEW` gemeldet. Inhalte, Dateinamen, freie Auditdetails, UIDs und Drittpersonenangaben bleiben ausgeschlossen. Keine Retention-Ausführung und kein Lifecycle-Provider |
-| `filzmann_data_protection` | angefragte Nextcloud-UID und aggregierte Berichte bleiben transient; die app-lokale Historie zeitlich begrenzter Adminfreigaben persistiert Ziel-, Freigabe- und Widerrufs-UIDs samt Zeitpunkten. Reviewer-Gruppen sind Rollen-Konfiguration, keine Mitgliedskopie | ja | ja, für die eigene Adminfreigabehistorie | Kontolebenszyklus sowie sechs Monate ab tatsächlichem Ende als konfigurierbarer Standard; Maßnahme, Sperren und Backup-/Restore-Verhalten bleiben offen | erst nach Entscheidung über die Maßnahme; der Beweiswert ist zu erhalten | hoch, IKT/Datenschutz | Eigener PersonalDataProvider auf Standalone V1 und eigener PermissionProvider auf Matrix V1 umgesetzt. Der Provider projiziert nur die Rolle der betroffenen Person und neutralisiert fremde Beteiligte. Ausschließlich Mitglieder von `Datenschutzbeauftragte` dürfen künftig Freigaben erteilen oder widerrufen; Ziel bleibt ein bestätigtes natives Administrationskonto. Rollen-, UI- und Retention-Ausführung sind noch nicht app-lokal umgesetzt oder laufzeitverifiziert |
-| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider auf Standalone V1 für eigene Dienste und Termine sowie tatsächlich gespeicherte persönliche Filter-, Standarddienst- und Sync-Werte vervollständigt. Gemeinsame Meetings nennen weitere Beteiligte nur abstrakt; Filter nennen ausgewählte Personen nur als Anzahl. Externe Verbindungen werden ohne Entschlüsselung ausschließlich als Anbieter-/OAuth-Vorhandenseinsmetadaten ausgewiesen. Serveradressen, Kontonamen, technische Kennungen, Passwörter, Tokens und OAuth-State bleiben ausgeschlossen. Native DAV- und externe Kalenderobjekte sind abgeleitete Darstellungen der führenden AD-/Urlaubsdaten und werden nicht als zweite Quelle gelesen. Keine Files-/Team-Folder-Ablage, keine Retention-Policy |
-| `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider auf Standalone V1 migriert; eigene freiwillige Notizen werden als möglicher Drittpersoneninhalt gekennzeichnet. Der konfigurierbare Retention-REVIEW-Dry-Run ist auf den öffentlichen Standalone-V1-Vertrag migriert; alte/neue Registry, Update, Deaktivierung, Entfernung, Neuinstallation und Rückbau sind auf Nextcloud 34 grün. Keine Retention-Ausführung |
+| `filzmann_data_protection` | angefragte Nextcloud-UID und aggregierte Berichte bleiben transient; die app-lokale Historie zeitlich begrenzter Adminfreigaben persistiert Ziel-, Freigabe- und Widerrufs-UIDs samt Zeitpunkten. Reviewer-Gruppen sind Rollen-Konfiguration, keine Mitgliedskopie | ja | ja, für die eigene Adminfreigabehistorie | sechs Monate ab tatsächlichem Ende; Holds nur durch Datenschutzbeauftragte, Backup-/Restore-Ausführung offen | vollständige Löschung ohne anonymisierten oder statistischen Restbestand | hoch, IKT/Datenschutz | Eigener PersonalDataProvider auf Standalone V1 und eigener PermissionProvider auf Matrix V1 umgesetzt. Der Provider projiziert nur die Rolle der betroffenen Person und neutralisiert fremde Beteiligte. Ausschließlich Mitglieder von `Datenschutzbeauftragte` dürfen künftig Freigaben erteilen oder widerrufen; Ziel bleibt ein bestätigtes natives Administrationskonto. Rollen-, UI- und Retention-Ausführung sind noch nicht app-lokal umgesetzt oder laufzeitverifiziert |
+| `adcalendar` | Mitarbeiter- und Ersteller-UIDs, Dienste/Termine/Titel, persönliche Filter/Dienststandards, externe Verbindungskonfiguration, erzeugte DAV-/Providerkalender | ja | ja | Beschäftigungs-/Kontolebenszyklus sowie Entzug externer Verbindungen; derzeit keine Beschäftigungsquelle | für historische Dienste/Termine möglich; Secrets werden gelöscht, nicht ausgegeben | sehr hoch | PersonalDataProvider auf Standalone V1 für eigene Dienste und Termine sowie tatsächlich gespeicherte persönliche Filter-, Standarddienst- und Sync-Werte vervollständigt. Gemeinsame Meetings nennen weitere Beteiligte nur abstrakt; Filter nennen ausgewählte Personen nur als Anzahl. Externe Verbindungen werden ohne Entschlüsselung ausschließlich als Anbieter-/OAuth-Vorhandenseinsmetadaten ausgewiesen. Serveradressen, Kontonamen, technische Kennungen, Passwörter, Tokens und OAuth-State bleiben ausgeschlossen. Native DAV- und externe Kalenderobjekte sind abgeleitete Darstellungen der führenden AD-/Urlaubsdaten und werden nicht als zweite Quelle gelesen. Keine Files-/Team-Folder-Ablage; Retention-Policy entschieden, sichere app-lokale Ausführung und Restore bleiben offen |
+| `adurlaub` | Mitarbeiter- und Ersteller-UIDs, Urlaubszeiträume, Status und freie Notiz | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | für Personenreferenzen möglich, Notiz kann Drittpersonen enthalten | sehr hoch | PersonalDataProvider auf Standalone V1 migriert; eigene freiwillige Notizen werden als möglicher Drittpersoneninhalt gekennzeichnet. Der konfigurierbare Retention-REVIEW-Dry-Run ist auf den öffentlichen Standalone-V1-Vertrag migriert; alte/neue Registry, Update, Deaktivierung, Entfernung, Neuinstallation und Rückbau sind auf Nextcloud 34 grün. Retention-Policy entschieden, sichere app-lokale Ausführung und Restore bleiben offen |
 | `orgsuite` | keine eigenen Fachdaten oder App-Tabellen; Navigation und LocalBase-Adminadapter | derzeit nein | derzeit nein | keine eigene Quelle | nicht anwendbar | niedrig | Kein eigener Provider erforderlich; bei neuen Personenwerten neu bewerten |
 | `adroom` | Buchungs-UID, Zweck, freier Titel und Zeitraum | ja | ja | Beschäftigungs-/Kontolebenszyklus; derzeit keine Quelle | neutraler Platzhalter erhält den Buchungskontext ohne möglichen Drittpersonen-Freitext | hoch, Pilot | PersonalDataProvider auf den öffentlichen Standalone-V1-Vertrag migriert und aktiv/deaktiviert lokal in Nextcloud verifiziert; Raum, Zweck und Zeitraum bleiben erhalten, der freie Titel wird neutral ersetzt. Retention-`REVIEW`-Dry-Run ist auf den öffentlichen Standalone-V1-Vertrag migriert; alte/neue Registry, Update, Deaktivierung, Entfernung, Neuinstallation und Rückbau sind auf Nextcloud 34 grün. Keine Ausführung oder Lifecycle-Quelle |
 | `adrecruitment` | interne Bewerber-ID, Namen/Kontakt, Bewerbung und Statushistorie, Interviews/Antworten, BQ-Bewertung, Einstellungsdaten, Nachrichten, Anhänge in AppData, Kommentare, Feldnachweise sowie Beschäftigten-UIDs in Bearbeitung/Audit | ja, getrennte Subject-Typen | ja | Prozessabschluss für Bewerbungen; Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen; keine Beschäftigungsquelle | nur differenziert: Akteur*innenreferenzen eventuell, Bewerbungsakte überwiegend löschen/sperren nach Fachentscheidung | sehr hoch | PersonalDataProvider für alle internen Nextcloud-UID-Bezüge implementiert; Bewerber-Selbstauskunft bleibt bis zu einem sicheren authentifizierten Subject-Vertrag offen; `retention_state` ohne ausführende Policy |
-| `adbqplanung` | interne PFK-UIDs, minimale externe Dozentinnenprofile mit Name und E-Mail, Lehranfragen und Bearbeitungsreferenzen; keine Bewerbungsakten oder Teilnehmerkopien | ja | ja | Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen sowie fachlicher Abschluss externer Lehranfragen; derzeit keine belastbare Quelle | Entfernen oder Anonymisieren abgeschlossener externer Kontakte und Bearbeitungsreferenzen fachlich zu prüfen | sehr hoch | Standalone-V1-Provider für interne Nextcloud-PFKs umgesetzt: Profil, Hauptleitung, Modulzuordnung und subjectgebundene Bearbeitungsnachweise werden ausgegeben. Externe Profile bleiben bis zu einem authentifizierten externen Subject-Vertrag ausgeschlossen; keine E-Mail-Identifikation. Retention-Trigger und Maßnahmen offen |
+| `adbqplanung` | interne PFK-UIDs, minimale externe Dozentinnenprofile mit Name und E-Mail, Lehranfragen und Bearbeitungsreferenzen; keine Bewerbungsakten oder Teilnehmerkopien | ja | ja | Beschäftigungs-/Kontolebenszyklus für interne Akteur*innen sowie fachlicher Abschluss externer Lehranfragen; derzeit keine belastbare Quelle | externe Profile und Anfragen vollständig löschen und Personenreferenz aus historischen Curricula entfernen | sehr hoch | Standalone-V1-Provider für interne Nextcloud-PFKs umgesetzt: Profil, Hauptleitung, Modulzuordnung und subjectgebundene Bearbeitungsnachweise werden ausgegeben. Externe Profile bleiben bis zu einem authentifizierten externen Subject-Vertrag ausgeschlossen; Name oder E-Mail allein genügen nicht. Zwölfmonatsfrist und Maßnahme sind entschieden; sichere Ausführung bleibt offen |
 
 ## Neue Apps
 
