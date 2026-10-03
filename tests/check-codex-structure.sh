@@ -317,16 +317,6 @@ for row in rows:
         if any(re.search(pattern, roadmap_text) for pattern in completed_patterns):
             fail(f'ROADMAP.md enthält erledigte statt ausschließlich offener Arbeit: {row["path"]}')
 
-        manual_acceptance_text = (repo / 'docs' / 'manual-acceptance.md').read_text(encoding='utf-8')
-        historical_acceptance_patterns = (
-            r'(?im)^#{1,6}\s+.*\b(?:automatisiert(?:e|er|en)?|historisch(?:e|er|en)?)\b.*\b(?:nachweis|prüfung|abnahme|bericht|nacharbeit)\b',
-            r'(?im)^#{1,6}\s+.*\b(?:nachweis|prüfung|abnahme|bericht|nacharbeit)\b.*\b(?:20\d{2}|\d{1,2}\.\d{1,2}\.)',
-            r'(?im)\bLuna-Prüfung\b',
-            r'\[x\]',
-        )
-        if any(re.search(pattern, manual_acceptance_text) for pattern in historical_acceptance_patterns):
-            fail(f'docs/manual-acceptance.md enthält historischen Nachweis statt eines wiederverwendbaren Formulars: {row["path"]}')
-
 canonical_text = (workspace / '.agents/skills/work-in-nextcloud-app/SKILL.md').read_text(encoding='utf-8')
 required_contracts = (
     'Use the locally available sibling skill `test-driven-change` for every new feature',

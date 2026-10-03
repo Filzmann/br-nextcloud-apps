@@ -28,6 +28,8 @@ coverage/
 .coverage
 .cache/
 .phpunit.cache/
+__pycache__/
+*.pyc
 
 # Logs
 *.log

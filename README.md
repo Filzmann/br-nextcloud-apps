@@ -26,6 +26,7 @@ Repositories. Er enthält selbst keinen deploybaren App-Code.
 - Verbindliche Codex-Grenzen: [`AGENTS.md`](AGENTS.md)
 - Einheitliche App-Repository-Struktur:
   [`docs/app-repository-structure.md`](docs/app-repository-structure.md)
+- [Lokaler Markdown- und Abnahme-Viewer](docs/workspace.md#lokaler-markdown--und-abnahme-viewer)
 - Wiederholbare Arbeitsabläufe: [`.agents/skills/`](.agents/skills/)
 - Kanonisches Repositoryinventar:
   [`config/workspace-repositories.tsv`](config/workspace-repositories.tsv)

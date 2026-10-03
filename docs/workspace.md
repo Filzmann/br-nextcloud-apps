@@ -364,6 +364,42 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Echtes sauberes AD-Suite-Delivery-Gate: `scripts/check-ad-suite-delivery`
 - Automatisches RC-Deployment auf Teamcloud: `docs/staging-deployment.md`
 
+## Lokaler Markdown- und Abnahme-Viewer
+
+Der Parent stellt einen dependency-freien lokalen Viewer für alle
+Markdown-Dateien unterhalb der jeweiligen `docs`-Verzeichnisse im Parent und
+in den über `config/workspace-repositories.tsv` registrierten Repositories
+bereit:
+
+```bash
+scripts/manual-acceptance-viewer
+```
+
+Anschließend wird die ausgegebene Adresse (standardmäßig
+`http://127.0.0.1:8765/`) im Browser geöffnet. Ein abweichender lokaler Port
+kann mit `--port PORT` gewählt werden. Normale Markdown-Dokumente sind
+schreibgeschützt. Dateien mit dem Namen
+`<repo>/docs/manual-acceptance.md` werden als Formular gerendert; „Speichern“
+schreibt erkannte Checkboxen und Eingabefelder atomar in genau diese Datei
+zurück. „Drucken / PDF“ verwendet eine reduzierte Druckansicht.
+
+Der Dienst bindet ausschließlich an `127.0.0.1`, akzeptiert nur lokale Host-
+und Origin-Werte und schützt die API pro Start mit einem zufälligen Token.
+Symlinks, Dateien außerhalb registrierter `docs`-Bäume, unbekannte Dokumente
+und veraltete Speicherstände werden abgewiesen. Ändert sich die Datei nach dem
+Laden, muss sie vor dem nächsten Speichern neu geladen werden.
+
+Der Formular- und Dateivertrag einschließlich Reset- und Commit-Lebenszyklus
+steht in `docs/app-repository-structure.md`. Der fokussierte Test läuft mit:
+
+```bash
+python3 tests/test_manual_acceptance_viewer.py
+```
+
+Die lokale HTTP-Grenze wird in Umgebungen, die Loopback-Sockets erlauben,
+zusätzlich mit `RUN_LOCAL_SOCKET_TESTS=1` aktiviert. `scripts/check-fast`
+enthält den socketfreien Contract-Test bereits.
+
 `check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
 
 Ein Releasebau löscht keine älteren Release Candidates. Eine Bereinigung ist

@@ -63,6 +63,7 @@ if grep -Fqx 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETR
 fi
 
 echo '== Parent-Contract-Tests =='
+python3 tests/test_manual_acceptance_viewer.py
 bash tests/check-worktree-markdown-inventory.sh
 bash tests/check-document-references.sh
 scripts/check-document-references

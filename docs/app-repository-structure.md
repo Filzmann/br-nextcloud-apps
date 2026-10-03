@@ -15,7 +15,7 @@ wenn sie einen klar benannten, app-spezifischen Vertrag enthalten und in
 | `<app>/LICENSE` | vollständiger Lizenztext passend zur Deklaration in `appinfo/info.xml` |
 | `<app>/AGENTS.md` | verbindliche app-lokale Arbeits-, Sicherheits-, Architektur- und Prüfregeln |
 | `<app>/docs/architecture.md` | geltende fachliche und technische Architektur, Daten- und Integrationsgrenzen |
-| `<app>/docs/manual-acceptance.md` | wiederholbare manuelle Abnahme, keine Aufgabenplanung |
+| `<app>/docs/manual-acceptance.md` | versioniertes Formular und aktueller Nachweis der manuellen Abnahme, keine Aufgabenplanung |
 | `<app>/.agents/skills/*/SKILL.md` | synchronisierte wiederholbare Arbeitsabläufe |
 | `<app>/appinfo/info.xml` | App-Metadaten und deklarierter Nextcloud-Supportbereich |
 | `<app>/.gitignore` | ausschließlich lokale und generierte Artefakte |
@@ -44,6 +44,37 @@ markierten Checklisten. Sobald eine Aufgabe abgeschlossen ist, wird ihr
 Ergebnis in `README.md` und ihre Änderung in `CHANGELOG.md` dokumentiert; nur
 eine tatsächlich verbleibende Restaufgabe bleibt in der Roadmap.
 
+## Lebenszyklus der manuellen Abnahme
+
+`<app>/docs/manual-acceptance.md` ist zugleich wiederverwendbare
+Prüfvorschrift und versionierter aktueller Abnahmenachweis. Ausgefüllte Kopfdaten, markierte
+`[x]`-Ergebnisse und datensparsame Belege bleiben deshalb in derselben Datei
+und werden mit dem geprüften Stand committed. Eine getrennte historische
+Abnahmedatei oder eine generierte HTML-Kopie wird nicht als zweite Wahrheit
+geführt; die Git-Historie bewahrt frühere Stände.
+
+Bei einer Codeänderung werden vor dem Commit genau die Ergebnisfelder und
+Belege der davon fachlich oder technisch betroffenen Prüffälle zurückgesetzt.
+Ergebnisse zu nachweislich unverändertem Verhalten bleiben erhalten. Die
+erneute manuelle Prüfung füllt die zurückgesetzten Felder wieder aus; der
+zugehörige Code-Commit enthält das aktualisierte Formular immer mit. Das
+Zurücksetzen des gesamten Formulars ist nur erforderlich, wenn die Änderung
+tatsächlich alle Prüffälle entwertet.
+
+Damit das Formular im Parent-Viewer ohne verlustbehaftete Markdown-
+Rückkonvertierung bearbeitbar bleibt, verwendet es diese stabilen Strukturen:
+
+- Checkboxen werden als `[ ]` beziehungsweise `[x]` geschrieben. Mehrere
+  Checkboxen in derselben Zeile bilden eine Auswahlgruppe.
+- Einzeilige Listenfelder verwenden `- Feldname: Wert`.
+- Kopfdaten verwenden eine zweispaltige Tabelle `Feld | Eintrag`.
+- Prüftabellen besitzen eine stabile `ID` und können die Spalten `Ergebnis`
+  sowie `Warum/Beleg/Abweichung`, `Notiz` oder `Kommentar` enthalten.
+
+Der Viewer verändert beim Speichern ausschließlich die erkannten Feldspannen.
+Freier mehrzeiliger Text und Pipe-Zeichen in Tabellenfeldern werden abgewiesen,
+damit Tabellenstruktur und übrige Quelldatei bytegenau erhalten bleiben.
+
 ## Zulässige zusätzliche Dokumente
 
 App-spezifische Vertragsdokumente wie Datenschutzinformationen,
@@ -57,6 +88,8 @@ Repository-Steuerung bilden.
 
 `tests/check-codex-structure.sh` prüft die Pflichtdateien, lokale Skills,
 Symlinkfreiheit, Dokumentationsindizes und offensichtliche erledigte
-Checklisten in Roadmaps. Der Referenzcheck prüft relative Markdown-Links. Die
-inhaltliche Richtigkeit und Vollständigkeit bleibt zusätzlich Gegenstand der
-app-lokalen Reviews und Tests.
+Checklisten in Roadmaps. Markierte Checkboxen und ausgefüllte Nachweise im
+manuellen Abnahmeformular sind ausdrücklich gültige versionierte Evidenz. Der
+Referenzcheck prüft relative Markdown-Links. Die inhaltliche Richtigkeit und
+Vollständigkeit bleibt zusätzlich Gegenstand der app-lokalen Reviews und
+Tests.
