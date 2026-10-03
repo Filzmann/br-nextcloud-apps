@@ -19,14 +19,17 @@ Die Datenowner-App entscheidet und testet selbst Datenklassen,
 Personenreferenzen, zulässige Auskunft, Drittpersonenschutz, Trigger,
 Sperren, Löschung, Anonymisierung, Personenentkopplung sowie Artefakte in
 Datenbank, Konfiguration, AppData, Dateien, Shares, Exporten, Indizes und
-Caches. Konkrete Zwecke, Rechtsgrundlagen, Empfänger, Fristen, Owner und
-Backupgrenzen werden nicht zentral dupliziert, sondern im app-lokalen
-Processing-Katalog geführt.
+Caches. Der auslieferbare app-lokale Processing-Katalog führt Datenklassen,
+Zwecke, Empfänger, technische Fristen und offene Entscheidungsbedarfe. Die
+konkrete kundenlokale Rechtsgrundlage, Vereinbarung, DPO-/Betriebsratsfreigabe,
+verantwortliche Organisation und zugehörige Evidenz bleiben außerhalb des
+Produktpakets; Root und Runtime duplizieren sie nicht.
 
 `Datenschutzbeauftragte` verantwortet den zentralen Auskunftsdienst und darf
 die zentrale Admin-Auskunft nutzen. Native Nextcloud-Administration erteilt
 keinen fachlichen Bypass. IT-Administration verantwortet nur Plattform und
-Backups. Jede Fachapp führt freigegebene Maßnahmen selbst aus.
+Backups. Jede Fachapp führt technisch aktivierte Maßnahmen ausschließlich auf
+ihren eigenen Daten selbst aus.
 
 Die Berechtigungsmatrix bleibt gemäß
 [ADR 0003](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md)
@@ -60,7 +63,10 @@ Root, Registry und Privacy-Runtime führen keine zentrale Kopie;
 personenbezogene Laufzeitdaten bleiben bei der Datenowner-App.
 Fehlende Zwecke, Erforderlichkeit, Empfänger, Zugriff,
 Rechtsgrundlage, Retention- oder Backupentscheidung werden als
-`PRIVACY-DECISION-REQUIRED` ausgewiesen.
+`PRIVACY-DECISION-REQUIRED` ausgewiesen. Dieser fachliche Status bleibt für
+Betreiber transparent, ist aber nicht automatisch ein technisches
+DELETE-Gate. Destruktive Ausführung richtet sich ausschließlich nach dem
+ausdrücklich versionierten technischen Vertrag der jeweiligen Policy.
 
 ## Provider-Registry und Auskunft
 
@@ -100,6 +106,16 @@ Bewertungszeitpunkt, Batchgrenze und gegebenenfalls ein geprüftes
 Lifecycle-Ereignis; sie übergibt nie SQL oder fremde Primärschlüssel zur
 zentralen Löschung.
 
+Der öffentliche V1-Vertrag bleibt read-only und besitzt keine
+`execute()`-Methode. Der getrennte V2-Vertrag registriert ausführende
+DELETE-Provider versioniert und lazy. Automatische Ausführung startet nach
+Installation oder Upgrade deaktiviert. Nur native Nextcloud-Administration
+darf sie über eine revisionsgesicherte technische Option aktivieren oder
+deaktivieren; sie wählt dabei weder Personen noch einzelne Datensätze aus.
+Rechtsgrundlage, Vereinbarung, DPO-/Betriebsratsbestätigung und
+Kundenevidenz sind keine Aktivierungsfelder oder technischen DELETE-Gates.
+Ihre Prüfung bleibt Betreiber-Governance außerhalb des Pakets.
+
 Policies besitzen stabile IDs, Datenklasse, Zweck, Rechtsgrundlagenhinweis,
 Trigger, Dauer oder Termin, Konfigurationsgrenzen, Maßnahme, Sperr-/Reviewregel
 und Version. Unterstützte Trigger sind `CREATED_AT`, `COMPLETED_AT`,
@@ -112,9 +128,29 @@ einer App dokumentiert nur die Überführung eigener Provider- und
 Policyversionen; sie erzeugt keine zentrale Kopie oder Fremd-App-Mutation.
 
 Ausführung benötigt einen passenden Dry Run sowie unveränderten Policy- und
-Previewstand. Ungültige Konfiguration, unbekannte Ereignisse oder
-widersprüchliche Daten bewirken keine destruktive Aktion. Läufe müssen
+Previewstand. Ungültige, fehlende oder deaktivierte technische Aktivierung,
+künftig datierte Backup-/Restore-Prüfzeitpunkte, ein fälliger oder veralteter
+nächster Prüftermin, unbekannte oder inkompatible Provider, unbekannte
+Ereignisse, Holds, Integritäts- und Nebenläufigkeitskonflikte oder
+widersprüchliche Daten bewirken keine destruktive Aktion. Löschung und
+minimaler technischer Nachweis müssen je Datensatz atomar sein; Läufe müssen
 gebatcht, wiederholbar, nebenläufigkeitssicher und fehlerisoliert sein.
+
+Die technische Aktivierung akzeptiert eine reguläre Backup-Aufbewahrung von 1
+bis 365 ganzen Kalendertagen und 0 bis 5 Tage technischen Puffer. Sie verlangt
+bereits vergangene Backup- und Restore-Prüfzeitpunkte sowie einen zukünftigen,
+spätestens innerhalb eines Jahres fälligen nächsten Prüftermin. Fehlende oder
+veraltete technische Prüfwerte blockieren fail-closed. Die App prüft damit
+nur Konsistenz und Aktualität der Betreiberangabe; sie untersucht keine
+externen Sicherungsmedien und behauptet keinen vollständigen Entfall aus
+Backups. Nach Restore werden Aktivierung, Policy, Providerkompatibilität,
+Trigger und Holds erneut geprüft; abgelaufene Daten dürfen nicht dauerhaft
+reaktiviert und fachliche Adminfreigaben niemals wieder wirksam werden.
+
+Der erste Produktvorschlag umfasst `P1Y` ab Buchungsende für Raumbuchungen und
+`P6M` ab tatsächlichem Ende für Adminfreigabehistorien. Das sind technische
+Standardvorschläge, keine Rechts- oder Beteiligungsentscheidung des
+Softwareherstellers.
 
 `SubjectLifecycleProvider` liefert nur geprüfte Ereignisse mit Subject,
 Ereignistyp, Zeitpunkt, Quelle, Vertrauensstatus und stabiler ID. Eine
@@ -122,7 +158,9 @@ Kontodeaktivierung oder -löschung wird nicht als Beschäftigungsende abgeleitet
 Unbekannte, fehlende oder widersprüchliche Ereignisse lösen höchstens
 `REVIEW` aus. Ohne belastbare Beschäftigungsquelle und getesteten
 Ausführungsvertrag gibt es keinen globalen Lifecycle-Lauf und keine globale
-automatische Retention.
+automatische Retention. Diese Grenze verhindert keine app-lokale, technisch
+aktivierte Löschung mit einem fachlich unabhängigen Trigger wie Buchungsende
+oder tatsächlichem Ende einer Adminfreigabe.
 
 ## Test- und Änderungsvertrag
 
@@ -141,7 +179,8 @@ Dies gilt bei jeder relevanten Weiterentwicklung.
 Offene Entscheidungen und ihre Reihenfolge stehen im
 [`Zukunftsplan`](zukunftsplan.md): erwartete Providerabdeckung, belastbare
 Beschäftigungsquelle, sichere externe Subjects, Audit-Aufbewahrung,
-Retention-Ausführung und ein möglicher stabiler Upstream-Vertrag.
+Runtime-Abnahme und Erweiterung der Retention-Ausführung sowie ein möglicher
+stabiler Upstream-Vertrag.
 
 Fremd-App-Coverage bleibt read-only: Fehlt ein kompatibler öffentlicher
 Provider, lautet der Status `missing`, `partial`, `UNKNOWN` oder `UNSUPPORTED`;

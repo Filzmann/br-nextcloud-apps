@@ -1,6 +1,6 @@
 # Systemweiter Zukunftsplan
 
-Stand: 28. September 2026
+Stand: 2. Oktober 2026
 
 Diese Datei ist die einzige aktive systemweite Planungsquelle des Workspaces.
 Sie enthält ausschließlich offene, blockierte oder vor einer Umsetzung noch zu
@@ -43,9 +43,9 @@ für jedes betroffene Repository bleibt erforderlich.
 | ID | Priorität | Systemweite Aufgabe | Gate |
 | --- | --- | --- | --- |
 | DP-06 | P1 | Native Files-, Share-, Groupfolders- und Calendar-Rechte zuerst über öffentliche Verträge vervollständigen; Fremd-App-Abdeckung danach ausschließlich read-only inventarisieren. | Fehlende Details bleiben sichtbar `UNKNOWN`, `UNSUPPORTED`, `partial` oder `missing`. |
-| DP-07 | P2 | Einen Lifecycle- und Retention-Ausführungsvertrag erst nach belastbarer Beschäftigungsquelle und vollständiger Policy-, Nebenläufigkeits-, Backup-, Sperr-, Audit- und Rückbauentscheidung einführen. | Bis dahin keine globale automatische Retention oder zentrale Löschung; Preview bleibt `REVIEW`. |
+| DP-07 | P0 | Den implementierten öffentlichen V2-DELETE-Piloten mit technischer Operatoraktivierung für die empfohlenen `adroom`- und Adminhistorien-Policies auf der unterstützten realen Nextcloud-/Datenbankmatrix abnehmen. | Standard bleibt deaktiviert. Migration, Job-Wiederanlauf, Providerkompatibilität, Policy-/Kandidatenintegrität, Holds, Atomarität, Nebenläufigkeit, Backup-/Restore-Prüfstatus und Restore-Quarantäne müssen fail-closed nachgewiesen werden. Rechtsgrundlage, BV, DPO-/BR-Bestätigung und Kundenevidenz bleiben Betreiber-Governance außerhalb des Pakets und sind keine technischen Aktivierungsfelder. Ein globaler Beschäftigten-Lifecycle bleibt davon getrennt. |
 | DP-08 | P1 | Die noch fehlenden app-lokalen Processing-Kataloge und die systemweite Coverage-Prüfung in einzelnen, freigegebenen App-Aufträgen vervollständigen. | Fachliche Lücken bleiben `PRIVACY-DECISION-REQUIRED`; Root-Schema und app-lokaler Katalog bleiben die einzige Wertquelle. |
-| DP-09 | P1 | App-eigene Retention-Policies mit fachlicher Freigabe, Ausführung und Wiederherstellungsgrenze vervollständigen. | Konkrete Datenklassen, Fristen, Owner und Rechtsgrundlagen werden ausschließlich im jeweiligen app-lokalen Processing-Katalog geführt. |
+| DP-09 | P1 | Weitere app-eigene Retention-Policies nur mit eindeutigem Trigger, Datenowner, versioniertem V2-Provider, Holds und Wiederherstellungsvertrag ergänzen. | Der auslieferbare Processing-Katalog führt Datenklassen, technische Fristen und offene lokale Entscheidungen. Kundenspezifische Rechtsgrundlagen, Vereinbarungen, Rollenbezeichnungen und Evidenz werden weder hardcodiert noch zum technischen DELETE-Gate gemacht. |
 | DP-10 | P1 | Eine mögliche schreibende Matrix-Bedienoberfläche erst nach Erweiterung von [ADR 0003](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md) (`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`) und einer Owner-/Source-of-Truth-Matrix bewerten. | Öffentlicher opt-in Verwaltungsvertrag, Audit, CSRF sowie Allow-/Deny-/Manipulations- und Lifecycle-Tests sind vor jeder Umsetzung erforderlich. |
 
 ## Vorgemerkte Suite-Module
