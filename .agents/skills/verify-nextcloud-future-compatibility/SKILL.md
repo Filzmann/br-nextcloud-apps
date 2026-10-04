@@ -1,16 +1,52 @@
 ---
 name: verify-nextcloud-future-compatibility
-description: Prove the highest contiguous Nextcloud major supported by one or more apps and update each appinfo/info.xml only from reproducible evidence. Use before publishing or approving a release candidate, extending a Nextcloud support range, or changing nextcloud max-version metadata. Do not use for ordinary app development, speculative compatibility claims, production deployment, or publication itself.
+description: Check that the development workspace uses the latest released Nextcloud, or prove the full support range and future ceiling while creating a release candidate. Use for periodic runtime currency checks and publishable RC compatibility gates; do not use for unrelated app development, production deployment, or publication itself.
 ---
 
 # Verify Nextcloud future compatibility
 
-Establish the highest supportable future Nextcloud major from official upstream
-sources, static checks, and real runtime evidence. Treat this as a mandatory
-pre-publication gate, not as authorization to publish.
+Keep the development runtime current and, separately, establish the highest
+supportable future Nextcloud major from official upstream sources, static
+checks, and real runtime evidence. The lightweight currency result is not a
+release proof. Treat the complete matrix as a mandatory release-candidate
+gate, not as authorization to publish.
 
 Read [evidence-contract.md](references/evidence-contract.md) completely before
 selecting upstream refs or recording a result.
+
+## Choose the evidence mode
+
+### Routine development currency check
+
+Use this mode periodically outside a release-candidate run.
+
+1. Resolve the latest officially released Nextcloud stable version from the
+   official `https://github.com/nextcloud/server` Git tags. Pin the tag and
+   commit and verify its version in `version.php`.
+2. Read the actual local DDEV version with `occ status`. Compare the complete
+   version, not only the branch or image label. Running or changing DDEV,
+   Docker, Nextcloud, or `occ` still requires the authorization defined by the
+   Parent rules.
+3. If the local runtime is current, run the established narrow DDEV/workspace
+   smokes appropriate to the mounted apps. If it is behind, report the exact
+   pinned target and open or execute the separately authorized runtime-update
+   task before claiming that development happens on the newest version.
+4. Record the upstream and local versions, commits or tags, retrieval time,
+   commands, and smoke result. This mode does not produce a release compatibility verdict,
+   does not prove the declared support range, and must not change `min-version`
+   or `max-version`.
+
+### Release-candidate compatibility gate
+
+Run the full compatibility matrix while creating every publishable release candidate.
+Resolve and record the current openDesk Nextcloud major from the authoritative
+openDesk release or deployment source named for that candidate. Every app's
+declared range must include it; the declared minimum need not equal it and may
+remain lower when that wider support is still proved. An unavailable or
+ambiguous openDesk source makes the RC unverified.
+
+The remaining sections describe this release-candidate mode unless they
+explicitly mention the routine currency check.
 
 ## Protect scope and state
 
@@ -40,10 +76,13 @@ selecting upstream refs or recording a result.
 
 1. Read each app's current `min-version` and `max-version`. The declared range
    is inclusive and cannot express gaps.
-2. Query the official `https://github.com/nextcloud/server` repository. Pin
+2. Confirm that the declared range includes the current openDesk Nextcloud
+   major recorded for this candidate. Treat a missing or contradictory
+   openDesk version source as unverified rather than guessing a floor.
+3. Query the official `https://github.com/nextcloud/server` repository. Pin
    every tested ref to a commit and verify the major in `version.php` rather
    than inferring it from a branch name.
-3. Include every declared major and then every successive upstream-named major
+4. Include every declared major and then every successive upstream-named major
    through the highest testable candidate:
    - for a released major, test the newest published patch tag and the current
      `stableNN` head when it exists;
@@ -51,10 +90,10 @@ selecting upstream refs or recording a result.
      major and the official developer manual already has dedicated release
      notes for it;
    - never invent or extrapolate a major that upstream has not named.
-4. Re-fetch refs immediately before the release-candidate verdict. Evidence
+5. Re-fetch refs immediately before the release-candidate verdict. Evidence
    applies only to the recorded commits; a later moving-branch result needs a
    new run.
-5. Determine the highest contiguous green major. Stop extending the range at
+6. Determine the highest contiguous green major. Stop extending the range at
    the first failed, missing, or unverified major even if a later major appears
    to pass.
 

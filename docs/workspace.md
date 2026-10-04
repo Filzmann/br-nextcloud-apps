@@ -143,9 +143,29 @@ In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalie
 
 DDEV und Produktion sind getrennte Umgebungen. DDEV-Pfade, DDEV-Benutzer, Containerpfade, PHP-Binaries, Datenbankzugänge und andere lokale Annahmen dürfen nie auf Hosting oder Produktion übertragen werden. In der Zielumgebung müssen Produktionspfade, Benutzer, reale `apps_paths`, PHP-Binary und CLI-Memory-Limit separat ermittelt werden. Jeder Wechsel zwischen DDEV und Produktion wird ausdrücklich als Umgebungsgrenze benannt; bei unklarer Zielumgebung wird gestoppt.
 
+### Nextcloud-Aktualität und Release-Kompatibilität
+
+Die lokale DDEV-Laufzeit wird regelmäßig mit der neuesten offiziell
+veröffentlichten stabilen Version aus dem Git-Repository
+`nextcloud/server` abgeglichen. Der Vergleich verwendet den gepinnten Tag und
+Commit, dessen `version.php` sowie die tatsächliche Ausgabe von `occ status`.
+Nach einem freigegebenen Update belegen die vorhandenen schmalen DDEV- und
+Workspace-Smokes, dass auf dieser Version gearbeitet wird. Der Ablauf und die
+Nachweisgrenze stehen im Skill `verify-nextcloud-future-compatibility`; der
+Aktualitätscheck allein ändert keine App-Metadaten und ist kein Releaseurteil.
+
+Die vollständige Matrix vom deklarierten Minimum bis zu den offiziell
+benannten testbaren Zukunftsversionen wird erst beim Erstellen eines
+veröffentlichungsfähigen Release-Candidates ausgeführt. Dabei muss jede App
+die für diesen Kandidaten aktuelle openDesk-Nextcloud-Hauptversion einschließen;
+die höchste lückenlos grüne Version bestimmt `max-version`.
+
 ## App-Installation und Migrationen
 
-Die lokale Nextcloud 34-Umgebung hat keinen `occ migrations:migrate`-Befehl. App-Migrationen laufen beim Aktivieren einer App mit `occ app:enable <app-id>` bzw. ueber `occ upgrade`, wenn `occ status` `needsDbUpgrade: true` meldet.
+App-Migrationen laufen beim Aktivieren einer App mit `occ app:enable <app-id>`
+bzw. ueber `occ upgrade`, wenn `occ status` `needsDbUpgrade: true` meldet. Vor
+der Verwendung eines versionsabhängigen Einzelbefehls wird dessen Verfügbarkeit
+in der tatsächlich laufenden Nextcloud-Version geprüft.
 
 Nach App-Aktivierung oder Updates pruefen:
 

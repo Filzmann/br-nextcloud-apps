@@ -342,12 +342,17 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 - Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
   je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
   richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
-- Vor der Veröffentlichung jedes Release-Candidates wird mit dem Skill
-  `verify-nextcloud-future-compatibility` gegen gepinnte offizielle
-  Nextcloud-Repositories die höchste lückenlos nachgewiesene künftige
-  Hauptversion je App bestimmt und als `max-version` in deren `info.xml`
-  aufgenommen. Rote, lückenhafte, veraltete oder nur statisch geprüfte
-  Nachweise blockieren die Veröffentlichung.
+- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den Entwicklungsstand; er ersetzt keine Release-Kompatibilitätsmatrix und erweitert keine Freigabe für DDEV-, Docker-, Nextcloud- oder `occ`-Änderungen.
+- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates mit dem Skill
+  `verify-nextcloud-future-compatibility` ausgeführt. Sie prüft den gesamten
+  deklarierten Bereich und jede offiziell benannte, testbare künftige
+  Hauptversion gegen gepinnte offizielle Nextcloud-Git-Quellen. Die höchste
+  lückenlos nachgewiesene künftige Hauptversion je App wird als `max-version`
+  in deren `info.xml` aufgenommen. Rote, lückenhafte, veraltete oder nur
+  statisch geprüfte Nachweise blockieren die Veröffentlichung. Außerhalb eines
+  Release-Candidate-Laufs entsteht aus dem Aktualitätscheck keine neue
+  `max-version`-Aussage.
+- `min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten. Die autoritative openDesk-Quelle und die aufgelöste Hauptversion werden im RC-Nachweis festgehalten; ein niedrigeres weiterhin belegtes Minimum darf erhalten bleiben.
 - `min-version` wird niemals automatisch angehoben. Ein belegtes Supportende,
   eine nicht mehr sicher reproduzierbare Plattform oder eine notwendige
   Abkehr von riskanten Kompatibilitätsschichten löst nur eine getrennte

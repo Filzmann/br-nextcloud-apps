@@ -423,6 +423,9 @@ required_parent_contracts = (
     '`test-driven-change`',
     '`verify-nextcloud-future-compatibility`',
     'bei derselben fachlichen Änderung mitgepflegt',
+    'vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates',
+    '`min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten',
+    'regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft',
     '`min-version` wird niemals automatisch angehoben',
     'nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung',
 )
@@ -476,6 +479,11 @@ for contract in (
     'one concrete action matrix',
     'separate columns for file changes',
     'once explicitly granted, retain it for the whole run',
+    'Routine development currency check',
+    'latest officially released Nextcloud',
+    'does not produce a release compatibility verdict',
+    'Run the full compatibility matrix while creating every publishable release candidate',
+    'current openDesk Nextcloud major',
 ):
     if contract not in future_compatibility_skill_text:
         fail(f'Verbindlicher Zukunftskompatibilitäts-Workflow fehlt: {contract}')

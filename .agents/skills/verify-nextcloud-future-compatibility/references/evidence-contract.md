@@ -1,8 +1,21 @@
 # Compatibility evidence contract
 
-Use one report for one immutable release-candidate revision set. Store it in
-the ignored release workspace or another explicitly chosen non-secret artifact
-location; do not add generated reports to an app repository by default.
+Choose and label exactly one evidence mode. Store its record in the ignored
+release workspace or another explicitly chosen non-secret artifact location;
+do not add generated reports to an app repository by default.
+
+## 0. Evidence modes
+
+For a routine development currency check, record only the retrieval time, the
+latest officially released stable `nextcloud/server` tag and commit, its
+`version.php` value, the actual local DDEV version, comparison result, commands,
+and the established narrow smoke results. Mark the result `current` or
+`behind`, never `publishable`. This record proves neither the declared app
+range nor a future ceiling and cannot justify metadata changes. Sections 1–5
+below do not apply to this lightweight record.
+
+For a release-candidate compatibility gate, use one report for one immutable
+candidate revision set and complete every remaining section.
 
 ## 1. Scope
 
@@ -11,6 +24,9 @@ Record:
 - release-candidate label and UTC timestamp;
 - every app ID, repository URL, branch, and commit;
 - original `min-version` and `max-version`;
+- the authoritative openDesk release or deployment source, its immutable ref
+  or retrieval timestamp, and the current Nextcloud major resolved from it;
+- confirmation that every declared app range includes that openDesk major;
 - official lifecycle status and testability of the declared minimum major;
 - requested publication target and whether the run is diagnostic or a gate;
 - approvals for app, Parent, DDEV/`occ`, staging, or external-state writes.
