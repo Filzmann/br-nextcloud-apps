@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import argparse
+from pathlib import Path
+import secrets
+import sys
+
+
+WORKSPACE = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(WORKSPACE / "scripts" / "lib"))
+
+from manual_acceptance_viewer import Workspace, create_server  # noqa: E402
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Lokaler Viewer für Markdown und manuelle Abnahmeformulare"
+    )
+    parser.add_argument("--port", type=int, default=8765, help="lokaler TCP-Port (Standard: 8765)")
+    arguments = parser.parse_args()
+    token = secrets.token_urlsafe(32)
+    server = create_server(Workspace(WORKSPACE), "127.0.0.1", arguments.port, token)
+    print(f"Markdown-Viewer: http://127.0.0.1:{server.server_port}/")
+    print("Beenden mit Strg+C. Der Dienst akzeptiert nur lokale Verbindungen.")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nViewer beendet.")
+    finally:
+        server.server_close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

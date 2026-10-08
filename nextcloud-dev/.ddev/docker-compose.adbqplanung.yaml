@@ -1,4 +1,0 @@
-services:
-  web:
-    volumes:
-      - ${DDEV_APPROOT}/../adbqplanung:/var/www/html/html/custom_apps/adbqplanung:cached

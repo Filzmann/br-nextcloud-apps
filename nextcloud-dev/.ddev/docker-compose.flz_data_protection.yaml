@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - ${DDEV_APPROOT}/../flz_data_protection:/var/www/html/html/custom_apps/flz_data_protection:cached

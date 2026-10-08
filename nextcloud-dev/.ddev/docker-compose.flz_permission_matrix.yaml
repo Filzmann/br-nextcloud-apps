@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - /home/filzmann/projects/br-nextcloud-apps/flz_permission_matrix:/var/www/html/html/custom_apps/flz_permission_matrix:cached

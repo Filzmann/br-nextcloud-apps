@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+workspace_diff=0
+validator_arguments=()
+
+for argument in "$@"; do
+    if [[ "$argument" == '--workspace-diff' ]]; then
+        workspace_diff=1
+        continue
+    fi
+    validator_arguments+=("$argument")
+done
+
+if (( workspace_diff )); then
+    echo 'Security-Impact-Auswertung: tatsächliche App-Worktree-Diffs'
+    while IFS=$'\t' read -r path kind app_id required_skills; do
+        [[ "$path" == 'path' || "$kind" != 'app' ]] && continue
+        repo="$workspace/$path"
+        while IFS= read -r -d '' changed_file; do
+            validator_arguments+=(--changed-file "$path/$changed_file")
+        done < <(git -C "$repo" diff --name-only -z HEAD)
+        while IFS= read -r -d '' changed_file; do
+            validator_arguments+=(--changed-file "$path/$changed_file")
+        done < <(git -C "$repo" ls-files --others --exclude-standard -z)
+    done < "$workspace/config/workspace-repositories.tsv"
+fi
+
+exec php "$workspace/scripts/validate-security-compliance.php" "${validator_arguments[@]}"

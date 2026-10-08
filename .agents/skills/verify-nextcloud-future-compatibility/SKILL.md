@@ -1,16 +1,52 @@
 ---
 name: verify-nextcloud-future-compatibility
-description: Prove the highest contiguous Nextcloud major supported by one or more apps and update each appinfo/info.xml only from reproducible evidence. Use before publishing or approving a release candidate, extending a Nextcloud support range, or changing nextcloud max-version metadata. Do not use for ordinary app development, speculative compatibility claims, production deployment, or publication itself.
+description: Check that the development workspace uses the latest released Nextcloud, or prove the full support range and future ceiling while creating a release candidate. Use for periodic runtime currency checks and publishable RC compatibility gates; do not use for unrelated app development, production deployment, or publication itself.
 ---
 
 # Verify Nextcloud future compatibility
 
-Establish the highest supportable future Nextcloud major from official upstream
-sources, static checks, and real runtime evidence. Treat this as a mandatory
-pre-publication gate, not as authorization to publish.
+Keep the development runtime current and, separately, establish the highest
+supportable future Nextcloud major from official upstream sources, static
+checks, and real runtime evidence. The lightweight currency result is not a
+release proof. Treat the complete matrix as a mandatory release-candidate
+gate, not as authorization to publish.
 
 Read [evidence-contract.md](references/evidence-contract.md) completely before
 selecting upstream refs or recording a result.
+
+## Choose the evidence mode
+
+### Routine development currency check
+
+Use this mode periodically outside a release-candidate run.
+
+1. Resolve the latest officially released Nextcloud stable version from the
+   official `https://github.com/nextcloud/server` Git tags. Pin the tag and
+   commit and verify its version in `version.php`.
+2. Read the actual local DDEV version with `occ status`. Compare the complete
+   version, not only the branch or image label. Running or changing DDEV,
+   Docker, Nextcloud, or `occ` still requires the authorization defined by the
+   Parent rules.
+3. If the local runtime is current, run the established narrow DDEV/workspace
+   smokes appropriate to the mounted apps. If it is behind, report the exact
+   pinned target and open or execute the separately authorized runtime-update
+   task before claiming that development happens on the newest version.
+4. Record the upstream and local versions, commits or tags, retrieval time,
+   commands, and smoke result. This mode does not produce a release compatibility verdict,
+   does not prove the declared support range, and must not change `min-version`
+   or `max-version`.
+
+### Release-candidate compatibility gate
+
+Run the full compatibility matrix while creating every publishable release candidate.
+Resolve and record the current openDesk Nextcloud major from the authoritative
+openDesk release or deployment source named for that candidate. Every app's
+declared range must include it; the declared minimum need not equal it and may
+remain lower when that wider support is still proved. An unavailable or
+ambiguous openDesk source makes the RC unverified.
+
+The remaining sections describe this release-candidate mode unless they
+explicitly mention the routine currency check.
 
 ## Protect scope and state
 
@@ -19,14 +55,20 @@ selecting upstream refs or recording a result.
    `git status --short` in each repository.
 2. Identify the exact app commits intended for the release candidate. A dirty
    or moving app revision is not release evidence.
-3. Before changing any app repository, apply the repository stop gate: name
+3. Before requesting authorization, record one concrete action matrix with a
+   row per affected repository and separate columns for file changes,
+   DDEV/`occ`, commits, push/release, and external-state writes. Bundle all
+   predictable rows into one request. A grant applies only to its named rows
+   and actions; once explicitly granted, retain it for the whole run and do
+   not ask for it again.
+4. Before changing any app repository, apply the repository stop gate: name
    the compatibility risk, exact files, tests, and rollback, then obtain
    explicit authorization for every affected repository. Include the Parent
    when its build or delivery contracts contain fixed version assumptions.
-4. Use an isolated temporary test environment. Do not mutate the documented
+5. Use an isolated temporary test environment. Do not mutate the documented
    DDEV instance, run `occ`, install or upgrade Nextcloud, or access staging or
    production without the separate authorization required by local rules.
-5. Keep upstream clones and generated evidence outside tracked app trees.
+6. Keep upstream clones and generated evidence outside tracked app trees.
    Never commit a Nextcloud checkout, credentials, databases, logs, or test
    artifacts.
 
@@ -34,10 +76,13 @@ selecting upstream refs or recording a result.
 
 1. Read each app's current `min-version` and `max-version`. The declared range
    is inclusive and cannot express gaps.
-2. Query the official `https://github.com/nextcloud/server` repository. Pin
+2. Confirm that the declared range includes the current openDesk Nextcloud
+   major recorded for this candidate. Treat a missing or contradictory
+   openDesk version source as unverified rather than guessing a floor.
+3. Query the official `https://github.com/nextcloud/server` repository. Pin
    every tested ref to a commit and verify the major in `version.php` rather
    than inferring it from a branch name.
-3. Include every declared major and then every successive upstream-named major
+4. Include every declared major and then every successive upstream-named major
    through the highest testable candidate:
    - for a released major, test the newest published patch tag and the current
      `stableNN` head when it exists;
@@ -45,10 +90,10 @@ selecting upstream refs or recording a result.
      major and the official developer manual already has dedicated release
      notes for it;
    - never invent or extrapolate a major that upstream has not named.
-4. Re-fetch refs immediately before the release-candidate verdict. Evidence
+5. Re-fetch refs immediately before the release-candidate verdict. Evidence
    applies only to the recorded commits; a later moving-branch result needs a
    new run.
-5. Determine the highest contiguous green major. Stop extending the range at
+6. Determine the highest contiguous green major. Stop extending the range at
    the first failed, missing, or unverified major even if a later major appears
    to pass.
 
@@ -116,11 +161,23 @@ requirements.
    required infrastructure, place the exact release-candidate app revision in
    the custom app path, enable it, and verify status, dependency injection,
    background-job/command/settings registration, and database setup.
+   This is the primary Fresh-Install/Reinstall proof. Record the actual
+   executable invocation and show that server configuration, database and
+   app data were empty or deliberately recreated from the selected sources;
+   disabling/re-enabling an app or reading `occ status` is not that proof.
+   Reuse this stage for development-reset verification instead of creating
+   an identical second reinstall suite. A documented requirement without an
+   executed, reproducible command remains unverified.
 4. Exercise the app's relevant authenticated API, permission, file, job,
    integration, UI, and static-asset smokes. A page load alone is insufficient.
 5. When the app has persistent state or migrations, test an upgrade from the
    immediately preceding supported major with synthetic existing data and
    verify integrity, repeatability, and failure behavior.
+   This checks supported Nextcloud platform transitions. Preservation of an
+   older internal app development revision is a separate decision governed
+   by `docs/architecture.md`, section "Entwicklungsphase und
+   Kompatibilitätsbedarf"; do not manufacture historical app compatibility
+   solely because an earlier development schema exists.
 6. For infrastructure or suite apps, test required standalone combinations
    and the complete release combination. Record the suite ceiling as the
    lowest proven maximum of all included apps.

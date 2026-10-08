@@ -9,18 +9,81 @@ Es enthält keinen deploybaren App-Code.
 - Menschlicher Einstieg: `README.md`
 - Workspace und DDEV: `docs/workspace.md`
 - App-übergreifende Architektur: `docs/architecture.md`
+- Kanonischer systemweiter Zukunftsplan:
+  `docs/zukunftsplan.md`
+- Governance-Hierarchie für Subrepositories:
+  `docs/parent-governance-contract.md`
+- Verbindliche App-Dokument- und Steuerungsstruktur:
+  `docs/app-repository-structure.md`
 - Datenschutzarchitektur und Rollout: `docs/privacy-architecture.md`
-- Nicht freigegebene AD-Suite-Zukunftsplanung:
-  `docs/ad-suite-zukunftsplanung.md`
+- Öffentlicher Privacy-Providervertrag: `docs/privacy-provider-guide.md`
+- IKT-/Datenschutz-Zuordnung der Berechtigungsmatrix:
+  `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`
 - Wiederholbare Abläufe: `.agents/skills/`
 - Repositoryinventar: `config/workspace-repositories.tsv`
 - Unverbindliche Beobachtungen: `docs/learning-candidates.md`
 
-Jede App und `ad-suite` sind getrennte Git-Repositories mit eigener
+Jede App und `flz-full-suite` sind getrennte Git-Repositories mit eigener
 `AGENTS.md`. Normale App-Arbeit beginnt im Root des konkret beauftragten
 Repositories und folgt dem dort lokal mitgeführten Skill
 `work-in-nextcloud-app`. Der technische `workspace-write`-Zugriff erteilt
 keine fachliche Schreibfreigabe.
+
+## KI-Ausführungsrouting
+
+Für delegierbare Arbeit gilt die kleinste ausreichende Ausführungsklasse. Die
+einzige zentrale technische Routing-Policy liegt in `.codex/config.toml` und
+den dort referenzierten Dateien unter `.codex/agents/`; konkrete Modellnamen
+und Reasoning-Stufen stehen ausschließlich dort. Tasks speichern, sofern sie
+dauerhaft erfasst werden, nur `execution_class: ROUTINE|STANDARD|COMPLEX|CRITICAL_REVIEW`.
+
+- `ROUTINE` gilt für eng begrenzte, mechanische und deterministische Arbeit
+  nach einem vorhandenen Muster, ohne neue Architektur-, Berechtigungs-,
+  Datenschutz- oder Security-Entscheidung. Sie wird an `routine_worker`
+  geroutet.
+- `STANDARD` gilt für normale Entwicklung innerhalb bestehender Architektur
+  und bereits definierter Verträge. Sie wird an `standard_worker` geroutet.
+- `COMPLEX` gilt insbesondere für Architektur und Harness/Policy, neue oder
+  geänderte APIs und Shared Contracts, App-Grenzen, Security,
+  Authentifizierung/Autorisierung und Berechtigungen, Datenschutz,
+  Migrationen und persistente Strukturen, Datenintegrität und Nebenläufigkeit,
+  widersprüchliche Anforderungen oder großen Blast Radius. Sie wird an
+  `complex_worker` geroutet.
+- `CRITICAL_REVIEW` ist eine unabhängige Prüfung bereits umgesetzter
+  risikoreicher Arbeit durch `critical_reviewer`. Sie wird nach Risiko und
+  Nutzen eingesetzt und ist keine automatische zweite Prüfung jeder Änderung.
+
+Ist ein Task bereits gültig klassifiziert, wird er ohne separaten
+Modellaufruf und ohne unbegründete Reklassifikation geroutet. Neue oder bei
+der Arbeit entdeckte Tasks werden möglichst deterministisch anhand dieser
+Regeln klassifiziert. Bestehende Security-, Privacy-, Architektur-,
+Repository-, Test- und Stop-Gates sind autoritativ: Sie ziehen eine zu
+niedrige Klasse hoch oder stoppen die Arbeit und können durch Klassifikation
+nie abgeschwächt werden.
+
+Der Coordinator startet die konfigurierte Rolle und darf klassifizierte
+Worker-Arbeit nicht selbst ausführen. Kann die Rolle oder ihre explizite
+Modell-/Reasoning-Konfiguration nicht gestartet werden, endet die Bearbeitung
+ohne Parent-Fallback mit `ROUTING_FAILED`; gemeldet werden Task,
+`execution_class`, vorgesehener Worker und Grund. Codex erzwingt die Werte
+eines gestarteten Custom Agents technisch; das Selbstübernahmeverbot des
+Coordinators ist in der aktuellen Codex-Version eine Instruktionsgrenze und
+keine plattformseitige Ausführungssperre. Es darf nicht als stärkere
+technische Garantie dargestellt werden.
+
+Erkennt ein Worker eine höhere Grenze, stoppt er vor weiteren abhängigen
+Änderungen mit `ESCALATION_REQUIRED`, Ausgangs- und Zielklasse, Grund und
+Fundstelle; der Coordinator routet den Task neu. Ein `COMPLEX`-Worker weist
+klar trennbare mechanische Unteraufgaben mit eigener Klasse aus, damit der
+Coordinator sie an `ROUTINE` oder `STANDARD` herabstufen kann. Worker starten
+keine eigenen Subagents. Bei Bedarf wird knapp Task, Klasse, Worker,
+Konfigurationsdatei, daraus aufgelöstes Modell, Reasoning-Stufe und
+Eskalationsstatus berichtet; Prompts, Secrets und unnötige personenbezogene
+Daten werden nicht protokolliert.
+
+Die separate Rolle `reviewer` bleibt ausschließlich für Codex-
+Freigabeprüfungen erhalten und führt keine klassifizierten Tasks aus. Sie ist
+kein automatischer `CRITICAL_REVIEW`-Schritt.
 
 ## Harte Repositorygrenzen
 
@@ -33,9 +96,19 @@ keine fachliche Schreibfreigabe.
   einzeln genannten Repositories, lokalen Regeln, Statusprüfungen und Tests.
 - Vor Arbeit in einem App-Repository werden dessen vollständige `AGENTS.md`,
   lokal referenzierte Skills und `git status --short` gelesen.
+- Vor jeder App-Änderung werden die für diese App und die berührten
+  Architekturgrenzen anwendbaren Punkte aus
+  `docs/zukunftsplan.md` geprüft. Nach dem Prinzip
+  „Improve what you touch“ werden kleine passende Lücken mitgeschlossen;
+  isolierte Änderungen ohne betroffene Plattformgrenze lösen keinen
+  künstlichen Gesamtaudit aus.
 - Jede deploybare App besitzt ein eigenes Git-Repository, eine eigene
   `AGENTS.md`, `.gitignore` und lokal auflösbare Steuerung. Neue Apps werden
   ausschließlich mit dem Skill `create-nextcloud-app` registriert.
+- Jede App erfüllt die einheitliche Datei- und Quellenverantwortung aus
+  `docs/app-repository-structure.md`. App-lokale Planung steht ausschließlich
+  in `ROADMAP.md`; aktueller Stand und Historie stehen in `README.md` und
+  `CHANGELOG.md`.
 - `config/workspace-repositories.tsv` ist die einzige manuell gepflegte
   Repositoryliste. Andere Inventare werden daraus erzeugt oder dagegen
   geprüft.
@@ -105,16 +178,64 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   Dateien einer Fachapp direkt. Neue oder wesentlich erweiterte Datenklassen
   erhalten spätestens vor fachlicher Fertigstellung eine konkrete
   Provider-, Retention-, Drittpersonen- und Testaufgabe.
+- Für jede neue oder geänderte personenbezogene Verarbeitung wird die
+  betroffene app-lokale `processing_id` bestimmt und der Processing-Katalog
+  gegen `docs/contracts/privacy-processing-metadata.schema.json` im selben
+  App-Auftrag mitgeführt. Root besitzt nur Schema und Governance; fachliche
+  Werte und Laufzeitdaten bleiben bei der App. Fehlende Zwecke,
+  Erforderlichkeit, Empfänger, Zugriff, Rechtsgrundlagen, Retention- oder
+  Backupentscheidungen werden als `PRIVACY-DECISION-REQUIRED` ausgewiesen und
+  nicht durch technische Defaults ersetzt. Unbekannte Anforderungen erlauben
+  weder vorsorgliche Datensammlung noch unbegrenzte Aufbewahrung.
+- Privacy-Prüfung bleibt inkrementell: Datenmodell, API, Import, Export,
+  Report, Log, Backup, Berechtigung, Synchronisation, Index, Integration und
+  personenbezogener Workflow lösen nur die Prüfung der berührten Verarbeitung,
+  Provider, Weitergaben und vorhandenen Tests aus. APIs liefern nur den
+  erforderlichen Consumer-Ausschnitt; Privacy Provider erhalten keinen
+  pauschalen Zugriff. Art. 15 konsumiert app-eigene Policy und Laufzeitdaten,
+  ist aber niemals deren Source of Truth oder ein zentraler Schattenspeicher.
+- Jede von Simon verantwortete Nextcloud-App hält ihre anwendbaren
+  `PersonalDataProvider` und `PermissionProvider` während der gesamten
+  Weiterentwicklung vollständig. Neue oder geänderte personenbezogene
+  Datenklassen, Identifier, AppConfig-/UserConfig-Werte, AppData-, Datei-,
+  Share-, Export-, Cache- oder sonstige Nebenspeicher sowie neue oder
+  geänderte Berechtigungen und Scopes werden im Daten-/Rechteinventar und im
+  zuständigen Provider bei derselben fachlichen Änderung mitgepflegt und
+  durch Provider-/Consumer- sowie relevante Negativtests belegt. Eine App
+  ohne eigene persistierte Personenwerte beziehungsweise ohne eigene
+  Fachberechtigungen dokumentiert die begründete Nichtanwendbarkeit und
+  bewertet sie bei jeder Scopeänderung neu. Bekannte Auslassungen werden
+  sichtbar als `partial`, `UNKNOWN` oder `UNSUPPORTED` ausgewiesen und nie als
+  vollständig oder erlaubt behauptet.
+- Zielruntime des öffentlichen Datenschutzvertrags ist die Standalone-App
+  `flz_data_protection` der Kategorie B aus
+  `docs/architecture-decisions/0002-standalone-privacy-platform.md`.
+  LocalBase bleibt bis zur kontrollierten Migration nur Pilot. Fehlende oder
+  inkompatible Provider werden sichtbar ausgewiesen; SQL-, Reflection-,
+  Datei-, AppConfig- und Migrator-Fallbacks sind verboten.
+- Die Berechtigungsmatrix ist eine eigenständige Kategorie-B-App im Portfolio
+  IKT/Datenschutz und keine Gremien-Arbeits-App. Sie wird nicht in die
+  Privacy-App verschmolzen; Produktzuordnung, Navigation, Datenownership und
+  Berechtigungen bleiben getrennte Verträge gemäß
+  `docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`.
+- Native Nextcloud-Administration erteilt in eigenen Apps nicht automatisch
+  fachlichen Vollzugriff. Der app-lokale, pro Admin und App höchstens 24
+  Stunden gültige Freigabe-, Audit-, Provider- und Testvertrag steht
+  ausschließlich in
+  `docs/architecture-decisions/0004-app-local-temporary-admin-full-access.md`.
+  Technischer Zugriff auf den jeweiligen Nextcloud-Adminbereich bleibt davon
+  getrennt. Apps ohne fachlichen Admin-Vollzugriff dokumentieren die
+  begründete Nichtanwendbarkeit und prüfen sie bei Scopeänderungen neu.
 
 ## Suite- und Produktverträge
 
-- OrgSuite besitzt die gemeinsamen AD-/BR-Einstiege; Fachapps duplizieren
+- OrgSuite besitzt die gemeinsamen FLZ-/BR-Einstiege; Fachapps duplizieren
   keine Suite-Linklisten.
-- `adcalendar`, `adplaner`, `adurlaub`, `adroom`, `adrecruitment` und
-  `adbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
+- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment` und
+  `flzbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
   Infrastruktur. Der BQ-Planer ist bis zur dokumentierten Release-Reife zwar
   navigierbar, aber aus Full-Suite- und Einzelprodukt-Bundles ausgeschlossen.
-- Bei genau einem aktiven AD-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
+- Bei genau einem aktiven FLZ-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
   Fachprodukten aktiviert der geprüfte Installer OrgSuite.
 - Fachapps greifen nicht direkt auf Tabellen, Controller oder
   JavaScript-Assets anderer Fachapps zu. Optionale Integrationen verwenden
@@ -125,6 +246,15 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 ## Test-, UI- und Datenqualität
 
+- Vor einem neuen Test, Scan, Linter, Architektur- oder Systemcheck wird
+  geprüft, welcher bestehende Check dieselbe Eigenschaft bereits nachweist.
+  Diesen erweitern oder sein nachweislich passendes Ergebnis wiederverwenden;
+  ein zusätzlicher Check braucht eine benannte zusätzliche Fehlerklasse oder
+  Vertrauensgrenze. Gleicher Input, gleiche Prüfung, gleiche Fehlerklasse und
+  gleiche Phase begründen keinen zweiten Lauf. Gestaffelte Unit-, Contract-
+  und Runtime-Nachweise bleiben erhalten. Die dokumentierten lokalen
+  Prüfeinstiege bestimmen Umfang und Ergebnisgültigkeit.
+
 ### Testgetriebene Funktionserweiterungen und Verhaltensänderungen
 
 Bei jeder neuen Funktion, Fehlerkorrektur oder sonstigen Änderung des
@@ -134,23 +264,12 @@ Zielverhalten, geeignete Testebene, was der geplante Test beweist und
 ausdrücklich nicht beweist sowie relevante negative Fälle und Grenzfälle
 bestimmt.
 
-Der Skill erzwingt Red–Green–Refactor mit einem aus dem erwarteten fachlichen
-Grund zunächst roten Test, der kleinsten notwendigen Implementierung,
-Regressionstests und Refactoring erst bei grünem Stand. Der Abschlussbericht
-weist Invariante, Testebene, Red-Nachweis samt Fehlergrund, minimale
-Implementierung, ausgeführte Tests und Ergebnisse, verbleibende ungetestete
-Risiken sowie begründete Abweichungen aus.
-
 Ein sofort grüner Test ist kein TDD-Nachweis; er darf nur als ausdrücklich
-begründeter Charakterisierungstest dienen. Reine Dokumentations-,
-Formatierungs-, generierte oder mechanische Änderungen ohne sinnvoll
-testbares Verhalten erhalten statt eines künstlichen TDD-Zyklus die passende
-maschinelle Prüfung; Zweifelsfälle werden kurz begründet.
-Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
+begründeter Charakterisierungstest dienen. Der vollständige Ablauf steht ausschließlich im Skill
+`test-driven-change`, einschließlich Red–Green–Refactor, Ausnahmen für
+Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 
-- Fachlogik, Berechtigungen, Hierarchien, Konflikte und Validierungen werden
-  test-first entwickelt. Cross-App-Verträge erhalten Provider- und
-  Consumer-Contract-Tests.
+- Cross-App-Verträge erhalten Provider- und Consumer-Contract-Tests.
 - Berührt eine Änderung eine fachliche oder sicherheitsrelevante Schutz- oder
   Zustandsgrenze, belegen Tests den erlaubten und mindestens einen sinnvollen
   verweigerten, ungültigen oder manipulierten Fall einschließlich
@@ -158,10 +277,6 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   keiner künstlich erzeugt; ein nicht automatisierbarer relevanter Pfad wird
   mit geeigneter Integrations- oder manueller Prüfung und verbleibender
   Nachweislücke berichtet.
-- Zeitlich begrenzte Spikes und schwer isolierbare Nextcloud-Integration sind
-  im Skill ausdrücklich zu begründende Abweichungen. Übernommener Spike-Code
-  wird zuvor charakterisiert; deklarative Änderungen erhalten passende
-  Syntax-, Contract-, Layout- oder Sichtprüfungen.
 - Für neuen oder wesentlich geänderten ausführbaren Code werden mindestens
   85 Prozent Line-Coverage angestrebt. PHP und JavaScript werden getrennt
   ausgewiesen; Sicherheitsinvarianten sind vollständig abzudecken.
@@ -175,6 +290,12 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 
 ## Zustandsmodelle und Migrationen
 
+- Vor Kompatibilitäts- oder Migrationsarbeit gilt die kanonische
+  Entwicklungsphasenregel in `docs/architecture.md`, Abschnitt
+  „Entwicklungsphase und Kompatibilitätsbedarf“. Sie bestimmt zuerst, ob ein
+  Zustand überhaupt erhalten werden muss. Die folgenden Erhaltungs- und
+  Upgradepflichten gelten nur bei einem dort belegten Erhaltungsgrund;
+  andernfalls wird das kanonische Ziel über Fresh Install/Reinstall geprüft.
 - Vor Funktionen, die persistente Fachobjekte verändern, werden erlaubte und
   verbotene Ausgangszustände, Vorbedingungen, Zielzustand, Nebenwirkungen,
   Fehlerzustände, Wiederholungsverhalten und Nebenläufigkeitskonflikte
@@ -196,8 +317,10 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   relevanten Vorversion mit synthetischen Bestandsdaten, der fachlichen Daten-
   und Beziehungsintegrität, ungültiger beziehungsweise widersprüchlicher
   Altdaten und der Anwendung auf dem migrierten Schema.
-- Veröffentlichte Migrationen werden nicht nachträglich verändert.
-  Korrekturen erfolgen durch eine neue Migration.
+- Migrationen zu produktiv eingesetzten oder anderweitig konkret zu
+  erhaltenden Ständen werden nicht nachträglich verändert. Korrekturen erfolgen
+  durch eine neue Migration; rein interne Entwicklungsstände folgen der
+  genannten Phasenregel.
 
 ## DDEV, Hosting und Delivery
 
@@ -219,12 +342,17 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
 - Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
   je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
   richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
-- Vor der Veröffentlichung jedes Release-Candidates wird mit dem Skill
-  `verify-nextcloud-future-compatibility` gegen gepinnte offizielle
-  Nextcloud-Repositories die höchste lückenlos nachgewiesene künftige
-  Hauptversion je App bestimmt und als `max-version` in deren `info.xml`
-  aufgenommen. Rote, lückenhafte, veraltete oder nur statisch geprüfte
-  Nachweise blockieren die Veröffentlichung.
+- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den Entwicklungsstand; er ersetzt keine Release-Kompatibilitätsmatrix und erweitert keine Freigabe für DDEV-, Docker-, Nextcloud- oder `occ`-Änderungen.
+- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates mit dem Skill
+  `verify-nextcloud-future-compatibility` ausgeführt. Sie prüft den gesamten
+  deklarierten Bereich und jede offiziell benannte, testbare künftige
+  Hauptversion gegen gepinnte offizielle Nextcloud-Git-Quellen. Die höchste
+  lückenlos nachgewiesene künftige Hauptversion je App wird als `max-version`
+  in deren `info.xml` aufgenommen. Rote, lückenhafte, veraltete oder nur
+  statisch geprüfte Nachweise blockieren die Veröffentlichung. Außerhalb eines
+  Release-Candidate-Laufs entsteht aus dem Aktualitätscheck keine neue
+  `max-version`-Aussage.
+- `min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten. Die autoritative openDesk-Quelle und die aufgelöste Hauptversion werden im RC-Nachweis festgehalten; ein niedrigeres weiterhin belegtes Minimum darf erhalten bleiben.
 - `min-version` wird niemals automatisch angehoben. Ein belegtes Supportende,
   eine nicht mehr sicher reproduzierbare Plattform oder eine notwendige
   Abkehr von riskanten Kompatibilitätsschichten löst nur eine getrennte
@@ -232,8 +360,8 @@ Der vollständige Ablauf steht ausschließlich im Skill `test-driven-change`.
   nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung nach
   oben; eine bereits deklarierte oder ausdrücklich geforderte Zielversion
   blockiert bei Inkompatibilität den Release-Candidate.
-- Kein Release erfolgt mit rotem Delivery-Gate. AD-Suite-Bau und -Abnahme
-  folgen ausschließlich dem Skill `build-ad-suite-release`.
+- Kein Release erfolgt mit rotem Delivery-Gate. Filzmann-Full-Suite-Bau und -Abnahme
+  folgen ausschließlich dem Skill `build-flz-full-suite-release`.
 
 ## Stop-Regeln
 

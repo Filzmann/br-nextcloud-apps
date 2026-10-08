@@ -13,39 +13,50 @@ required_parent_files=(
     br-nextcloud-apps.code-workspace
     "$manifest"
     .codex/config.toml
-    .codex/agents/explorer.toml
+    .codex/agents/routine_worker.toml
+    .codex/agents/standard_worker.toml
+    .codex/agents/complex_worker.toml
+    .codex/agents/critical_reviewer.toml
     .codex/agents/reviewer.toml
     .agents/skills/create-nextcloud-app/SKILL.md
     .agents/skills/classify-shared-code/SKILL.md
     "$canonical_skill"
     "$canonical_tdd_skill"
     .agents/skills/verify-workspace/SKILL.md
-    .agents/skills/build-ad-suite-release/SKILL.md
+    .agents/skills/build-flz-full-suite-release/SKILL.md
     .agents/skills/verify-nextcloud-future-compatibility/SKILL.md
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
     docs/architecture.md
+    docs/app-repository-structure.md
+    docs/zukunftsplan.md
     docs/privacy-architecture.md
+    docs/privacy-provider-guide.md
     docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md
-    docs/plans/codex-structure-correction.md
-    docs/plans/codex-structure-migration.md
+    docs/architecture-decisions/0002-standalone-privacy-platform.md
+    docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md
     docs/workspace.md
     scripts/check-fast
     scripts/check-full
     scripts/check-workspace-structure
+    scripts/list-worktree-markdown-files
+    scripts/validate-nextcloud-support-range.php
     scripts/check-apps
-    scripts/check-ad-suite-delivery
-    scripts/verify-ad-suite-delivery.sh
+    scripts/check-flz-full-suite-delivery
+    scripts/verify-flz-full-suite-delivery.sh
     tests/check-codex-structure.sh
     tests/check-privacy-architecture-contract.sh
+    tests/check-ikt-privacy-portfolio-contract.sh
+    tests/check-nextcloud-support-range.sh
 )
 required_executables=(
     scripts/check-fast
     scripts/check-full
     scripts/check-workspace-structure
+    scripts/list-worktree-markdown-files
     scripts/check-apps
-    scripts/check-ad-suite-delivery
-    scripts/verify-ad-suite-delivery.sh
+    scripts/check-flz-full-suite-delivery
+    scripts/verify-flz-full-suite-delivery.sh
 )
 
 fail() {
@@ -158,36 +169,31 @@ def parse_skill(skill_path: Path) -> tuple[str, str]:
 rows = parse_manifest()
 manifest_paths = {row['path'] for row in rows}
 
-adrecruitment_rows = [
+flzrecruitment_rows = [
     row for row in rows
-    if row['path'] == 'adrecruitment'
+    if row['path'] == 'flzrecruitment'
     and row['kind'] == 'app'
-    and row['app_id'] == 'adrecruitment'
+    and row['app_id'] == 'flzrecruitment'
 ]
-if len(adrecruitment_rows) != 1:
-    fail('AD Recruitment muss genau einmal als adrecruitment registriert sein')
+if len(flzrecruitment_rows) != 1:
+    fail('Filzmann Recruitment muss genau einmal als flzrecruitment registriert sein')
 if any(row['path'] == 'recruitment' or row['app_id'] == 'recruitment' for row in rows):
     fail('Veraltete Recruitment-Repository- oder App-ID ist noch registriert')
 
 
 def markdown_files() -> list[tuple[Path, Path]]:
-    commands = (
-        ('git', 'ls-files', '*.md'),
-        ('git', 'ls-files', '--others', '--exclude-standard', '*.md'),
-    )
     files: set[tuple[Path, Path]] = set()
     for row in rows:
         repository = workspace if row['path'] == '.' else workspace / str(row['path'])
-        for command in commands:
-            result = subprocess.run(
-                ('git', '-C', str(repository), *command[1:]),
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            for line in result.stdout.splitlines():
-                if line:
-                    files.add((repository / line, repository))
+        result = subprocess.run(
+            (str(workspace / 'scripts/list-worktree-markdown-files'), str(repository)),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        for line in result.stdout.splitlines():
+            if line:
+                files.add((repository / line, repository))
     return sorted(files)
 
 
@@ -267,6 +273,22 @@ for row in rows:
         fail(f'AGENTS.md referenziert nicht lokale Skills in {row["path"]}: {sorted(missing_references)}')
 
     if row['kind'] == 'app':
+        required_app_files = (
+            'AGENTS.md',
+            'README.md',
+            'ROADMAP.md',
+            'CHANGELOG.md',
+            'LICENSE',
+            '.gitignore',
+            'appinfo/info.xml',
+            'docs/architecture.md',
+            'docs/manual-acceptance.md',
+        )
+        for required_file in required_app_files:
+            candidate = repo / required_file
+            if not candidate.is_file() or candidate.is_symlink():
+                fail(f'App-Pflichtdatei fehlt oder ist ein Symlink: {row["path"]}/{required_file}')
+
         for required in row['required_skills']:
             local_skill = skill_root / required / 'SKILL.md'
             if required not in skill_names or not local_skill.is_file():
@@ -276,9 +298,24 @@ for row in rows:
                 fail(f'Lokale Skill-Kopie weicht von der kanonischen Fassung ab: {row["path"]}/{required}')
         if 'vollständige Repository-Steuerung' not in agents_text:
             fail(f'Direkte Standalone-Steuerung ist nicht erklärt: {row["path"]}/AGENTS.md')
+        if '## Dokumentenverantwortung' not in agents_text:
+            fail(f'Dokumentenverantwortung fehlt: {row["path"]}/AGENTS.md')
         forbidden = ('Parent-Skill', 'Parent-`AGENTS.md` gilt ergaenzend', 'Parent-`AGENTS.md` gilt ergänzend')
         if any(fragment in agents_text for fragment in forbidden):
             fail(f'Unwirksame Parent-Laufzeitabhängigkeit in {row["path"]}/AGENTS.md')
+
+        readme_text = (repo / 'README.md').read_text(encoding='utf-8')
+        if '## Dokumentation' not in readme_text:
+            fail(f'Dokumentationsindex fehlt: {row["path"]}/README.md')
+
+        roadmap_text = (repo / 'ROADMAP.md').read_text(encoding='utf-8')
+        completed_patterns = (
+            r'(?im)^#{1,6}\s+.*\b(?:umgesetzt|erledigt|abgeschlossen|historisch)\b',
+            r'(?im)^\s*-\s*(?:Umgesetzt|Erledigt|Abgeschlossen):',
+            r'(?im)^Status(?:\s+seit)?\s*:.*\b(?:umgesetzt|implementiert|erledigt|abgeschlossen)\b',
+        )
+        if any(re.search(pattern, roadmap_text) for pattern in completed_patterns):
+            fail(f'ROADMAP.md enthält erledigte statt ausschließlich offener Arbeit: {row["path"]}')
 
 canonical_text = (workspace / '.agents/skills/work-in-nextcloud-app/SKILL.md').read_text(encoding='utf-8')
 required_contracts = (
@@ -385,6 +422,10 @@ required_parent_contracts = (
     'vollständige Ablauf steht ausschließlich im Skill',
     '`test-driven-change`',
     '`verify-nextcloud-future-compatibility`',
+    'bei derselben fachlichen Änderung mitgepflegt',
+    'vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates',
+    '`min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten',
+    'regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft',
     '`min-version` wird niemals automatisch angehoben',
     'nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung',
 )
@@ -400,6 +441,8 @@ for contract in (
     'work-in-nextcloud-app,test-driven-change',
     'byte-for-byte',
     'REQUIRE_TRACKED_STRUCTURE=1 scripts/check-workspace-structure',
+    'PersonalDataProvider',
+    'PermissionProvider',
     'Do not report a new app as complete',
 ):
     if contract not in create_skill_text:
@@ -433,13 +476,21 @@ for contract in (
     'lower-bound review',
     'outside the declared range',
     'already declared or is an explicit release target',
+    'one concrete action matrix',
+    'separate columns for file changes',
+    'once explicitly granted, retain it for the whole run',
+    'Routine development currency check',
+    'latest officially released Nextcloud',
+    'does not produce a release compatibility verdict',
+    'Run the full compatibility matrix while creating every publishable release candidate',
+    'current openDesk Nextcloud major',
 ):
     if contract not in future_compatibility_skill_text:
         fail(f'Verbindlicher Zukunftskompatibilitäts-Workflow fehlt: {contract}')
 
-release_skill_text = (workspace / '.agents/skills/build-ad-suite-release/SKILL.md').read_text(encoding='utf-8')
+release_skill_text = (workspace / '.agents/skills/build-flz-full-suite-release/SKILL.md').read_text(encoding='utf-8')
 if '`verify-nextcloud-future-compatibility`' not in release_skill_text:
-    fail('AD-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
+    fail('Filzmann-Full-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
 
 shared_code_decision = 'docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md'
 shared_code_text = (workspace / shared_code_decision).read_text(encoding='utf-8')
@@ -499,7 +550,7 @@ for contract in (
     'Lizenzinformationen',
     'sauberen Installation',
     'Official App-Store single-app candidate',
-    'Do not run or cite the AD-Suite builder or Delivery Gate as proof',
+    'Do not run or cite the Filzmann Full Suite builder or Delivery Gate as proof',
     'Parent currently has no generic App-Store builder',
     'no publishable Store candidate can be produced',
 ):
@@ -521,14 +572,16 @@ for contract in (
         fail(f'Verbindliche Workspace-Dokumentation fehlt: {contract}')
 
 check_fast_text = (workspace / 'scripts/check-fast').read_text(encoding='utf-8')
-delivery_wrapper_text = (workspace / 'scripts/check-ad-suite-delivery').read_text(encoding='utf-8')
-delivery_verify_text = (workspace / 'scripts/verify-ad-suite-delivery.sh').read_text(encoding='utf-8')
+delivery_wrapper_text = (workspace / 'scripts/check-flz-full-suite-delivery').read_text(encoding='utf-8')
+delivery_verify_text = (workspace / 'scripts/verify-flz-full-suite-delivery.sh').read_text(encoding='utf-8')
 parent_contract_scripts = (
-    'check-ad-suite-coverage-baseline.sh',
-    'check-ad-suite-ci-contract.sh',
-    'check-ad-suite-standalone-contract.sh',
-    'check-ad-product-installer.sh',
-    'check-ad-release-pruning.sh',
+    'check-parent-governance-contract.sh',
+    'check-flz-full-suite-coverage-baseline.sh',
+    'check-flz-full-suite-ci-contract.sh',
+    'check-flz-full-suite-standalone-contract.sh',
+    'check-flz-product-installer.sh',
+    'check-nextcloud-support-range.sh',
+    'check-flz-release-pruning.sh',
 )
 for script in parent_contract_scripts:
     if script not in check_fast_text:
@@ -541,12 +594,12 @@ if 'PARENT_FAST_CHECK_VERIFIED=1' not in delivery_wrapper_text or 'PARENT_FAST_C
     fail('Delivery-Verify muss durch den erfolgreich geprüften Parent-Fast-Pfad geschützt sein')
 for contract in (
     'RUN_INTEGRATION_SMOKES',
-    'adplaner/tests/access-matrix-ddev-smoke.sh',
-    'adplaner/tests/integration-ddev-smoke.sh',
-    'adcalendar/tests/admin-defaults-ddev-smoke.sh',
-    'adcalendar/tests/integration-ddev-smoke.sh',
-    'adurlaub/tests/migration-schema-ddev-smoke.sh',
-    'adrecruitment/tests/ddev-smoke.sh',
+    'flzplaner/tests/access-matrix-ddev-smoke.sh',
+    'flzplaner/tests/integration-ddev-smoke.sh',
+    'flzcalendar/tests/admin-defaults-ddev-smoke.sh',
+    'flzcalendar/tests/integration-ddev-smoke.sh',
+    'flzurlaub/tests/migration-schema-ddev-smoke.sh',
+    'flzrecruitment/tests/ddev-smoke.sh',
     'RECR_BASE_URL=',
 ):
     if contract not in delivery_verify_text:
@@ -571,17 +624,32 @@ if 'sandbox_workspace_write' in config:
 agents_config = config.get('agents')
 if not isinstance(agents_config, dict):
     fail('.codex/config.toml: agents muss eine Tabelle sein')
-if agents_config.get('max_depth') != 1 or agents_config.get('max_threads') != 3:
-    fail('Subagent-Grenzen müssen max_depth=1 und max_threads=3 sein')
-expected_agents = {'explorer', 'reviewer'}
-declared = set(agents_config) - {'max_depth', 'max_threads'}
-if declared != expected_agents:
-    fail(f'Erwartete Agenten sind explorer/reviewer, gefunden: {sorted(declared)}')
-for name in sorted(expected_agents):
+if agents_config.get('enabled') is not True:
+    fail('Subagent-Routing muss explizit aktiviert sein')
+if agents_config.get('max_concurrent_threads_per_session') != 3:
+    fail('Subagent-Grenze muss max_concurrent_threads_per_session=3 sein')
+if 'max_threads' in agents_config or 'max_depth' in agents_config:
+    fail('Veraltete oder nicht dokumentierte Subagent-Grenzen sind unzulässig')
+execution_routing = {
+    'ROUTINE': ('routine_worker', 'workspace-write', 'low'),
+    'STANDARD': ('standard_worker', 'workspace-write', 'medium'),
+    'COMPLEX': ('complex_worker', 'workspace-write', 'high'),
+    'CRITICAL_REVIEW': ('critical_reviewer', 'read-only', 'high'),
+}
+scalar_agent_settings = {'enabled', 'max_concurrent_threads_per_session'}
+declared = set(agents_config) - scalar_agent_settings
+expected_agents = {route[0] for route in execution_routing.values()}
+support_agents = {'reviewer'}
+if declared != expected_agents | support_agents:
+    fail(f'Erwartete Klassenrollen fehlen oder Parallelrollen existieren: {sorted(declared)}')
+configured_models: list[tuple[str, Path]] = []
+for execution_class, (name, sandbox_mode, reasoning_effort) in execution_routing.items():
     declaration = agents_config.get(name)
     if not isinstance(declaration, dict):
         fail(f'agents.{name} muss eine Tabelle sein')
-    require_string(declaration.get('description'), f'agents.{name}.description')
+    description = require_string(declaration.get('description'), f'agents.{name}.description')
+    if execution_class not in description:
+        fail(f'agents.{name}.description muss die Ausführungsklasse {execution_class} abbilden')
     relative = Path(require_string(declaration.get('config_file'), f'agents.{name}.config_file'))
     if relative.is_absolute():
         fail(f'agents.{name}.config_file muss relativ sein')
@@ -592,15 +660,86 @@ for name in sorted(expected_agents):
         role = tomllib.load(handle)
     if role.get('name') != name:
         fail(f'{role_path.relative_to(workspace)}: name muss {name} sein')
-    if role.get('sandbox_mode') != 'read-only':
-        fail(f'{role_path.relative_to(workspace)}: sandbox_mode muss read-only sein')
+    model = require_string(role.get('model'), f'{role_path}: model')
+    if not re.fullmatch(r'gpt-[a-z0-9.-]+', model):
+        fail(f'{role_path.relative_to(workspace)}: ungültiger Modellbezeichner')
+    configured_models.append((model, role_path))
+    if role.get('model_reasoning_effort') != reasoning_effort:
+        fail(f'{role_path.relative_to(workspace)}: reasoning muss {reasoning_effort} sein')
+    if role.get('sandbox_mode') != sandbox_mode:
+        fail(f'{role_path.relative_to(workspace)}: sandbox_mode muss {sandbox_mode} sein')
     instructions = require_string(role.get('developer_instructions'), f'{role_path}: developer_instructions')
-    for required_phrase in ('Do not edit files', 'access the network', 'spawn subagents'):
+    for required_phrase in ('Read the applicable AGENTS.md', 'Do not spawn subagents'):
         if required_phrase not in instructions:
             fail(f'{role_path.relative_to(workspace)}: Rollenverbot fehlt: {required_phrase}')
+    if execution_class != 'CRITICAL_REVIEW':
+        for required_phrase in ('ESCALATION_REQUIRED', 'Security', 'permissions', 'privacy', 'migration', 'shared contract'):
+            if required_phrase not in instructions:
+                fail(f'{role_path.relative_to(workspace)}: Eskalationsvertrag fehlt: {required_phrase}')
+    elif 'Do not edit files' not in instructions:
+        fail(f'{role_path.relative_to(workspace)}: Critical Review muss Änderungen verbieten')
     forbidden_keys = {'writable_roots', 'add_dir', 'add_dirs', 'sandbox_workspace_write'}
     if forbidden_keys.intersection(role):
         fail(f'{role_path.relative_to(workspace)} enthält schreibende Sandbox-Optionen')
+
+reviewer_declaration = agents_config.get('reviewer')
+if not isinstance(reviewer_declaration, dict) or 'approval-review support role only' not in require_string(reviewer_declaration.get('description'), 'agents.reviewer.description'):
+    fail('reviewer muss auf die Codex-Freigabeprüfung begrenzt sein')
+reviewer_relative = Path(require_string(reviewer_declaration.get('config_file'), 'agents.reviewer.config_file'))
+reviewer_path = (config_path.parent / reviewer_relative).resolve()
+if reviewer_relative.is_absolute() or not reviewer_path.is_relative_to(config_path.parent.resolve()) or not reviewer_path.is_file():
+    fail('Ungültiger Agentpfad für reviewer')
+with reviewer_path.open('rb') as handle:
+    reviewer_role = tomllib.load(handle)
+if reviewer_role.get('name') != 'reviewer' or reviewer_role.get('sandbox_mode') != 'read-only':
+    fail('reviewer muss die read-only Codex-Freigaberolle bleiben')
+reviewer_model = require_string(reviewer_role.get('model'), f'{reviewer_path}: model')
+if not re.fullmatch(r'gpt-[a-z0-9.-]+', reviewer_model) or reviewer_role.get('model_reasoning_effort') != 'high':
+    fail('reviewer braucht ein explizites Modell und high reasoning')
+reviewer_instructions = require_string(reviewer_role.get('developer_instructions'), f'{reviewer_path}: developer_instructions')
+for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE', 'Do not edit files', 'spawn subagents'):
+    if required_phrase not in reviewer_instructions:
+        fail(f'{reviewer_path.relative_to(workspace)}: Freigabegrenze fehlt: {required_phrase}')
+configured_models.append((reviewer_model, reviewer_path))
+
+for required_phrase in (
+    '## KI-Ausführungsrouting',
+    '`ROUTINE`',
+    '`STANDARD`',
+    '`COMPLEX`',
+    '`CRITICAL_REVIEW`',
+    'execution_class',
+    'ROUTING_FAILED',
+    'ESCALATION_REQUIRED',
+    'nicht selbst ausführen',
+    'bereits gültig klassifiziert',
+):
+    if required_phrase not in parent_text:
+        fail(f'Root-AGENTS.md: Routingvertrag fehlt: {required_phrase}')
+
+tracked_parent_files = subprocess.run(
+    ('git', 'ls-files'),
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines()
+untracked_parent_files = subprocess.run(
+    ('git', 'ls-files', '--others', '--exclude-standard'),
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines()
+for relative_text_path in sorted(set(tracked_parent_files + untracked_parent_files)):
+    candidate = workspace / relative_text_path
+    if not candidate.is_file() or candidate in {role_path for _, role_path in configured_models}:
+        continue
+    try:
+        candidate_text = candidate.read_text(encoding='utf-8')
+    except UnicodeDecodeError:
+        continue
+    for model, _ in configured_models:
+        if model in candidate_text:
+            fail(f'Konkreter Modellname außerhalb der zentralen Rollenpolicy: {relative_text_path}')
 PY
 
 tracking_warning=0
@@ -625,6 +764,7 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
 
     control_files=(AGENTS.md)
     if [[ "$kind" == 'app' ]]; then
+        control_files+=(README.md ROADMAP.md CHANGELOG.md LICENSE .gitignore appinfo/info.xml docs/architecture.md docs/manual-acceptance.md)
         IFS=',' read -r -a skills <<< "$required_skills"
         for required_skill in "${skills[@]}"; do
             control_files+=(".agents/skills/$required_skill/SKILL.md")
@@ -681,7 +821,7 @@ fi
 while IFS= read -r markdown; do
     fences="$(grep -c '^```' "$markdown" || true)"
     (( fences % 2 == 0 )) || fail "Nicht geschlossenes Markdown-Codefence: $markdown"
-done < <({ git ls-files '*.md'; git ls-files --others --exclude-standard '*.md'; } | sort -u)
+done < <(scripts/list-worktree-markdown-files .)
 
 if (( tracking_warning )); then
     echo 'STRUKTUR VORHANDEN – NICHT FREIGABEFÄHIG: PFLICHTDATEIEN UNGETRACKT'

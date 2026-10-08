@@ -1,0 +1,329 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+evidence_file=''
+cache_dir="${SECURITY_SCANNER_CACHE_DIR:-$workspace/.cache/security-scanners}"
+tools_manifest="$workspace/security-compliance/scanner-tools.json"
+analysis_exceptions="$workspace/security-compliance/analysis-exceptions.json"
+vulnerability_exceptions="$workspace/security-compliance/vulnerability-exceptions.json"
+rules="$workspace/security-compliance/semgrep-rules.yml"
+gitleaks_config="$workspace/security-compliance/gitleaks.toml"
+gitleaks_ignore="$workspace/security-compliance/gitleaks-ignore.txt"
+osv_config="$workspace/security-compliance/osv-scanner.toml"
+inventory_inspector="$workspace/scripts/inspect-third-party-inventory.php"
+declare -a requested_repositories=()
+
+while (( $# )); do
+    case "$1" in
+        --evidence-file) evidence_file="$2"; shift 2 ;;
+        --cache-dir) cache_dir="$2"; shift 2 ;;
+        --repository) requested_repositories+=("$2"); shift 2 ;;
+        --analysis-exceptions) analysis_exceptions="$2"; shift 2 ;;
+        --vulnerability-exceptions) vulnerability_exceptions="$2"; shift 2 ;;
+        *) echo "Unbekannte Option: $1" >&2; exit 2 ;;
+    esac
+done
+if [[ -z "$evidence_file" ]]; then
+    echo 'Verwendung: scripts/run-security-scanners --evidence-file pfad [--repository id=pfad ...]' >&2
+    exit 2
+fi
+if [[ -e "$evidence_file" || -L "$evidence_file" ]]; then
+    echo "Scanner-Evidence-Ziel existiert bereits: $evidence_file" >&2
+    exit 1
+fi
+
+declare -a repository_ids=()
+declare -a repository_paths=()
+if (( ${#requested_repositories[@]} )); then
+    for repository in "${requested_repositories[@]}"; do
+        if [[ "$repository" != *=* ]]; then
+            echo "Ungültiger Repositoryparameter: $repository" >&2
+            exit 2
+        fi
+        repository_ids+=("${repository%%=*}")
+        repository_paths+=("${repository#*=}")
+    done
+else
+    php "$workspace/scripts/validate-security-compliance.php" \
+        --analysis-exceptions "$analysis_exceptions" \
+        --exceptions "$vulnerability_exceptions" >/dev/null
+    repository_ids+=(parent)
+    repository_paths+=("$workspace")
+    while IFS=$'\t' read -r path kind app_id required_skills; do
+        [[ "$path" == 'path' || "$kind" != 'app' ]] && continue
+        repository_ids+=("$app_id")
+        repository_paths+=("$workspace/$path")
+    done < "$workspace/config/workspace-repositories.tsv"
+fi
+
+declare -A seen_repositories=()
+for index in "${!repository_ids[@]}"; do
+    repository_id="${repository_ids[$index]}"
+    repository_path="${repository_paths[$index]}"
+    if [[ ! "$repository_id" =~ ^[a-z0-9][a-z0-9_-]{0,63}$ ]]; then
+        echo 'Ungültige Scanner-Repository-ID.' >&2
+        exit 2
+    fi
+    if [[ -n "${seen_repositories[$repository_id]:-}" ]]; then
+        echo "Doppelte Scanner-Repository-ID: $repository_id" >&2
+        exit 2
+    fi
+    if [[ ! -d "$repository_path/.git" ]]; then
+        echo "Scanner-Repository fehlt oder ist kein Git-Worktree: $repository_id" >&2
+        exit 1
+    fi
+    seen_repositories[$repository_id]=1
+    repository_paths[$index]="$(cd "$repository_path" && pwd -P)"
+done
+
+case "${SECURITY_SCANNER_TEST_MODE:-0}" in
+    0|'') execution_mode='production' ;;
+    1) execution_mode='test' ;;
+    *) echo 'SECURITY_SCANNER_TEST_MODE muss 0 oder 1 sein.' >&2; exit 2 ;;
+esac
+
+if [[ "$execution_mode" == 'test' ]]; then
+    test_bin_dir="${SECURITY_SCANNER_TEST_BIN_DIR:-}"
+    if [[ -z "$test_bin_dir" ]]; then
+        echo 'SECURITY_SCANNER_TEST_MODE braucht SECURITY_SCANNER_TEST_BIN_DIR.' >&2
+        exit 2
+    fi
+    gitleaks_bin="$test_bin_dir/gitleaks"
+    osv_bin="$test_bin_dir/osv-scanner"
+    semgrep_test_bin="$test_bin_dir/semgrep"
+    for binary in "$gitleaks_bin" "$osv_bin" "$semgrep_test_bin"; do
+        [[ -x "$binary" && ! -L "$binary" ]] || { echo "Testscanner fehlt: $binary" >&2; exit 2; }
+    done
+else
+    bin_dir="$($workspace/scripts/install-security-scanners --cache-dir "$cache_dir")"
+    gitleaks_bin="$bin_dir/gitleaks"
+    osv_bin="$bin_dir/osv-scanner"
+    semgrep_test_bin=''
+    command -v docker >/dev/null 2>&1 || { echo 'Docker fehlt für den digest-gepinnten Semgrep-Scanner.' >&2; exit 1; }
+fi
+
+temporary="$(mktemp -d)"
+cleanup() {
+    rm -rf "$temporary"
+}
+trap cleanup EXIT
+scanner_home="$temporary/scanner-home"
+scanner_config_home="$temporary/scanner-config"
+scanner_cache_home="$temporary/scanner-cache"
+scanner_tmp="$temporary/scanner-tmp"
+mkdir -p "$scanner_home" "$scanner_config_home" "$scanner_cache_home" "$scanner_tmp"
+scanner_environment=(
+    env -i
+    "HOME=$scanner_home"
+    "XDG_CONFIG_HOME=$scanner_config_home"
+    "XDG_CACHE_HOME=$scanner_cache_home"
+    "TMPDIR=$scanner_tmp"
+    'PATH=/usr/bin:/bin'
+    'LANG=C'
+    'LC_ALL=C'
+)
+if [[ "$execution_mode" == 'test' ]]; then
+    for variable in MOCK_GITLEAKS_ERROR MOCK_GITLEAKS_FINDING MOCK_SEMGREP_ERROR MOCK_SEMGREP_FINDING \
+        MOCK_SEMGREP_WARNING MOCK_SEMGREP_REPORT_ERROR MOCK_OSV_ERROR MOCK_OSV_FINDING MOCK_OSV_MALFORMED \
+        MOCK_OSV_PURL_FINDING; do
+        if [[ -v "$variable" ]]; then
+            scanner_environment+=("$variable=${!variable}")
+        fi
+    done
+fi
+reports_manifest="$temporary/reports.tsv"
+printf 'scanner\trepository\trepository_path\tsource\treport\texit_code\n' > "$reports_manifest"
+inventories_manifest="$temporary/inventories.tsv"
+printf 'repository\tinventory_path\tpurl\tbundled_root\ttree_sha256\tfile_count\n' > "$inventories_manifest"
+counter=0
+
+record_report() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "$5" "$6" >> "$reports_manifest"
+}
+
+semgrep_image="$(php -r '$data=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR); echo $data["tools"]["semgrep"]["image"], "@", $data["tools"]["semgrep"]["image_digest"];' "$tools_manifest")"
+
+for index in "${!repository_ids[@]}"; do
+    repository_id="${repository_ids[$index]}"
+    repository_path="${repository_paths[$index]}"
+
+    inventory_path='resources/third-party-components.cdx.json'
+    inventory_file="$repository_path/$inventory_path"
+    inventory_report="$temporary/$repository_id-third-party-inventory.json"
+    declare -a third_party_roots=()
+    if [[ -e "$inventory_file" || -L "$inventory_file" ]]; then
+        php "$inventory_inspector" \
+            --repository-root "$repository_path" \
+            --owner "$repository_id" \
+            --output "$inventory_report"
+        mapfile -d '' -t third_party_roots < <(php -r '
+            $data=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            foreach($data["components"] as $component) echo $component["bundled_root"],"\0";
+        ' "$inventory_report")
+        php -r '
+            $data=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            $handle=fopen($argv[2],"ab");
+            foreach($data["components"] as $component){
+                fputcsv($handle,[$argv[3],$data["inventory_path"],$component["purl"],$component["bundled_root"],$component["tree_sha256"],(string)$component["file_count"]],"\t","\"","\\");
+            }
+            fclose($handle);
+        ' "$inventory_report" "$inventories_manifest" "$repository_id"
+    fi
+
+    scan_tree="$temporary/sources/$repository_id"
+    semgrep_tree="$temporary/semgrep-sources/$repository_id"
+    mkdir -p "$scan_tree" "$semgrep_tree"
+    source_list="$temporary/$repository_id-files.list"
+    semgrep_source_list="$temporary/$repository_id-semgrep-files.list"
+    : > "$source_list"
+    : > "$semgrep_source_list"
+    while IFS= read -r -d '' source_file; do
+        if [[ -e "$repository_path/$source_file" || -L "$repository_path/$source_file" ]]; then
+            printf '%s\0' "$source_file" >> "$source_list"
+            first_party_source=1
+            for third_party_root in "${third_party_roots[@]}"; do
+                if [[ "$source_file" == "$third_party_root" || "$source_file" == "$third_party_root/"* ]]; then
+                    first_party_source=0
+                    break
+                fi
+            done
+            if (( first_party_source )); then
+                printf '%s\0' "$source_file" >> "$semgrep_source_list"
+            fi
+        fi
+    done < <(git -C "$repository_path" ls-files --cached --others --exclude-standard -z)
+    source_tar="$temporary/$repository_id-source.tar"
+    tar -C "$repository_path" --null --no-recursion -cf "$source_tar" --files-from="$source_list"
+    tar -C "$scan_tree" -xf "$source_tar"
+    semgrep_source_tar="$temporary/$repository_id-semgrep-source.tar"
+    tar -C "$repository_path" --null --no-recursion -cf "$semgrep_source_tar" --files-from="$semgrep_source_list"
+    tar -C "$semgrep_tree" -xf "$semgrep_source_tar"
+    if find "$scan_tree" -type l -print -quit | grep -q .; then
+        echo "Symlink im Scanner-Quellumfang gefunden: $repository_id" >&2
+        exit 1
+    fi
+
+    counter=$((counter + 1))
+    gitleaks_report="$temporary/$counter-gitleaks.json"
+    set +e
+    "${scanner_environment[@]}" "$gitleaks_bin" dir --no-banner --no-color --redact=100 \
+        --config "$gitleaks_config" --gitleaks-ignore-path "$gitleaks_ignore" \
+        --ignore-gitleaks-allow --report-format json --report-path "$gitleaks_report" \
+        --exit-code 0 "$scan_tree" \
+        >"$temporary/$counter-gitleaks.stdout" 2>"$temporary/$counter-gitleaks.stderr"
+    gitleaks_status=$?
+    set -e
+    record_report gitleaks "$repository_id" "$scan_tree" . "$gitleaks_report" "$gitleaks_status"
+
+    counter=$((counter + 1))
+    semgrep_report="$temporary/$counter-semgrep.json"
+    set +e
+    if [[ -n "$semgrep_test_bin" ]]; then
+        "${scanner_environment[@]}" "$semgrep_test_bin" scan --quiet --config "$rules" \
+            --disable-nosem --no-git-ignore --x-ignore-semgrepignore-files \
+            --json --metrics=off --disable-version-check "$semgrep_tree" \
+            >"$semgrep_report" 2>"$temporary/$counter-semgrep.stderr"
+    else
+        "${scanner_environment[@]}" docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --tmpfs /tmp:rw,noexec,nosuid,size=256m \
+            --tmpfs /home/semgrep:rw,noexec,nosuid,size=32m,uid=1000,gid=1000,mode=0700 \
+            --env SEMGREP_SETTINGS_FILE=/tmp/settings.yml --env XDG_CACHE_HOME=/tmp/cache \
+            --volume "$semgrep_tree:/src:ro" --volume "$rules:/rules/semgrep-rules.yml:ro" \
+            "$semgrep_image" semgrep scan --quiet --config /rules/semgrep-rules.yml --json \
+            --disable-nosem --no-git-ignore --x-ignore-semgrepignore-files \
+            --metrics=off --disable-version-check /src \
+            >"$semgrep_report" 2>"$temporary/$counter-semgrep.stderr"
+    fi
+    semgrep_status=$?
+    set -e
+    record_report semgrep "$repository_id" "$semgrep_tree" . "$semgrep_report" "$semgrep_status"
+
+    lockfile_count=0
+    dependency_input_count=0
+    while IFS= read -r -d '' relative_lockfile; do
+        case "${relative_lockfile##*/}" in
+            composer.lock|package-lock.json|npm-shrinkwrap.json|yarn.lock|pnpm-lock.yaml|Pipfile.lock|poetry.lock|go.sum|Cargo.lock) ;;
+            *) continue ;;
+        esac
+        lockfile_count=$((lockfile_count + 1))
+        dependency_input_count=$((dependency_input_count + 1))
+        counter=$((counter + 1))
+        osv_report="$temporary/$counter-osv.json"
+        set +e
+        "${scanner_environment[@]}" "$osv_bin" scan source \
+            --config "$osv_config" --lockfile "$repository_path/$relative_lockfile" \
+            --format json --output-file "$osv_report" --verbosity error \
+            >"$temporary/$counter-osv.stdout" 2>"$temporary/$counter-osv.stderr"
+        osv_status=$?
+        set -e
+        record_report osv-scanner "$repository_id" "$repository_path" "$relative_lockfile" "$osv_report" "$osv_status"
+    done < <(git -C "$repository_path" ls-files --cached --others --exclude-standard -z)
+    if [[ -f "$inventory_report" ]]; then
+        dependency_input_count=$((dependency_input_count + 1))
+        counter=$((counter + 1))
+        osv_report="$temporary/$counter-osv-inventory.json"
+        set +e
+        "${scanner_environment[@]}" "$osv_bin" scan source \
+            --config "$osv_config" --sbom "$inventory_file" \
+            --format json --output-file "$osv_report" --verbosity error \
+            >"$temporary/$counter-osv.stdout" 2>"$temporary/$counter-osv.stderr"
+        osv_status=$?
+        set -e
+        record_report osv-scanner "$repository_id" "$repository_path" "$inventory_path" "$osv_report" "$osv_status"
+    fi
+    if (( dependency_input_count == 0 )); then
+        counter=$((counter + 1))
+        osv_report="$temporary/$counter-osv-empty.json"
+        printf '%s\n' '{"results":[]}' > "$osv_report"
+        record_report osv-scanner "$repository_id" "$repository_path" . "$osv_report" 0
+    fi
+done
+
+set +e
+php "$workspace/scripts/evaluate-security-scan.php" \
+    --reports-manifest "$reports_manifest" \
+    --output "$evidence_file" \
+    --tools "$tools_manifest" \
+    --execution-mode "$execution_mode" \
+    --inventories-manifest "$inventories_manifest" \
+    --analysis-exceptions "$analysis_exceptions" \
+    --vulnerability-exceptions "$vulnerability_exceptions"
+evaluation_status=$?
+set -e
+
+if (( evaluation_status != 0 )); then
+    php -r '
+        $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($data["scanners"] as $scanner => $status) {
+            if ($status["status"] === "error") fwrite(STDERR, ucfirst($scanner) . " konnte nicht vollständig ausgeführt werden.\n");
+        }
+        $warningScanners = [];
+        foreach ($data["warnings"] as $warning) {
+            $warningScanners[$warning["scanner"]] = true;
+        }
+        foreach (array_keys($warningScanners) as $scanner) {
+            fwrite(STDERR, ucfirst($scanner) . " wurde wegen Analysewarnungen nur teilweise ausgeführt.\n");
+        }
+        $reported = 0;
+        $remaining = 0;
+        foreach ($data["findings"] as $finding) {
+            if ($finding["accepted"]) continue;
+            if ($reported >= 20) {
+                $remaining++;
+                continue;
+            }
+            $line = isset($finding["line"]) ? ":" . $finding["line"] : "";
+            fwrite(STDERR, "Nicht akzeptierter {$finding["scanner"]}-Fund: {$finding["repository"]}/{$finding["path"]}{$line} {$finding["finding_id"]} ({$finding["severity"]}, Fingerprint {$finding["fingerprint"]})\n");
+            $reported++;
+        }
+        if ($remaining > 0) fwrite(STDERR, "Weitere nicht akzeptierte Funde stehen ausschließlich in der redigierten Evidence: {$remaining}\n");
+    ' "$evidence_file"
+    exit "$evaluation_status"
+fi
+
+if [[ "$execution_mode" == 'test' ]]; then
+    echo "Security-Scanner: DIAGNOSTIC – nicht releasefähige Test-Evidence: $evidence_file"
+else
+    echo "Security-Scanner: OK – Evidence: $evidence_file"
+fi

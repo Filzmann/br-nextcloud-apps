@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo "Verwendung: $0 [--workspace <root>] [markdown-datei ...]" >&2
+}
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+documents=()
+while (( $# > 0 )); do
+    case "$1" in
+        --workspace)
+            [[ $# -ge 2 ]] || { usage; exit 2; }
+            workspace="$(cd "$2" && pwd)"
+            shift 2
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --*)
+            usage
+            exit 2
+            ;;
+        *)
+            documents+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if (( ${#documents[@]} == 0 )); then
+    [[ -f "$workspace/README.md" ]] && documents+=("$workspace/README.md")
+    while IFS= read -r document; do
+        documents+=("$document")
+    done < <(find "$workspace/docs" -type f -name '*.md' -print | sort)
+fi
+
+repo_roots=()
+if [[ -f "$workspace/config/workspace-repositories.tsv" ]]; then
+    while IFS=$'\t' read -r path _; do
+        [[ "$path" == path || "$path" == '.' || -z "$path" ]] && continue
+        repo_roots+=("$path")
+    done < "$workspace/config/workspace-repositories.tsv"
+fi
+
+is_repo_path() {
+    local token="$1"
+    local repo
+    for repo in "${repo_roots[@]}"; do
+        [[ "$token" == "$repo" || "$token" == "$repo/"* ]] && return 0
+    done
+    return 1
+}
+
+status=0
+while IFS=$'\t' read -r document line token; do
+    candidate="${token%% *}"
+    candidate="${candidate%,}"
+    candidate="${candidate%;}"
+    candidate="${candidate%:}"
+
+    [[ -n "$candidate" ]] || continue
+    [[ "$candidate" == *'<'* || "$candidate" == *'>'* || "$candidate" == *'${'* ]] && continue
+    [[ "$candidate" == http://* || "$candidate" == https://* || "$candidate" == /* ]] && continue
+
+    exact=0
+    target=''
+    case "$candidate" in
+        ../*)
+            exact=1
+            target="$(dirname "$document")/$candidate"
+            ;;
+        README.md|AGENTS.md|.gitignore|*.code-workspace|.agents/*|.codex/*|config/*|docs/*|scripts/*|tests/*)
+            exact=1
+            target="$workspace/$candidate"
+            ;;
+        *)
+            if is_repo_path "$candidate"; then
+                exact=1
+                target="$workspace/$candidate"
+            fi
+            ;;
+    esac
+
+    if (( exact )); then
+        if [[ ! -e "$target" ]]; then
+            echo "$document:$line: exakte technische Referenz existiert nicht: $candidate" >&2
+            status=1
+        fi
+        continue
+    fi
+
+    # Basenames ohne Repository- oder Verzeichniskontext sind absichtlich nur
+    # heuristisch: Derselbe Name kann in mehreren getrennten Apps vorkommen.
+    case "$candidate" in
+        *Job.php|*.sh)
+            echo "$document:$line: WARNUNG: technische Referenz ohne eindeutigen Pfad: $candidate" >&2
+            ;;
+    esac
+done < <(
+    awk '{
+        rest = $0
+        while (match(rest, /`[^`]+`/)) {
+            token = substr(rest, RSTART + 1, RLENGTH - 2)
+            print FILENAME "\t" FNR "\t" token
+            rest = substr(rest, RSTART + RLENGTH)
+        }
+    }' "${documents[@]}"
+)
+
+exit "$status"

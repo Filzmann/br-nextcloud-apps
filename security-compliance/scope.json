@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-09-15",
+  "certification": {
+    "status": "not-certified",
+    "claim": "BSI-IT-Grundschutz-orientierter Entwicklungsprozess"
+  },
+  "sources": {
+    "repository_inventory": "config/workspace-repositories.tsv",
+    "flz_product_catalog": "localbase/resources/flz-product-catalog.json",
+    "architecture": "docs/architecture.md",
+    "privacy": "docs/privacy-architecture.md"
+  },
+  "platform_boundaries": [
+    {
+      "capability": "authentication-session-identity",
+      "owner": "nextcloud-platform",
+      "application_responsibility": "consume public OCP session and identity contracts; never create a parallel identity system"
+    },
+    {
+      "capability": "csrf-framework-baseline",
+      "owner": "nextcloud-platform",
+      "application_responsibility": "retain framework CSRF protection on writes and justify every read-only exemption"
+    },
+    {
+      "capability": "domain-authorization-and-scope",
+      "owner": "filzmann-application",
+      "application_responsibility": "enforce actor, target scope and concrete capability server-side with deny-by-default semantics"
+    },
+    {
+      "capability": "application-data-and-privacy",
+      "owner": "filzmann-application",
+      "application_responsibility": "own data, retention decisions, provider projection, validation, logging minimization and app-local audit"
+    },
+    {
+      "capability": "hosting-operating-system-database-reverse-proxy-backup",
+      "owner": "deployment-operator",
+      "application_responsibility": "declare compatible platform range and avoid embedding environment assumptions"
+    }
+  ],
+  "external_services": [
+    "Nextcloud and its public OCP APIs",
+    "configured LDAP or other Nextcloud user backends",
+    "Nextcloud mail service",
+    "OpenHolidays API through the single LocalBase adapter",
+    "user-configured CalDAV endpoints including Kopano",
+    "Google Calendar OAuth/API where explicitly configured",
+    "GitHub Actions and referenced build actions"
+  ],
+  "out_of_scope": [
+    "Nextcloud core implementation and infrastructure hardening",
+    "operating system, database, reverse proxy, backup and identity-provider operation",
+    "WordPress legacy runtime and legacy data import",
+    "formal BSI certification and external penetration testing"
+  ],
+  "support_policy": {
+    "available_states": ["supported", "security-fixes-only", "end-of-life"],
+    "current_state": "development",
+    "decision": "DECISION-REQUIRED",
+    "source_for_platform_versions": "each appinfo/info.xml plus reproducible future-compatibility evidence"
+  },
+  "applications": [
+    {"id": "brtop", "repository": "brtop", "kind": "domain-app"},
+    {"id": "flzplaner", "repository": "flzplaner", "kind": "domain-app"},
+    {"id": "brstunden", "repository": "brstunden", "kind": "domain-app"},
+    {"id": "localbase", "repository": "localbase", "kind": "shared-runtime-app"},
+    {"id": "flz_permission_matrix", "repository": "flz_permission_matrix", "kind": "independent-runtime-app"},
+    {"id": "flzcalendar", "repository": "flzcalendar", "kind": "domain-app"},
+    {"id": "flzurlaub", "repository": "flzurlaub", "kind": "domain-app"},
+    {"id": "orgsuite", "repository": "orgsuite", "kind": "navigation-infrastructure-app"},
+    {"id": "flzroom", "repository": "flzroom", "kind": "domain-app"},
+    {"id": "flzrecruitment", "repository": "flzrecruitment", "kind": "domain-app"},
+    {"id": "flzbqplanung", "repository": "flzbqplanung", "kind": "development-domain-app"},
+    {"id": "flz_data_protection", "repository": "flz_data_protection", "kind": "independent-runtime-app"}
+  ]
+}

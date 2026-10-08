@@ -1,0 +1,22 @@
+rules:
+  - id: filzmann.php.dynamic-code-execution
+    languages: [php]
+    severity: ERROR
+    message: Dynamische Codeausführung ist in App-Code nicht zulässig.
+    patterns:
+      - pattern: eval(...)
+
+  - id: filzmann.php.unsafe-deserialization
+    languages: [php]
+    severity: ERROR
+    message: PHP-unserialize benötigt eine eng geprüfte Daten- und Typgrenze.
+    patterns:
+      - pattern: unserialize(...)
+
+  - id: filzmann.javascript.dynamic-code-execution
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Dynamische JavaScript-Codeausführung ist nicht zulässig.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)

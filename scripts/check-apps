@@ -27,32 +27,31 @@ if (( ! skip_structure )); then
     fi
 fi
 
+echo '== Kontextabhängige Security-Impact-Auswertung =='
+"$workspace"/scripts/check-security-compliance --workspace-diff
+
 while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$path" == 'path' ]] && continue
     [[ "$kind" == 'app' ]] || continue
 
     repo="$workspace/$path"
-    echo "== $path: lokale Instruktionskette und Skill-Auflösung =="
-    (
-        cd "$repo"
-        [[ -f AGENTS.md && ! -L AGENTS.md ]]
-        grep -Fq 'vollständige Repository-Steuerung' AGENTS.md
-        IFS=',' read -r -a skills <<< "$required_skills"
-        for required_skill in "${skills[@]}"; do
-            local_skill=".agents/skills/$required_skill/SKILL.md"
-            [[ -f "$local_skill" && ! -L "$local_skill" ]]
-            grep -Fq "name: $required_skill" "$local_skill"
-            if git check-ignore -q "$local_skill"; then
-                echo "Lokaler Skill wird ignoriert: $path/$required_skill" >&2
-                exit 1
-            fi
-        done
-    )
+    # Instruction chains, skill contents and ignore state are already covered
+    # by check-workspace-structure (or check-full's preceding check-fast).
     echo "== $path: lokale PHP-Tests =="
     (cd "$repo" && php tests/run.php)
     echo "== $path: lokale JavaScript-Tests =="
     (cd "$repo" && node tests/run-js.mjs)
 done < "$manifest"
+
+echo '== Öffentlicher Berechtigungsprovider-V1-Vertrag =='
+(cd "$workspace" && php tests/permission-provider-v1-contract.php)
+
+echo '== Öffentlicher Datenschutzprovider-V1-Vertrag =='
+(cd "$workspace" && php tests/privacy-provider-v1-contract.php)
+(cd "$workspace" && php tests/processing-metadata-provider-v1-contract.php)
+
+echo '== Öffentlicher LocalBase-Organisationsprovider-V1-Vertrag =='
+(cd "$workspace" && php tests/localbase-organization-v1-contract.php)
 
 if (( structure_tracking_warning )); then
     echo 'App-Prüfung aller registrierten App-Repositories: TESTS OK – STRUKTUR NICHT FREIGABEFÄHIG WEGEN UNGETRACKTER PFLICHTDATEIEN'

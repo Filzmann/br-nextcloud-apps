@@ -1,0 +1,4 @@
+title = "Filzmann central Gitleaks policy"
+
+[extend]
+useDefault = true

@@ -38,9 +38,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Nextcloud: app list adplaner",
+      "label": "Nextcloud: app list flzplaner",
       "type": "shell",
-      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev exec -d /var/www/html/html php occ app:list | grep -i flzplaner",
       "problemMatcher": []
     },
     {
@@ -56,9 +56,9 @@
       "problemMatcher": []
     },
     {
-      "label": "DDEV: launch adplaner",
+      "label": "DDEV: launch flzplaner",
       "type": "shell",
-      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/adplaner/",
+      "command": "cd ~/projects/br-nextcloud-apps/nextcloud-dev && ddev launch /apps/flzplaner/",
       "problemMatcher": []
     },
     {

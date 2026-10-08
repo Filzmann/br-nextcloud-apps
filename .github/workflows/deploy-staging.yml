@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$APP_ID" in
-            brtop|adplaner|brstunden|localbase|br_permission_matrix|adcalendar|adurlaub|orgsuite|adroom|adrecruitment) ;;
+            brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
             *) echo "Nicht freigegebene App-ID: $APP_ID" >&2; exit 2 ;;
           esac
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || {
@@ -52,6 +52,14 @@ jobs:
           repository: Filzmann/br-nextcloud-apps
           ref: main
           path: control
+
+      - name: Gepinnte Security-Scanner
+        run: |
+          set -euo pipefail
+          bash control/scripts/run-security-scanners \
+            --repository "parent=$GITHUB_WORKSPACE/control" \
+            --repository "$APP_ID=$GITHUB_WORKSPACE/app" \
+            --evidence-file "$RUNNER_TEMP/security-scans.json"
 
       - name: Geprüftes App-Archiv bauen
         run: |

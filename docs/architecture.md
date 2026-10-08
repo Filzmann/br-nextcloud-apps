@@ -5,6 +5,15 @@ kurzen Arbeits- und Stop-Regeln stehen in `AGENTS.md`; wiederholbare Abläufe
 stehen unter `.agents/skills/`. App-spezifische Fach- und Rechteverträge
 bleiben im jeweiligen App-Repository.
 
+## Entwicklungsphase und Kompatibilitätsbedarf
+
+Der verbindliche Entwicklungsphasen- und Kompatibilitätsvertrag einschließlich
+seiner vollständigen, für Einzel-Checkouts vorgesehenen Projektion steht im
+[`Parent-Governance-Vertrag`](parent-governance-contract.md). Dieser Vertrag
+ist die kanonische Lifecycle-Quelle; dieser Architekturtext wiederholt ihn
+nicht. Die Architektur- und Sicherheitsgrenzen dieser Datei gelten dabei
+unverändert.
+
 ## Repository- und Produktgrenzen
 
 Der Parent ist Meta-, DDEV-, Dokumentations- und Prüfkontext. Jede deploybare
@@ -15,11 +24,11 @@ in jedem betroffenen Repository separat geprüft.
 `localbase` stellt kleine, dependency-arme gemeinsame Verträge bereit.
 Gemeinsamer Code wird erst aufgenommen, wenn mindestens zwei Apps denselben
 semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
-gemeinsamen AD-/BR-Einstiege und den Adminadapter für app-übergreifende
+gemeinsamen FLZ-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
-Die sechs AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub`, `adroom`,
-`adrecruitment` und `adbqplanung` bleiben einzeln installierbar. Der BQ-Planer
+Die sechs FLZ-Fachprodukte `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`,
+`flzrecruitment` und `flzbqplanung` bleiben einzeln installierbar. Der BQ-Planer
 ist als Entwicklungsprodukt im gemeinsamen Menü und Standalone-Vertrag
 registriert, bis zur dokumentierten Release-Reife jedoch aus Full-Suite- und
 Einzelprodukt-Bundles ausgeschlossen. Bei genau einem aktiven Fachprodukt bleibt
@@ -28,9 +37,9 @@ Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
 geprüfte Installer OrgSuite. LocalBase und OrgSuite sind Infrastruktur, keine
 eigenständigen Fachprodukte.
 
-Noch nicht freigegebene künftige AD-Suite-Module, insbesondere DPA-
+Noch nicht freigegebene künftige Filzmann Nextcloud Plugins-Module, insbesondere DPA-
 Fallsteuerung und Schichtvermittlung, stehen ausschließlich in der
-[`AD-Suite-Zukunftsplanung`](ad-suite-zukunftsplanung.md). Diese Vormerkung
+[`systemweiten Zukunftsplanung`](zukunftsplan.md). Diese Vormerkung
 ändert weder den geltenden Produktkatalog noch Repositoryinventar,
 Laufzeitverträge oder app-lokale Roadmaps und erteilt keine
 Implementierungsfreigabe.
@@ -41,6 +50,15 @@ oder Capability-Verträge. Ein fehlender Provider ist ein gültiger
 Standalone-Zustand. Navigation, Capability-Verfügbarkeit und Menüsichtbarkeit
 erweitern niemals fachliche Rechte.
 
+OrgSuite besitzt auch die zusätzlichen externen Suite-Links; Fachapps pflegen
+keine Kopien. Konfiguration und Darstellung sind app-lokal in
+`orgsuite/AGENTS.md` und `orgsuite/docs/architecture.md` festgelegt. Der oben
+genannte Grundsatz, dass Navigation keine Rechte erweitert, gilt auch hier.
+
+`flzbqplanung` konsumiert den öffentlichen LocalBase-Jahreskalender Version 1
+über einen app-eigenen Port. Fachliche Planungsregeln und das Verhalten bei
+eingeschränkter Kalenderverfügbarkeit stehen in `flzbqplanung/AGENTS.md`.
+
 Die normative Einteilung gemeinsamen Codes und app-übergreifender
 Laufzeitdienste, die Store-Regeln sowie die komponentenweise
 LocalBase-Bestandsaufnahme stehen in
@@ -48,6 +66,11 @@ LocalBase-Bestandsaufnahme stehen in
 Die Root-relative Quelle ist
 `docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`;
 diese Datei wiederholt das dortige Entscheidungs- und Release-Gate nicht.
+
+Native Nextcloud-Administration ist keine app-übergreifende fachliche
+Superrolle. Eigene Apps behandeln einen notwendigen Vollzugriff app-lokal,
+pro Admin und höchstens 24 Stunden gemäß
+[`ADR 0004`](architecture-decisions/0004-app-local-temporary-admin-full-access.md).
 
 ## Schichten und Modelle
 
@@ -85,9 +108,9 @@ Read-only-/Bearbeitungsrollen und Hintergrundjobs werden nicht gleichgesetzt.
 
 Der öffentliche LocalBase-Organisationsvertrag Version 3 trennt `finance`
 und `payroll` unter derselben `finance_lead`. Fachapps lesen Rollen und
-Bürobereiche über den datensparsamen `AdOrganizationSnapshot`; ein fehlender,
+Bürobereiche über den datensparsamen `FlzOrganizationSnapshot`; ein fehlender,
 ungültiger oder nur aus Defaults rekonstruierter Persistenzstand erteilt keine
-Fachrechte. AD Recruitment verwendet diesen Vertrag für Personalreferat,
+Fachrechte. Filzmann Recruitment verwendet diesen Vertrag für Personalreferat,
 Lohn, bereichsgebundene Erstbegleitungen und granulare Vertretungsscopes,
 ohne Tabellen oder Controller anderer Fachapps zu lesen.
 
@@ -125,6 +148,13 @@ Persönliche Einstellungen liegen in einem eigenen semantischen Tab
 Fachapp, app-übergreifende Organisationskonfiguration im zuständigen
 Suite-Adminabschnitt.
 
+Die BQ-Planung gruppiert ihre fachlich verschiedenen Funktionen mit demselben
+semantischen, tastaturbedienbaren Tab-Muster wie die übrigen Apps. Planung,
+Termine beziehungsweise Tagesprogramm, Ressourcen und Einstellungen bleiben
+dadurch klar getrennt. Eine Verwaltung von Bewerber*innen oder ihrer
+Zuordnung zu einem BQ-Durchlauf ist kein Tab und keine Funktion der
+BQ-Planungs-App; diese Zuständigkeit bleibt vollständig bei Filzmann Recruitment.
+
 Neue und wesentlich überarbeitete Menüs arbeiten möglichst kompakt: häufige
 Aktionen bleiben direkt erreichbar, zusammengehörige seltene Optionen werden
 verständlich gruppiert oder schrittweise eingeblendet. Kompaktheit darf weder
@@ -150,7 +180,13 @@ verwendbare allgemeine Setter. Erlaubte Übergänge werden im Fachmodell oder
 einem eindeutig zuständigen Anwendungsservice gekapselt und positiv, negativ
 und im Fehlerfall getestet.
 
-Bei Datenbankänderungen mit möglichen Bestandsdaten werden altes und neues
+Zuerst wird nach der Entwicklungsphasenregel oben entschieden, ob überhaupt
+ein zu erhaltender Zustand vorliegt. Nur für diesen Fall gelten die folgenden
+Erhaltungs- und Upgradepflichten; bei einem erlaubten Entwicklungsreset werden
+stattdessen das kanonische Zielschema, notwendige Testdatensicherung,
+Fresh Install/Reinstall, Integrität und Anwendung auf dem neuen Schema geprüft.
+
+Bei Datenbankänderungen mit zu erhaltenden Bestandsdaten werden altes und neues
 Schema, Transformationsregeln, Bestandsvarianten, Integritätsbedingungen,
 Transaktionsgrenze, Fortsetzbarkeit und Rollbackgrenzen dokumentiert. Erforderlich
 sind mindestens ein Test der frischen Installation, ein Upgrade-Test aus der
@@ -158,8 +194,11 @@ relevanten Vorversion mit synthetischen Bestandsdaten, Integritätsprüfungen,
 eine Behandlung ungültiger oder widersprüchlicher Altdaten und ein
 Anwendungstest auf dem migrierten Schema.
 
-Veröffentlichte Migrationen werden nicht nachträglich verändert. Korrekturen
-erfolgen durch eine neue Migration.
+Migrationen für produktiv eingesetzte oder anderweitig konkret zu erhaltende
+Stände werden nicht nachträglich verändert. Korrekturen erfolgen durch eine
+neue Migration. Rein interne Entwicklungsrevisionen fallen unter die
+Entwicklungsphasenregel; eine bloße RC-Veröffentlichung erzeugt keinen
+fiktiven Produktionsbestand.
 
 ## Test- und Liefermodell
 

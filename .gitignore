@@ -28,6 +28,8 @@ coverage/
 .coverage
 .cache/
 .phpunit.cache/
+__pycache__/
+*.pyc
 
 # Logs
 *.log
@@ -37,17 +39,18 @@ nextcloud-dev/html/
 
 # Split app repositories
 brtop/
-adplaner/
+flzplaner/
 brstunden/
 localbase/
-br_permission_matrix/
-adcalendar/
-adurlaub/
+flz_permission_matrix/
+flzcalendar/
+flzurlaub/
 orgsuite/
-adroom/
-adrecruitment/
-adbqplanung/
-ad-suite/
+flzroom/
+flzrecruitment/
+flzbqplanung/
+flz_data_protection/
+flz-full-suite/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

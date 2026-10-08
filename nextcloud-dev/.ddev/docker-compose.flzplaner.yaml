@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - /home/filzmann/projects/br-nextcloud-apps/flzplaner:/var/www/html/html/custom_apps/flzplaner:cached
