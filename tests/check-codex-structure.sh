@@ -23,7 +23,7 @@ required_parent_files=(
     "$canonical_skill"
     "$canonical_tdd_skill"
     .agents/skills/verify-workspace/SKILL.md
-    .agents/skills/build-ad-suite-release/SKILL.md
+    .agents/skills/build-flz-full-suite-release/SKILL.md
     .agents/skills/verify-nextcloud-future-compatibility/SKILL.md
     .agents/skills/evaluate-learning-candidate/SKILL.md
     README.md
@@ -42,8 +42,8 @@ required_parent_files=(
     scripts/list-worktree-markdown-files
     scripts/validate-nextcloud-support-range.php
     scripts/check-apps
-    scripts/check-ad-suite-delivery
-    scripts/verify-ad-suite-delivery.sh
+    scripts/check-flz-full-suite-delivery
+    scripts/verify-flz-full-suite-delivery.sh
     tests/check-codex-structure.sh
     tests/check-privacy-architecture-contract.sh
     tests/check-ikt-privacy-portfolio-contract.sh
@@ -55,8 +55,8 @@ required_executables=(
     scripts/check-workspace-structure
     scripts/list-worktree-markdown-files
     scripts/check-apps
-    scripts/check-ad-suite-delivery
-    scripts/verify-ad-suite-delivery.sh
+    scripts/check-flz-full-suite-delivery
+    scripts/verify-flz-full-suite-delivery.sh
 )
 
 fail() {
@@ -169,14 +169,14 @@ def parse_skill(skill_path: Path) -> tuple[str, str]:
 rows = parse_manifest()
 manifest_paths = {row['path'] for row in rows}
 
-adrecruitment_rows = [
+flzrecruitment_rows = [
     row for row in rows
-    if row['path'] == 'adrecruitment'
+    if row['path'] == 'flzrecruitment'
     and row['kind'] == 'app'
-    and row['app_id'] == 'adrecruitment'
+    and row['app_id'] == 'flzrecruitment'
 ]
-if len(adrecruitment_rows) != 1:
-    fail('AD Recruitment muss genau einmal als adrecruitment registriert sein')
+if len(flzrecruitment_rows) != 1:
+    fail('Filzmann Recruitment muss genau einmal als flzrecruitment registriert sein')
 if any(row['path'] == 'recruitment' or row['app_id'] == 'recruitment' for row in rows):
     fail('Veraltete Recruitment-Repository- oder App-ID ist noch registriert')
 
@@ -488,9 +488,9 @@ for contract in (
     if contract not in future_compatibility_skill_text:
         fail(f'Verbindlicher Zukunftskompatibilitäts-Workflow fehlt: {contract}')
 
-release_skill_text = (workspace / '.agents/skills/build-ad-suite-release/SKILL.md').read_text(encoding='utf-8')
+release_skill_text = (workspace / '.agents/skills/build-flz-full-suite-release/SKILL.md').read_text(encoding='utf-8')
 if '`verify-nextcloud-future-compatibility`' not in release_skill_text:
-    fail('AD-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
+    fail('Filzmann-Full-Suite-Release-Workflow schaltet die Zukunftskompatibilitätsprüfung nicht vor')
 
 shared_code_decision = 'docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md'
 shared_code_text = (workspace / shared_code_decision).read_text(encoding='utf-8')
@@ -550,7 +550,7 @@ for contract in (
     'Lizenzinformationen',
     'sauberen Installation',
     'Official App-Store single-app candidate',
-    'Do not run or cite the AD-Suite builder or Delivery Gate as proof',
+    'Do not run or cite the Filzmann Full Suite builder or Delivery Gate as proof',
     'Parent currently has no generic App-Store builder',
     'no publishable Store candidate can be produced',
 ):
@@ -572,16 +572,16 @@ for contract in (
         fail(f'Verbindliche Workspace-Dokumentation fehlt: {contract}')
 
 check_fast_text = (workspace / 'scripts/check-fast').read_text(encoding='utf-8')
-delivery_wrapper_text = (workspace / 'scripts/check-ad-suite-delivery').read_text(encoding='utf-8')
-delivery_verify_text = (workspace / 'scripts/verify-ad-suite-delivery.sh').read_text(encoding='utf-8')
+delivery_wrapper_text = (workspace / 'scripts/check-flz-full-suite-delivery').read_text(encoding='utf-8')
+delivery_verify_text = (workspace / 'scripts/verify-flz-full-suite-delivery.sh').read_text(encoding='utf-8')
 parent_contract_scripts = (
     'check-parent-governance-contract.sh',
-    'check-ad-suite-coverage-baseline.sh',
-    'check-ad-suite-ci-contract.sh',
-    'check-ad-suite-standalone-contract.sh',
-    'check-ad-product-installer.sh',
+    'check-flz-full-suite-coverage-baseline.sh',
+    'check-flz-full-suite-ci-contract.sh',
+    'check-flz-full-suite-standalone-contract.sh',
+    'check-flz-product-installer.sh',
     'check-nextcloud-support-range.sh',
-    'check-ad-release-pruning.sh',
+    'check-flz-release-pruning.sh',
 )
 for script in parent_contract_scripts:
     if script not in check_fast_text:
@@ -594,12 +594,12 @@ if 'PARENT_FAST_CHECK_VERIFIED=1' not in delivery_wrapper_text or 'PARENT_FAST_C
     fail('Delivery-Verify muss durch den erfolgreich geprüften Parent-Fast-Pfad geschützt sein')
 for contract in (
     'RUN_INTEGRATION_SMOKES',
-    'adplaner/tests/access-matrix-ddev-smoke.sh',
-    'adplaner/tests/integration-ddev-smoke.sh',
-    'adcalendar/tests/admin-defaults-ddev-smoke.sh',
-    'adcalendar/tests/integration-ddev-smoke.sh',
-    'adurlaub/tests/migration-schema-ddev-smoke.sh',
-    'adrecruitment/tests/ddev-smoke.sh',
+    'flzplaner/tests/access-matrix-ddev-smoke.sh',
+    'flzplaner/tests/integration-ddev-smoke.sh',
+    'flzcalendar/tests/admin-defaults-ddev-smoke.sh',
+    'flzcalendar/tests/integration-ddev-smoke.sh',
+    'flzurlaub/tests/migration-schema-ddev-smoke.sh',
+    'flzrecruitment/tests/ddev-smoke.sh',
     'RECR_BASE_URL=',
 ):
     if contract not in delivery_verify_text:

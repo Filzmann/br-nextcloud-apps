@@ -7,7 +7,7 @@
   },
   "sources": {
     "repository_inventory": "config/workspace-repositories.tsv",
-    "ad_product_catalog": "localbase/resources/ad-product-catalog.json",
+    "flz_product_catalog": "localbase/resources/flz-product-catalog.json",
     "architecture": "docs/architecture.md",
     "privacy": "docs/privacy-architecture.md"
   },
@@ -61,16 +61,16 @@
   },
   "applications": [
     {"id": "brtop", "repository": "brtop", "kind": "domain-app"},
-    {"id": "adplaner", "repository": "adplaner", "kind": "domain-app"},
+    {"id": "flzplaner", "repository": "flzplaner", "kind": "domain-app"},
     {"id": "brstunden", "repository": "brstunden", "kind": "domain-app"},
     {"id": "localbase", "repository": "localbase", "kind": "shared-runtime-app"},
-    {"id": "filzmann_permission_matrix", "repository": "filzmann_permission_matrix", "kind": "independent-runtime-app"},
-    {"id": "adcalendar", "repository": "adcalendar", "kind": "domain-app"},
-    {"id": "adurlaub", "repository": "adurlaub", "kind": "domain-app"},
+    {"id": "flz_permission_matrix", "repository": "flz_permission_matrix", "kind": "independent-runtime-app"},
+    {"id": "flzcalendar", "repository": "flzcalendar", "kind": "domain-app"},
+    {"id": "flzurlaub", "repository": "flzurlaub", "kind": "domain-app"},
     {"id": "orgsuite", "repository": "orgsuite", "kind": "navigation-infrastructure-app"},
-    {"id": "adroom", "repository": "adroom", "kind": "domain-app"},
-    {"id": "adrecruitment", "repository": "adrecruitment", "kind": "domain-app"},
-    {"id": "adbqplanung", "repository": "adbqplanung", "kind": "development-domain-app"},
-    {"id": "filzmann_data_protection", "repository": "filzmann_data_protection", "kind": "independent-runtime-app"}
+    {"id": "flzroom", "repository": "flzroom", "kind": "domain-app"},
+    {"id": "flzrecruitment", "repository": "flzrecruitment", "kind": "domain-app"},
+    {"id": "flzbqplanung", "repository": "flzbqplanung", "kind": "development-domain-app"},
+    {"id": "flz_data_protection", "repository": "flz_data_protection", "kind": "independent-runtime-app"}
   ]
 }

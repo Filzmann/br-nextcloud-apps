@@ -6,8 +6,8 @@ manifest="$workspace/config/workspace-repositories.tsv"
 tool="$workspace/localbase/tests/coverage/node_modules/.bin/c8"
 host_output="$workspace/build/coverage/js"
 summary="$workspace/build/coverage/js-summary.tsv"
-baseline="${JS_COVERAGE_BASELINE_FILE:-$workspace/scripts/ad-suite-js-coverage-baseline.tsv}"
-baseline_checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
+baseline="${JS_COVERAGE_BASELINE_FILE:-$workspace/scripts/flz-full-suite-js-coverage-baseline.tsv}"
+baseline_checker="$workspace/scripts/check-flz-full-suite-coverage-baseline.sh"
 apps=()
 while IFS=$'\t' read -r path kind app_id required_skills; do
     [[ "$kind" == 'app' ]] || continue

@@ -188,7 +188,7 @@ php -r '
     }
 ' "$workspace"
 
-for app in brtop adrecruitment adcalendar; do
+for app in brtop flzrecruitment flzcalendar; do
     contract="$workspace/$app/tests/nextcloud-compatibility-smoke.php"
     grep -Fq "'objectStorageWebSetup'" "$contract" \
         || fail "$app besitzt kein app-spezifisches Object-Storage-Websetup."

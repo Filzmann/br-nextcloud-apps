@@ -42,9 +42,9 @@ namespace OCA\LocalBase\AppInfo {
 }
 
 namespace {
-    use OCA\FilzmannPermissionMatrix\Service\OrganizationSnapshotService as MatrixOrganizationSnapshotService;
-    use OCA\LocalBase\Organization\AdOrganizationSettingsService;
-    use OCA\LocalBase\Organization\AdOrganizationSnapshotService;
+    use OCA\FlzPermissionMatrix\Service\OrganizationSnapshotService as MatrixOrganizationSnapshotService;
+    use OCA\LocalBase\Organization\FlzOrganizationSettingsService;
+    use OCA\LocalBase\Organization\FlzOrganizationSnapshotService;
     use OCA\LocalBase\PublicApi\V1\OrganizationSnapshot;
     use OCA\LocalBase\PublicApi\V1\OrganizationSnapshotService;
     use OCP\App\IAppManager;
@@ -54,7 +54,7 @@ namespace {
     $workspace = dirname(__DIR__);
     $prefixes = [
         'OCA\\LocalBase\\' => $workspace . '/localbase/lib/',
-        'OCA\\FilzmannPermissionMatrix\\' => $workspace . '/filzmann_permission_matrix/lib/',
+        'OCA\\FlzPermissionMatrix\\' => $workspace . '/flz_permission_matrix/lib/',
     ];
     spl_autoload_register(static function(string $class) use ($prefixes): void {
         foreach ($prefixes as $prefix => $directory) {
@@ -97,9 +97,9 @@ namespace {
         public function log($level, $message, array $context = []): void {}
     };
 
-    $settings = new AdOrganizationSettingsService($config);
+    $settings = new FlzOrganizationSettingsService($config);
     $settings->save($settings->definition()->toArray());
-    $provider = new OrganizationSnapshotService(new AdOrganizationSnapshotService($settings));
+    $provider = new OrganizationSnapshotService(new FlzOrganizationSnapshotService($settings));
     $snapshot = $provider->snapshot();
     $assertSame(OrganizationSnapshot::CONTRACT_VERSION, $snapshot->contractVersion(), 'Unerwartete LocalBase-Vertragsversion.');
     $assertSame(true, $snapshot->isValid(), 'Der reale LocalBase-Provider liefert keinen gültigen Snapshot.');
@@ -126,15 +126,15 @@ namespace {
     $assertSame('INCOMPATIBLE', $incompatible['status'], 'Ein aktivierter Provider ohne V1-Service wird nicht inkompatibel ausgewiesen.');
     $assertSame([], $incompatible['areas'], 'Ein inkompatibler Provider liefert Bereichsbedeutungen.');
 
-    $config->values['localbase']['ad_organization_definition'] = '{invalid';
+    $config->values['localbase']['flz_organization_definition'] = '{invalid';
     $invalid = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
     $assertSame('INVALID', $invalid['status'], 'Beschädigte kanonische Organisationsdaten werden nicht fail-closed ausgewiesen.');
     $assertSame([], $invalid['roles'], 'Beschädigte Organisationsdaten liefern Rollenbedeutungen.');
 
-    $consumerSource = file_get_contents($workspace . '/filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php');
+    $consumerSource = file_get_contents($workspace . '/flz_permission_matrix/lib/Service/OrganizationSnapshotService.php');
     if ($consumerSource === false || str_contains($consumerSource, 'OCA\\LocalBase\\Organization\\')) {
         throw new RuntimeException('Der Matrix-Consumer verwendet weiterhin interne LocalBase-Organisationsklassen.');
     }
 
-    echo 'LocalBase-Organisationsprovider-V1-Vertrag geprüft: localbase -> filzmann_permission_matrix' . PHP_EOL;
+    echo 'LocalBase-Organisationsprovider-V1-Vertrag geprüft: localbase -> flz_permission_matrix' . PHP_EOL;
 }

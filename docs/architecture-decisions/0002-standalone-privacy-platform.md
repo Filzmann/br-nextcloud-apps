@@ -13,7 +13,7 @@
 
 Der LocalBase-Pilot beweist mit mehreren realen Fachapps, dass eine
 providerbasierte Art.-15-Auskunft ohne direkten Zugriff auf fremde Tabellen
-funktioniert. Das Ziel ist inzwischen nicht mehr nur eine interne AD-/BR-
+funktioniert. Das Ziel ist inzwischen nicht mehr nur eine interne FLZ-/BR-
 Integration. Der Vertrag soll neutral, eigenständig installierbar und für
 beliebige Nextcloud-App-Entwickler sowie öffentliche Einrichtungen nutzbar
 werden.
@@ -33,7 +33,7 @@ Consumer noch für Releasearchive vorausgesetzt werden.
 
 Die Zielkomponente ist die neutrale Standalone-App und eigenständig
 versionierte Nextcloud-Laufzeit-App
-`filzmann_data_protection` der **Kategorie B** nach ADR 0001. Der öffentliche
+`flz_data_protection` der **Kategorie B** nach ADR 0001. Der öffentliche
 Produktname lautet `Data Protection Center`, die deutsche Bezeichnung
 `Datenschutz-Center`. Das Präfix `filzmann_` ist die bewusst gewählte,
 appübergreifende Herausgeberkennung. Eine aktuelle Store-Prüfung ergab keine
@@ -99,7 +99,7 @@ die Privacy-App alleinige kanonische Eigentümerin ihrer API.
 Die Migration ist kein Big Bang:
 
 1. Name, App-ID, Lizenz, Repository und vorläufigen Nextcloud-Zielkorridor
-   entscheiden; erledigt mit `filzmann_data_protection`, AGPL und dem noch vor
+   entscheiden; erledigt mit `flz_data_protection`, AGPL und dem noch vor
    Veröffentlichung nachzuweisenden Korridor 29 bis 35.
 2. Den vorhandenen LocalBase-Vertrag charakterisieren und einen
    versionsbehafteten Provider-/Consumer-Contract-Test festschreiben.

@@ -37,7 +37,7 @@ write_override() {
         'services:' \
         '  web:' \
         '    volumes:' \
-        "      - $host_path:/var/www/html/html/custom_apps/filzmann_data_protection:cached" \
+        "      - $host_path:/var/www/html/html/custom_apps/flz_data_protection:cached" \
         > "$override"
 }
 
@@ -52,10 +52,10 @@ cleanup() {
     if ! ddev_is_stopped; then
         ddev restart >/dev/null 2>&1
         if (( privacy_should_be_disabled )); then
-            ddev exec -d /var/www/html/html php occ app:disable filzmann_data_protection >/dev/null 2>&1
+            ddev exec -d /var/www/html/html php occ app:disable flz_data_protection >/dev/null 2>&1
         fi
         if (( matrix_should_be_disabled )); then
-            ddev exec -d /var/www/html/html php occ app:disable filzmann_permission_matrix >/dev/null 2>&1
+            ddev exec -d /var/www/html/html php occ app:disable flz_permission_matrix >/dev/null 2>&1
         fi
         ddev stop >/dev/null 2>&1
     fi
@@ -78,14 +78,14 @@ mkdir -p "$missing_fixture" "$incompatible_fixture/appinfo"
 printf '%s\n' \
     '<?xml version="1.0"?>' \
     '<info>' \
-    '    <id>filzmann_data_protection</id>' \
+    '    <id>flz_data_protection</id>' \
     '    <name>Synthetic incompatible privacy app</name>' \
     '    <summary>Compatibility test fixture</summary>' \
     '    <description>Contains no executable provider code.</description>' \
     '    <version>99.0.0-test.1</version>' \
     '    <licence>agpl</licence>' \
     '    <author>Local compatibility test</author>' \
-    '    <namespace>FilzmannDataProtection</namespace>' \
+    '    <namespace>FlzDataProtection</namespace>' \
     '    <dependencies>' \
     '        <nextcloud min-version="99" max-version="99"/>' \
     '    </dependencies>' \
@@ -94,21 +94,21 @@ printf '%s\n' \
 
 cd "$ddev_root"
 ddev start
-if app_is_disabled filzmann_data_protection; then
+if app_is_disabled flz_data_protection; then
     privacy_should_be_disabled=1
 else
     fail 'Die Privacy-App muss vor dem Check deaktiviert sein.'
 fi
-if app_is_disabled filzmann_permission_matrix; then
+if app_is_disabled flz_permission_matrix; then
     matrix_should_be_disabled=1
 else
     fail 'Die Permission-Matrix muss vor dem Check deaktiviert sein.'
 fi
-ddev exec -d /var/www/html/html php occ app:enable filzmann_permission_matrix
+ddev exec -d /var/www/html/html php occ app:enable flz_permission_matrix
 
 write_override "$missing_fixture"
 ddev restart
-ddev exec -d /var/www/html/html sh -c 'test ! -e custom_apps/filzmann_data_protection/appinfo/info.xml'
+ddev exec -d /var/www/html/html sh -c 'test ! -e custom_apps/flz_data_protection/appinfo/info.xml'
 ddev exec -d /var/www/html/html php occ status
 ddev exec -d /var/www/html/html php occ permission-matrix:status
 echo 'Physisch fehlende Privacy-App: Matrix bleibt funktionsfähig.'
@@ -118,12 +118,12 @@ ddev restart
 incompatible_inventory="$(ddev exec -d /var/www/html/html php occ app:list --output=json)"
 printf '%s' "$incompatible_inventory" | php -r '
     $apps = json_decode(stream_get_contents(STDIN), true);
-    $status = $apps["disabled"]["filzmann_data_protection"] ?? "";
+    $status = $apps["disabled"]["flz_data_protection"] ?? "";
     exit(str_contains($status, "99.0.0-test.1") ? 0 : 1);
 ' || fail 'Nextcloud hat die inkompatible Privacy-App nicht kontrolliert erkannt.'
 
 set +e
-incompatibility_output="$(ddev exec -d /var/www/html/html php occ app:enable filzmann_data_protection 2>&1)"
+incompatibility_output="$(ddev exec -d /var/www/html/html php occ app:enable flz_data_protection 2>&1)"
 incompatibility_status=$?
 set -e
 (( incompatibility_status != 0 )) || fail 'Die inkompatible Privacy-App wurde unerwartet aktiviert.'
@@ -134,11 +134,11 @@ ddev exec -d /var/www/html/html php occ permission-matrix:status
 
 rm -- "$override"
 ddev restart
-ddev exec -d /var/www/html/html sh -c 'test -e custom_apps/filzmann_data_protection/appinfo/info.xml'
-app_is_disabled filzmann_data_protection || fail 'Der deaktivierte Privacy-Ausgangszustand wurde nicht wiederhergestellt.'
+ddev exec -d /var/www/html/html sh -c 'test -e custom_apps/flz_data_protection/appinfo/info.xml'
+app_is_disabled flz_data_protection || fail 'Der deaktivierte Privacy-Ausgangszustand wurde nicht wiederhergestellt.'
 ddev exec -d /var/www/html/html php occ permission-matrix:status
-ddev exec -d /var/www/html/html php occ app:disable filzmann_permission_matrix
-app_is_disabled filzmann_permission_matrix || fail 'Der deaktivierte Matrix-Ausgangszustand wurde nicht wiederhergestellt.'
+ddev exec -d /var/www/html/html php occ app:disable flz_permission_matrix
+app_is_disabled flz_permission_matrix || fail 'Der deaktivierte Matrix-Ausgangszustand wurde nicht wiederhergestellt.'
 ddev stop
 
 rm -rf -- "$fixture_root"

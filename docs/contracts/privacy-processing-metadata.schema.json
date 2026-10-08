@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://filzmann.de/nextcloud/filzmann_data_protection/contracts/privacy-processing-metadata.schema.json",
+  "$id": "https://filzmann.de/nextcloud/flz_data_protection/contracts/privacy-processing-metadata.schema.json",
   "title": "Data Protection Center Processing Metadata",
   "description": "Project-wide contract governed by the Data Protection Center for app-owned processing policy metadata. It never contains personal runtime data.",
   "x-contract-owner": {
-    "app_id": "filzmann_data_protection",
+    "app_id": "flz_data_protection",
     "product_name": "Data Protection Center",
     "german_product_name": "Datenschutz-Center",
-    "php_namespace": "OCA\\FilzmannDataProtection"
+    "php_namespace": "OCA\\FlzDataProtection"
   },
   "type": "object",
   "additionalProperties": false,

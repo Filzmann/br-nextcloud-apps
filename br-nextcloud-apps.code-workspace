@@ -9,8 +9,8 @@
       "path": "brtop"
     },
     {
-      "name": "adplaner",
-      "path": "adplaner"
+      "name": "flzplaner",
+      "path": "flzplaner"
     },
     {
       "name": "brstunden",
@@ -21,40 +21,40 @@
       "path": "localbase"
     },
     {
-      "name": "filzmann_permission_matrix",
-      "path": "filzmann_permission_matrix"
+      "name": "flz_permission_matrix",
+      "path": "flz_permission_matrix"
     },
     {
-      "name": "adcalendar",
-      "path": "adcalendar"
+      "name": "flzcalendar",
+      "path": "flzcalendar"
     },
     {
-      "name": "adurlaub",
-      "path": "adurlaub"
+      "name": "flzurlaub",
+      "path": "flzurlaub"
     },
     {
       "name": "orgsuite",
       "path": "orgsuite"
     },
     {
-      "name": "adroom",
-      "path": "adroom"
+      "name": "flzroom",
+      "path": "flzroom"
     },
     {
-      "name": "adrecruitment",
-      "path": "adrecruitment"
+      "name": "flzrecruitment",
+      "path": "flzrecruitment"
     },
     {
-      "name": "adbqplanung",
-      "path": "adbqplanung"
+      "name": "flzbqplanung",
+      "path": "flzbqplanung"
     },
     {
-      "name": "filzmann_data_protection",
-      "path": "filzmann_data_protection"
+      "name": "flz_data_protection",
+      "path": "flz_data_protection"
     },
     {
-      "name": "ad-suite",
-      "path": "ad-suite"
+      "name": "flz-full-suite",
+      "path": "flz-full-suite"
     }
   ],
   "settings": {

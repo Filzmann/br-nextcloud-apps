@@ -17,9 +17,9 @@ description: Select and run the established fast or full verification path for P
 - Use `scripts/check-apps` for the fast PHP and JavaScript entries of all app
   repositories registered in `config/workspace-repositories.tsv`.
 - Use `scripts/check-full` for the complete local Workspace path: Parent fast
-  checks plus all registered app repositories. It is not an AD-Suite release
+  checks plus all registered app repositories. It is not a Filzmann Full Suite release
   verdict.
-- Use `scripts/check-ad-suite-delivery` only for the actual clean AD-Suite delivery/release gate. Use its explicit `--diagnostic` mode only to inspect a dirty in-progress workspace; that mode must end without a release verdict.
+- Use `scripts/check-flz-full-suite-delivery` only for the actual clean Filzmann Full Suite delivery/release gate. Use its explicit `--diagnostic` mode only to inspect a dirty in-progress workspace; that mode must end without a release verdict.
 - Run the affected app repository's `php tests/run.php` and/or `node tests/run-js.mjs` directly when only that app is in scope. Parent wrappers do not replace app-local requirements.
 
 ## Execution order
@@ -28,7 +28,7 @@ description: Select and run the established fast or full verification path for P
 2. During implementation, use the smallest relevant test for Red–Green and diagnosis. For final verification, choose one enclosing path below; do not prepend the syntax/unit/contract checks it already runs on the same unchanged input and runtime.
 3. For Parent-only validation, run `scripts/check-fast` from the Parent.
 4. For a complete Workspace validation, run `scripts/check-full` directly; it already includes `check-fast`, all app fast entries and the central provider contracts, and does not build release artifacts.
-5. For explicit delivery work, run the clean `scripts/check-ad-suite-delivery` directly. It runs the strict tracked `check-fast` path exactly once, so do not prepend a duplicate fast run. It fails on every dirty Parent, product-documentation, infrastructure, or included AD-product repository. If the user requested diagnosis rather than a release verdict, use `scripts/check-ad-suite-delivery --diagnostic`; never infer or hide that mode.
+5. For explicit delivery work, run the clean `scripts/check-flz-full-suite-delivery` directly. It runs the strict tracked `check-fast` path exactly once, so do not prepend a duplicate fast run. It fails on every dirty Parent, product-documentation, infrastructure, or included FLZ-product repository. If the user requested diagnosis rather than a release verdict, use `scripts/check-flz-full-suite-delivery --diagnostic`; never infer or hide that mode.
 6. DDEV/HTTP/access checks remain opt-in through the existing variables:
    - `RUN_DDEV_CHECKS=1`
    - `RUN_HTTP_SMOKES=1` plus the documented base URL and credentials

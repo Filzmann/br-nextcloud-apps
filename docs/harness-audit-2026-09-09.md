@@ -83,7 +83,7 @@ Lücken betreffen Umsetzung und technische Nachweise bereits geltender Regeln.
 **G1 – Schema-/Runtime-Drift, reproduziert.** Im Root-Schema verlangt
 `$defs.processing.properties.recipients.oneOf[0].uniqueItems` eindeutige
 Empfängerobjekte. Die reale Klasse
-`filzmann_data_protection/lib/PublicApi/V1/ProcessingMetadataCatalog.php`
+`flz_data_protection/lib/PublicApi/V1/ProcessingMetadataCatalog.php`
 akzeptiert zwei identische synthetische Empfängerobjekte. Ein CLI-Aufruf mit
 dem Raumplanerkatalog als neutraler Strukturvorlage und ersetzt synthetischen
 Empfängern bestätigt dies ohne Dateiänderung. Der Root-Test prüft ausgewählte

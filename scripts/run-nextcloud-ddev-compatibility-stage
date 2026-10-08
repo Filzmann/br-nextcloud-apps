@@ -646,18 +646,18 @@ verify_optional_provider_lifecycle() {
         local organization_state
         organization_state="$(php -r '
             require $argv[1];
-            echo json_encode(\OCA\LocalBase\Organization\AdOrganizationDefinition::defaults()->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-        ' "$project/html/custom_apps/$provider/lib/Organization/AdOrganizationDefinition.php")"
-        occ config:app:set "$provider" ad_organization_definition --value="$organization_state" \
+            echo json_encode(\OCA\LocalBase\Organization\FlzOrganizationDefinition::defaults()->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        ' "$project/html/custom_apps/$provider/lib/Organization/FlzOrganizationDefinition.php")"
+        occ config:app:set "$provider" flz_organization_definition --value="$organization_state" \
             > "$result_dir/lifecycle-$provider-update-state-seed-$effective_major.log" 2>&1
-        occ config:app:get "$provider" ad_organization_definition \
+        occ config:app:get "$provider" flz_organization_definition \
             > "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json"
     fi
 
     if [[ -n "$update_root" ]]; then
         replace_lifecycle_snapshots "$update_root" "$effective_major" "$provider" update 0
         if [[ "$provider" == localbase && -f "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json" ]]; then
-            occ config:app:get "$provider" ad_organization_definition \
+            occ config:app:get "$provider" flz_organization_definition \
                 > "$result_dir/lifecycle-$provider-update-state-after-$effective_major.json"
             cmp -s "$result_dir/lifecycle-$provider-update-state-before-$effective_major.json" \
                 "$result_dir/lifecycle-$provider-update-state-after-$effective_major.json" \

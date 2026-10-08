@@ -62,13 +62,13 @@ assert_rejected 'App-ID' "$temporary/wrong-id.xml" demoapp 33 34
 
 assert_rejected 'Release-Ziel' "$temporary/wide-range.xml" demoapp 33 32
 
-for app in localbase adrecruitment adroom adurlaub orgsuite; do
+for app in localbase flzrecruitment flzroom flzurlaub orgsuite; do
     php "$checker" "$workspace/$app/appinfo/info.xml" "$app" 33 34
 done
 
 for delivery_script in \
-    "$workspace/scripts/build-ad-suite-release.sh" \
-    "$workspace/scripts/verify-ad-suite-delivery.sh"; do
+    "$workspace/scripts/build-flz-full-suite-release.sh" \
+    "$workspace/scripts/verify-flz-full-suite-delivery.sh"; do
     grep -Fq 'NEXTCLOUD_TARGET_MAJOR' "$delivery_script" || {
         echo "Delivery-Skript besitzt keine explizite Nextcloud-Zielmajor: $delivery_script" >&2
         exit 1

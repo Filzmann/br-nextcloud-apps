@@ -3,9 +3,9 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 manifest="$workspace/config/workspace-repositories.tsv"
-checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
-baseline="$workspace/scripts/ad-suite-js-coverage-baseline.tsv"
-measurement="$workspace/scripts/measure-ad-suite-js-coverage.sh"
+checker="$workspace/scripts/check-flz-full-suite-coverage-baseline.sh"
+baseline="$workspace/scripts/flz-full-suite-js-coverage-baseline.tsv"
+measurement="$workspace/scripts/measure-flz-full-suite-js-coverage.sh"
 package="$workspace/localbase/tests/coverage/package.json"
 lock="$workspace/localbase/tests/coverage/package-lock.json"
 

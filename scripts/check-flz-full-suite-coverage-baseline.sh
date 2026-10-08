@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ "$#" -ne 2 ]]; then
-    echo 'Aufruf: check-ad-suite-coverage-baseline.sh <Baseline.tsv> <Coverage-Zusammenfassung.tsv>' >&2
+    echo 'Aufruf: check-flz-full-suite-coverage-baseline.sh <Baseline.tsv> <Coverage-Zusammenfassung.tsv>' >&2
     exit 2
 fi
 

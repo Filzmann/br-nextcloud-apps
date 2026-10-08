@@ -30,13 +30,13 @@ if [[ "$(tar -tzf "$temporary/first.tar.gz" | head -n 1)" != 'demo/' ]]; then
     exit 1
 fi
 
-builder="$workspace/scripts/build-ad-suite-release.sh"
+builder="$workspace/scripts/build-flz-full-suite-release.sh"
 for expected_call in \
     '"$reproducible_archiver" "$archive" "$stage" "$app"' \
     '"$reproducible_archiver" "$product_bundle" "$dist_root" "$product_name"' \
     '"$reproducible_archiver" "$bundle" "$dist_root" "$(basename "$release_dir")"'; do
     if ! grep -Fq "$expected_call" "$builder"; then
-        echo "Der AD-Suite-Builder verwendet den reproduzierbaren Archivierer nicht vollständig: $expected_call" >&2
+        echo "Der Filzmann-Full-Suite-Builder verwendet den reproduzierbaren Archivierer nicht vollständig: $expected_call" >&2
         exit 1
     fi
 done
@@ -51,19 +51,19 @@ for required in \
     }
 done
 
-mkdir -p "$temporary/repositories/localbase/appinfo" "$temporary/repositories/adcalendar/appinfo"
+mkdir -p "$temporary/repositories/localbase/appinfo" "$temporary/repositories/flzcalendar/appinfo"
 printf '%s\n' '<info><id>localbase</id><dependencies><nextcloud min-version="33" max-version="34"/></dependencies></info>' \
     > "$temporary/repositories/localbase/appinfo/info.xml"
-printf '%s\n' '<info><id>adcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>localbase</app></dependencies></info>' \
-    > "$temporary/repositories/adcalendar/appinfo/info.xml"
-mkdir -p "$temporary/repositories/adcalendar/js/vendor/synthetic-library" "$temporary/repositories/adcalendar/resources"
-printf '%s\n' 'library-content' > "$temporary/repositories/adcalendar/js/vendor/synthetic-library/library.js"
-third_party_file_hash="$(sha256sum "$temporary/repositories/adcalendar/js/vendor/synthetic-library/library.js" | cut -d' ' -f1)"
-third_party_tree_hash="$(php -r '$root=$argv[1];$hash=hash_init("sha256");hash_update($hash,"library.js\0");hash_update_file($hash,$root."/library.js");echo hash_final($hash);' "$temporary/repositories/adcalendar/js/vendor/synthetic-library")"
+printf '%s\n' '<info><id>flzcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>localbase</app></dependencies></info>' \
+    > "$temporary/repositories/flzcalendar/appinfo/info.xml"
+mkdir -p "$temporary/repositories/flzcalendar/js/vendor/synthetic-library" "$temporary/repositories/flzcalendar/resources"
+printf '%s\n' 'library-content' > "$temporary/repositories/flzcalendar/js/vendor/synthetic-library/library.js"
+third_party_file_hash="$(sha256sum "$temporary/repositories/flzcalendar/js/vendor/synthetic-library/library.js" | cut -d' ' -f1)"
+third_party_tree_hash="$(php -r '$root=$argv[1];$hash=hash_init("sha256");hash_update($hash,"library.js\0");hash_update_file($hash,$root."/library.js");echo hash_final($hash);' "$temporary/repositories/flzcalendar/js/vendor/synthetic-library")"
 php -r '
     $inventory=[
         "bomFormat"=>"CycloneDX","specVersion"=>"1.6","version"=>1,
-        "metadata"=>["properties"=>[["name"=>"filzmann:inventory-owner","value"=>"adcalendar"]]],
+        "metadata"=>["properties"=>[["name"=>"filzmann:inventory-owner","value"=>"flzcalendar"]]],
         "components"=>[[
             "type"=>"library","bom-ref"=>"pkg:npm/synthetic-library@1.2.3","name"=>"synthetic-library","version"=>"1.2.3","scope"=>"required","purl"=>"pkg:npm/synthetic-library@1.2.3",
             "properties"=>[
@@ -79,18 +79,18 @@ php -r '
         ]]
     ];
     file_put_contents($argv[1],json_encode($inventory,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");
-' "$temporary/repositories/adcalendar/resources/third-party-components.cdx.json" "$third_party_tree_hash" "$third_party_file_hash"
+' "$temporary/repositories/flzcalendar/resources/third-party-components.cdx.json" "$third_party_tree_hash" "$third_party_file_hash"
 
 cat > "$temporary/manifest.tsv" <<'EOF'
 app	version	git_commit	sha256	signed
 localbase	1.2.3	1111111111111111111111111111111111111111	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	no
-adcalendar	2.3.4	2222222222222222222222222222222222222222	bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	yes
+flzcalendar	2.3.4	2222222222222222222222222222222222222222	bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	yes
 EOF
 
 php "$workspace/scripts/generate-cyclonedx-sbom.php" \
     --manifest "$temporary/manifest.tsv" \
     --output "$temporary/sbom.cdx.json" \
-    --name ad-suite-test \
+    --name flz-full-suite-test \
     --version test-1 \
     --nextcloud-major 34 \
     --repository-root "$temporary/repositories"
@@ -99,7 +99,7 @@ php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
     if ($data["bomFormat"] !== "CycloneDX") throw new RuntimeException("CycloneDX-Format fehlt");
     if ($data["specVersion"] !== "1.6") throw new RuntimeException("CycloneDX-Version fehlt");
-    if ($data["metadata"]["component"]["name"] !== "ad-suite-test") throw new RuntimeException("SBOM-Komponente fehlt");
+    if ($data["metadata"]["component"]["name"] !== "flz-full-suite-test") throw new RuntimeException("SBOM-Komponente fehlt");
     if (count($data["components"]) !== 4) throw new RuntimeException("SBOM-Komponenten unvollständig");
     if (count($data["dependencies"]) !== 3) throw new RuntimeException("SBOM-Abhängigkeiten unvollständig");
     if ($data["components"][1]["hashes"][0]["alg"] !== "SHA-256") throw new RuntimeException("SBOM-Hash fehlt");
@@ -109,11 +109,11 @@ php -r '
     if (!in_array("pkg:npm/synthetic-library@1.2.3",$data["dependencies"][2]["dependsOn"],true)) throw new RuntimeException("Gebündelte Third-Party-Abhängigkeit fehlt");
 ' "$temporary/sbom.cdx.json" "$third_party_file_hash"
 
-printf '%s\n' 'tampered' >> "$temporary/repositories/adcalendar/js/vendor/synthetic-library/library.js"
+printf '%s\n' 'tampered' >> "$temporary/repositories/flzcalendar/js/vendor/synthetic-library/library.js"
 if php "$workspace/scripts/generate-cyclonedx-sbom.php" \
     --manifest "$temporary/manifest.tsv" \
     --output "$temporary/tampered-sbom.cdx.json" \
-    --name ad-suite-test \
+    --name flz-full-suite-test \
     --version test-1 \
     --nextcloud-major 34 \
     --repository-root "$temporary/repositories" >"$temporary/tampered-sbom.out" 2>&1; then
@@ -121,14 +121,14 @@ if php "$workspace/scripts/generate-cyclonedx-sbom.php" \
     exit 1
 fi
 grep -Fq 'Third-Party-Baumhash stimmt nicht' "$temporary/tampered-sbom.out"
-printf '%s\n' 'library-content' > "$temporary/repositories/adcalendar/js/vendor/synthetic-library/library.js"
+printf '%s\n' 'library-content' > "$temporary/repositories/flzcalendar/js/vendor/synthetic-library/library.js"
 
-printf '%s\n' '<info><id>adcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>missing-runtime-app</app></dependencies></info>' \
-    > "$temporary/repositories/adcalendar/appinfo/info.xml"
+printf '%s\n' '<info><id>flzcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>missing-runtime-app</app></dependencies></info>' \
+    > "$temporary/repositories/flzcalendar/appinfo/info.xml"
 if php "$workspace/scripts/generate-cyclonedx-sbom.php" \
     --manifest "$temporary/manifest.tsv" \
     --output "$temporary/invalid-sbom.cdx.json" \
-    --name ad-suite-test \
+    --name flz-full-suite-test \
     --version test-1 \
     --nextcloud-major 34 \
     --repository-root "$temporary/repositories" \
@@ -136,10 +136,10 @@ if php "$workspace/scripts/generate-cyclonedx-sbom.php" \
     echo 'Eine deklarierte, aber im Release fehlende Laufzeitabhängigkeit wurde akzeptiert.' >&2
     exit 1
 fi
-grep -Fq 'Deklarierte App-Laufzeitabhängigkeit fehlt im Release: adcalendar -> missing-runtime-app' "$temporary/missing-runtime.out"
+grep -Fq 'Deklarierte App-Laufzeitabhängigkeit fehlt im Release: flzcalendar -> missing-runtime-app' "$temporary/missing-runtime.out"
 
-printf '%s\n' '<info><id>adcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>localbase</app></dependencies></info>' \
-    > "$temporary/repositories/adcalendar/appinfo/info.xml"
+printf '%s\n' '<info><id>flzcalendar</id><dependencies><nextcloud min-version="33" max-version="34"/><app>localbase</app></dependencies></info>' \
+    > "$temporary/repositories/flzcalendar/appinfo/info.xml"
 
 sbom_hash="$(sha256sum "$temporary/sbom.cdx.json" | cut -d' ' -f1)"
 cat > "$temporary/security-scans.json" <<'JSON'
@@ -148,7 +148,7 @@ cat > "$temporary/security-scans.json" <<'JSON'
   "generated_at": "2026-09-14T12:00:00+00:00",
   "status": "passed",
   "execution": {"mode": "production", "test_doubles": false, "publishable": true},
-  "scope": {"repositories": ["parent", "localbase", "adcalendar"], "git_history_scanned": false, "third_party_components": [{"repository":"adcalendar","inventory_path":"resources/third-party-components.cdx.json","purl":"pkg:npm/synthetic-library@1.2.3","bundled_root":"js/vendor/synthetic-library","tree_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","file_count":1}]},
+  "scope": {"repositories": ["parent", "localbase", "flzcalendar"], "git_history_scanned": false, "third_party_components": [{"repository":"flzcalendar","inventory_path":"resources/third-party-components.cdx.json","purl":"pkg:npm/synthetic-library@1.2.3","bundled_root":"js/vendor/synthetic-library","tree_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","file_count":1}]},
   "tools": {
     "gitleaks": {"version": "8.30.1", "integrity": "sha256-pinned"},
     "osv-scanner": {"version": "2.4.0", "integrity": "sha256-pinned"},
@@ -167,7 +167,7 @@ JSON
 php "$workspace/scripts/generate-release-evidence.php" \
     --manifest "$temporary/manifest.tsv" \
     --output "$temporary/release-evidence.json" \
-    --release-id ad-suite-test \
+    --release-id flz-full-suite-test \
     --source-timestamp 2026-09-14T12:00:00+00:00 \
     --mapping-status passed \
     --test-status passed-by-builder \
@@ -176,12 +176,12 @@ php "$workspace/scripts/generate-release-evidence.php" \
     --security-scan-evidence "$temporary/security-scans.json" \
     --sbom-file sbom.cdx.json \
     --sbom-sha256 "$sbom_hash" \
-    --artifact-file ad-suite-test.tar.gz \
+    --artifact-file flz-full-suite-test.tar.gz \
     --artifact-sha256 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
-    if ($data["release_id"] !== "ad-suite-test") throw new RuntimeException("Release-ID fehlt");
+    if ($data["release_id"] !== "flz-full-suite-test") throw new RuntimeException("Release-ID fehlt");
     if ($data["tests"]["builder"] !== "passed-by-builder") throw new RuntimeException("Teststatus fehlt");
     if ($data["security"]["mapping_consistency"] !== "passed") throw new RuntimeException("Mappingstatus fehlt");
     if ($data["security"]["sast"] !== "passed" || $data["security"]["dependency_scan"] !== "passed" || $data["security"]["secret_scan"] !== "passed") throw new RuntimeException("Scannerstatus fehlt");
@@ -246,7 +246,7 @@ grep -Fq 'OSV-Scanner-Coverage der Third-Party-Inventare ist unvollständig.' "$
 php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
     $data["scanners"]["semgrep"]["warnings"] = 1;
-    $data["warnings"][] = ["scanner" => "semgrep", "repository" => "adcalendar", "level" => "warning", "type" => "PartialParsing", "reason" => "semgrep-analysis-warning"];
+    $data["warnings"][] = ["scanner" => "semgrep", "repository" => "flzcalendar", "level" => "warning", "type" => "PartialParsing", "reason" => "semgrep-analysis-warning"];
     file_put_contents($argv[2], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/security-scans.json" "$temporary/partial-security-scans.json"
 if php "$workspace/scripts/generate-release-evidence.php" \
@@ -298,7 +298,7 @@ grep -Fq 'Diagnostische Security-Scanner-Evidence ist nicht releasefähig.' "$te
 php "$workspace/scripts/generate-release-evidence.php" \
     --manifest "$temporary/manifest.tsv" \
     --output "$temporary/diagnostic-evidence.json" \
-    --release-id ad-suite-diagnostic \
+    --release-id flz-full-suite-diagnostic \
     --source-timestamp 2026-09-14T12:00:00+00:00 \
     --mapping-status passed \
     --test-status skipped-by-builder \
@@ -307,7 +307,7 @@ php "$workspace/scripts/generate-release-evidence.php" \
     --security-scan-evidence "$temporary/security-scans.json" \
     --sbom-file sbom.cdx.json \
     --sbom-sha256 "$sbom_hash" \
-    --artifact-file ad-suite-diagnostic.tar.gz \
+    --artifact-file flz-full-suite-diagnostic.tar.gz \
     --artifact-sha256 dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
@@ -378,20 +378,20 @@ fi
 grep -Fq 'Releaseziel existiert bereits' "$temporary/symlink.out"
 
 mkdir -p "$temporary/collision-dist"
-touch "$temporary/collision-dist/ad-suite-contract-collision.release-evidence.json"
+touch "$temporary/collision-dist/flz-full-suite-contract-collision.release-evidence.json"
 if DIST_ROOT="$temporary/collision-dist" RELEASE_LABEL='contract-collision' SKIP_TESTS=1 \
     "$builder" >"$temporary/builder-collision.out" 2>&1; then
     echo 'Der Builder akzeptiert eine vorhandene Release-Evidence.' >&2
     exit 1
 fi
 grep -Fq 'Releaseziel existiert bereits' "$temporary/builder-collision.out"
-if [[ -e "$temporary/collision-dist/ad-suite-contract-collision" ]]; then
+if [[ -e "$temporary/collision-dist/flz-full-suite-contract-collision" ]]; then
     echo 'Der Builder schrieb vor Abschluss des Kollisionsguards Release-Dateien.' >&2
     exit 1
 fi
 
 if grep -Fq -- '-czf' "$builder"; then
-    echo 'Der AD-Suite-Builder enthält weiterhin einen nicht normalisierten gzip-Tar-Aufruf.' >&2
+    echo 'Der Filzmann-Full-Suite-Builder enthält weiterhin einen nicht normalisierten gzip-Tar-Aufruf.' >&2
     exit 1
 fi
 

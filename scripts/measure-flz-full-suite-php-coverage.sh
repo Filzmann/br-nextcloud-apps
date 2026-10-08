@@ -12,11 +12,11 @@ done < "$manifest"
 container_root='/var/www/html/html/custom_apps'
 tool="$container_root/localbase/tests/coverage/vendor/bin/phpcov"
 merger="$container_root/localbase/tests/coverage/merge-clover.php"
-container_output='/tmp/ad-suite-coverage'
+container_output='/tmp/flz-full-suite-coverage'
 host_output="$workspace/build/coverage"
 summary="$host_output/php-summary.tsv"
-baseline="${COVERAGE_BASELINE_FILE:-$workspace/scripts/ad-suite-php-coverage-baseline.tsv}"
-baseline_checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
+baseline="${COVERAGE_BASELINE_FILE:-$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv}"
+baseline_checker="$workspace/scripts/check-flz-full-suite-coverage-baseline.sh"
 
 if ! command -v ddev >/dev/null 2>&1; then
     echo 'DDEV fehlt.' >&2

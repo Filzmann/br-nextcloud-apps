@@ -6,7 +6,7 @@ zugehörigen App-Commit als Release Candidate auf
 deployen nicht.
 
 Der wiederverwendbare Workflow liegt im Parent-Repository unter
-`.github/workflows/deploy-staging.yml`. Die zehn App-Repositories rufen ihn
+`.github/workflows/deploy-staging.yml`. Die zwölf App-Repositories rufen ihn
 nach ihren eigenen PHP-, JavaScript- und gegebenenfalls Consumer-Contract-
 Tests auf. Paketierung, Prüfsummenprüfung, Installation und Rollbacklogik
 bleiben dadurch zentral gepflegt.
@@ -19,6 +19,92 @@ Dieses Deployment beschreibt die Entwicklungs-/Integrationsinstanz. Ein
 Schema-Break ohne Upgradepfad wird als gezielter Reinstall ausgeführt und darf
 nicht über den gewöhnlichen Codeaustausch unten als Upgrade ausgegeben werden.
 Die Fehler- und Rückbaugrenzen des Installers bleiben auch auf STAGING nötig.
+
+## Einmaliger Rebranding-Reinstall beim nächsten Staging-Lauf
+
+Der nächste Staging-Lauf nach dem technischen Markenwechsel ist ausdrücklich
+kein normales In-Place-Deployment. Es gibt keinen produktiven Datenbestand und
+keinen freigegebenen Upgradepfad von den alten App-IDs. Der Lauf wird als
+separat freizugebender, vollständiger Clean Install vorgemerkt; die in diesem
+Änderungsauftrag vorgenommenen Repositoryänderungen führen ihn nicht aus.
+
+### Automatische Deployments vor dem Push anhalten
+
+Vor dem ersten Push der Rebranding-Commits auf `main` erhält das GitHub-
+Environment `staging` vorübergehend eine verpflichtende manuelle Freigabe.
+Alternativ werden seine beiden Deployment-Secrets kontrolliert entzogen. Kein
+durch einen App-Push wartender Deployment-Job wird freigegeben, bevor der
+frische Staging-Baseline-Stand vorbereitet und der Clean Install ausdrücklich
+beauftragt wurde. Dadurch installiert ein normaler Push keine neue FLZ-App-ID
+neben einen noch aktiven Altstand.
+
+Zuvor werden die externen GitHub-Repositories auf ihre bereits in Metadaten
+und CI verwendeten kanonischen Slugs umbenannt: `nextcloud-adcalendar` nach
+`nextcloud-flzcalendar`, `nextcloud-adplaner` nach `nextcloud-flzplaner`,
+`nextcloud-adurlaub` nach `nextcloud-flzurlaub`, `nextcloud-adroom` nach
+`nextcloud-flzroom`, `nextcloud-recruitment` nach
+`nextcloud-flzrecruitment`, `nextcloud-filzmann-permission-matrix` nach
+`nextcloud-flz-permission-matrix` und `ad-suite` nach `flz-full-suite`.
+Für `flzbqplanung` und `flz_data_protection`, deren lokale Repositories noch
+keinen `origin` besitzen, werden die kanonischen Ziele
+`nextcloud-flzbqplanung` und `nextcloud-flz-data-protection` angelegt oder
+zugeordnet. Erst danach werden die lokalen Remotes ausdrücklich auf die neuen
+Ziele gesetzt. Der Parent-Commit mit Workflow und SSH-Allowlisten wird vor den
+App-Commits auf `main` bereitgestellt.
+
+Vor dem Reset werden nur weiterhin benötigte externe Testkonten, native
+Nextcloud-Gruppen und nicht reproduzierbare Testkonfigurationen datensparsam
+gesichert oder über die vorhandenen Setup-Schritte reproduzierbar gemacht.
+Fachliche Entwicklungsdaten werden nicht migriert. Danach werden die alten
+Apps vollständig deaktiviert und entfernt:
+
+- `adcalendar` → `flzcalendar`
+- `adplaner` → `flzplaner`
+- `adurlaub` → `flzurlaub`
+- `adroom` → `flzroom`
+- `adrecruitment` → `flzrecruitment`
+- `adbqplanung` → `flzbqplanung`
+- `filzmann_data_protection` → `flz_data_protection`
+- `filzmann_permission_matrix` → `flz_permission_matrix`
+
+Weil auch gemeinsame LocalBase-Verträge, AppConfig-Schlüssel und Schemaquellen
+technisch umbenannt wurden, umfasst der Clean Install außerdem `localbase` und
+`orgsuite`. Bevor neue Apps installiert werden, muss belegt sein, dass keine
+alte App-ID, kein alter App-Code und kein altes App-Schema beziehungsweise
+AppConfig-Fragment mehr als aktive Quelle verwendet wird. Der bevorzugte Weg
+ist deshalb ein frischer Staging-Baseline-Stand von Nextcloud statt einer
+unvollständigen Einzelbereinigung. Erst danach werden `localbase`,
+`flz_data_protection`, `flz_permission_matrix`, die neuen FLZ-Fachapps
+einschließlich des weiterhin nur für Staging vorgesehenen `flzbqplanung` und
+– ab zwei aktiven FLZ-Produkten – `orgsuite` frisch installiert. Beide
+Plattform-Apps und der BQ-Planer verwenden dabei denselben geprüften
+Staging-Workflow wie die übrigen registrierten Apps; ihre Aufnahme in Staging
+ändert weder Bundle- noch Release-Reife.
+
+### Installationsreihenfolge des Clean Installs
+
+Nach dem belegten Entfernen aller Altquellen werden die neuen Apps in dieser
+Reihenfolge installiert und jeweils vollständig geprüft, bevor der nächste
+Schritt freigegeben wird:
+
+1. `localbase`
+2. `flz_data_protection`
+3. `flz_permission_matrix`
+4. `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom` und `flzrecruitment`
+5. `flzbqplanung` ausschließlich als nicht releasefähiges Staging-Produkt
+6. `orgsuite`, sobald mindestens zwei FLZ-Fachprodukte aktiv sind
+
+Die Reihenfolge ist ein Deploymentvertrag, keine neue Laufzeitabhängigkeit:
+optionale Provider bleiben optional und fehlende Fachapps bleiben ein gültiger
+Standalone-Zustand. Die temporäre GitHub-Freigabesperre wird erst nach
+Appstatus-, Schema-, Asset-, Provider-/Consumer- und Sichtprüfung aufgehoben.
+
+Der gesonderte Lauf prüft anschließend Appstatus und Installationsschema,
+mindestens ein CSS- und JavaScript-Asset je installierter App über HTTPS, die
+sichtbare Filzmann-Oberfläche sowie die notwendigen Rollen-, Provider- und
+Consumer-Verträge. Die konkreten Hosting-/`occ`-Befehle werden erst im
+freigegebenen Staging-Auftrag aus der tatsächlichen Umgebung abgeleitet; DDEV-
+oder Entwicklungsannahmen werden nicht übernommen.
 
 - SSH läuft ausschließlich als Hosting-/Domainbenutzer `filzmann`.
 - Es wird weder ein Root-Passwort noch ein anderes Serverpasswort in GitHub
@@ -169,16 +255,16 @@ vorhandenes, weder an Upload noch Installation beteiligtes Konto ersetzt:
 ```bash
 printf 'synthetischer ACL-Test\n' | \
   sudo -u filzmann /usr/local/bin/teamcloud-staging \
-    upload 999999 1 filzmann_permission_matrix
+    upload 999999 1 flz_permission_matrix
 
-probe=/var/tmp/teamcloud-staging-incoming/999999-1-filzmann_permission_matrix/filzmann_permission_matrix.tar.gz
+probe=/var/tmp/teamcloud-staging-incoming/999999-1-flz_permission_matrix/flz_permission_matrix.tar.gz
 test "$(stat -c %U -- "$probe")" = filzmann
 getfacl -n "$probe"
 sudo -u simonbeyer_sys test -r "$probe"
 ! sudo -u simonbeyer_sys test -w "$probe"
 ! sudo -u <UNBETEILIGTER-BENUTZER> test -r "$probe"
 sudo -u filzmann /usr/local/bin/teamcloud-staging \
-  cleanup 999999 1 filzmann_permission_matrix
+  cleanup 999999 1 flz_permission_matrix
 ```
 
 Dieser Test installiert das synthetische Archiv nicht. Er belegt Eigentum,

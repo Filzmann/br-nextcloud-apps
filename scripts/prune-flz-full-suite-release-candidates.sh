@@ -2,14 +2,14 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: prune-ad-suite-release-candidates.sh --dist-root <Pfad> --keep-label nc<major>-rcN [--execute]' >&2
+    echo 'Aufruf: prune-flz-full-suite-release-candidates.sh --dist-root <Pfad> --keep-label nc<major>-rcN [--execute]' >&2
 }
 
 dist_root=''
 keep_label=''
 execute=0
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t catalog_products < <(php "$catalog_reader" bundle-products)
 declare -A allowed_products=()
@@ -37,14 +37,14 @@ fi
 
 targets=()
 shopt -s nullglob
-candidates=("$dist_root"/ad-suite-"$release_series"-rc* "$dist_root"/ad-product-*-"$release_series"-rc*)
+candidates=("$dist_root"/flz-full-suite-"$release_series"-rc* "$dist_root"/flz-product-*-"$release_series"-rc*)
 shopt -u nullglob
 for candidate in "${candidates[@]}"; do
     name="$(basename "$candidate")"
     valid_candidate=0
-    if [[ "$name" =~ ^ad-suite-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
+    if [[ "$name" =~ ^flz-full-suite-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]]; then
         valid_candidate=1
-    elif [[ "$name" =~ ^ad-product-([a-z0-9_]+)-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]] \
+    elif [[ "$name" =~ ^flz-product-([a-z0-9_]+)-${release_series}-rc[0-9]+(\.tar\.gz(\.sha256)?)?$ ]] \
         && [[ -n "${allowed_products[${BASH_REMATCH[1]}]:-}" ]]; then
         valid_candidate=1
     fi

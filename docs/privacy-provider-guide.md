@@ -25,7 +25,7 @@ AppConfig-/UserConfig-Werte. Ein fehlender Provider bleibt sichtbar
 ## Minimalvertrag Version 1
 
 Der kanonische Namespace ist
-`OCA\FilzmannDataProtection\PublicApi\V1`. Der erste pre-release Contract-Kern
+`OCA\FlzDataProtection\PublicApi\V1`. Der erste pre-release Contract-Kern
 liegt in der Standalone-App; externe Consumer bleiben bis zur ausdrücklichen
 Freigabe und einem vollständigen Contract-Test-Kit blockiert. Fachlich
 benötigt Version 1 mindestens:
@@ -64,8 +64,8 @@ jeder Ausgabe neu gepflegt. Sie stammt künftig aus dem app-lokalen Katalog
 nach dem Root-Schema
 [`privacy-processing-metadata.schema.json`](contracts/privacy-processing-metadata.schema.json).
 Contract-Owner und öffentlicher Namespace bleiben dabei die bestehende App
-`filzmann_data_protection` (`Data Protection Center`/`Datenschutz-Center`,
-`OCA\FilzmannDataProtection`); es entsteht keine zusätzliche Provider-App.
+`flz_data_protection` (`Data Protection Center`/`Datenschutz-Center`,
+`OCA\FlzDataProtection`); es entsteht keine zusätzliche Provider-App.
 V1 projiziert davon weiterhin nur die heute vertraglich vorgesehenen Angaben
 in den konkreten `PersonalDataEntry`; eine eigenständige Katalogabfrage wird
 nur als neue, versionierte öffentliche Fähigkeit ergänzt. Sie darf V1 nicht
@@ -80,9 +80,9 @@ Provider werden isoliert, ohne interne Fehlerdetails oder fremde Daten
 offenzulegen. Der weitere Consumer-Rollout und das vollständige Coverage-Gate
 bleiben bis zu gesondert freigegebenen Cross-Repository-Läufen offen.
 
-Die ersten realen Consumer sind `adroom`, `adplaner`, `adcalendar`, `adurlaub`,
-`adrecruitment`, `brstunden`, `brtop`, `adbqplanung` und
-`filzmann_permission_matrix`. Ihre Provider werden im Parent gegen den echten Vertrag und das Contract-Test-Kit der
+Die ersten realen Consumer sind `flzroom`, `flzplaner`, `flzcalendar`, `flzurlaub`,
+`flzrecruitment`, `brstunden`, `brtop`, `flzbqplanung` und
+`flz_permission_matrix`. Ihre Provider werden im Parent gegen den echten Vertrag und das Contract-Test-Kit der
 Standalone-App geprüft; die app-lokalen Tests bleiben über kleine Test-Stubs
 auch ohne benachbarten Checkout ausführbar. Diese Stubs sind keine
 Produktionsabhängigkeit und keine zweite Runtime-Implementierung. Weitere Apps
@@ -201,8 +201,8 @@ Das Test-Kit prüft den technischen Vertrag, nicht die rechtliche
 Vollständigkeit der konkreten Dateninventur. Diese bleibt Reviewaufgabe der
 datenbesitzenden App und der verantwortlichen Stelle.
 
-Verifizierte Workspace-Beispiele sind `adroom` für kontextbewahrend ersetzten
-Drittpersonen-Freitext und `filzmann_permission_matrix` für eine
+Verifizierte Workspace-Beispiele sind `flzroom` für kontextbewahrend ersetzten
+Drittpersonen-Freitext und `flz_permission_matrix` für eine
 subjectgebundene Projektion mehrerer eigener Nachweistabellen. Letztere zeigt
 nur freigegebene Snapshot-, Export- und Auditmetadaten; freie Dateinamen,
 Inhalte, Auditdetails und fremde Benutzerbezüge bleiben in der Fachapp.

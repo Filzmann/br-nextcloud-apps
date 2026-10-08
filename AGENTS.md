@@ -23,7 +23,7 @@ Es enthält keinen deploybaren App-Code.
 - Repositoryinventar: `config/workspace-repositories.tsv`
 - Unverbindliche Beobachtungen: `docs/learning-candidates.md`
 
-Jede App und `ad-suite` sind getrennte Git-Repositories mit eigener
+Jede App und `flz-full-suite` sind getrennte Git-Repositories mit eigener
 `AGENTS.md`. Normale App-Arbeit beginnt im Root des konkret beauftragten
 Repositories und folgt dem dort lokal mitgeführten Skill
 `work-in-nextcloud-app`. Der technische `workspace-write`-Zugriff erteilt
@@ -208,7 +208,7 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
   sichtbar als `partial`, `UNKNOWN` oder `UNSUPPORTED` ausgewiesen und nie als
   vollständig oder erlaubt behauptet.
 - Zielruntime des öffentlichen Datenschutzvertrags ist die Standalone-App
-  `filzmann_data_protection` der Kategorie B aus
+  `flz_data_protection` der Kategorie B aus
   `docs/architecture-decisions/0002-standalone-privacy-platform.md`.
   LocalBase bleibt bis zur kontrollierten Migration nur Pilot. Fehlende oder
   inkompatible Provider werden sichtbar ausgewiesen; SQL-, Reflection-,
@@ -229,13 +229,13 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 ## Suite- und Produktverträge
 
-- OrgSuite besitzt die gemeinsamen AD-/BR-Einstiege; Fachapps duplizieren
+- OrgSuite besitzt die gemeinsamen FLZ-/BR-Einstiege; Fachapps duplizieren
   keine Suite-Linklisten.
-- `adcalendar`, `adplaner`, `adurlaub`, `adroom`, `adrecruitment` und
-  `adbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
+- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment` und
+  `flzbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
   Infrastruktur. Der BQ-Planer ist bis zur dokumentierten Release-Reife zwar
   navigierbar, aber aus Full-Suite- und Einzelprodukt-Bundles ausgeschlossen.
-- Bei genau einem aktiven AD-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
+- Bei genau einem aktiven FLZ-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
   Fachprodukten aktiviert der geprüfte Installer OrgSuite.
 - Fachapps greifen nicht direkt auf Tabellen, Controller oder
   JavaScript-Assets anderer Fachapps zu. Optionale Integrationen verwenden
@@ -360,8 +360,8 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
   nicht deklarierte künftige Hauptversion begrenzt nur die Erweiterung nach
   oben; eine bereits deklarierte oder ausdrücklich geforderte Zielversion
   blockiert bei Inkompatibilität den Release-Candidate.
-- Kein Release erfolgt mit rotem Delivery-Gate. AD-Suite-Bau und -Abnahme
-  folgen ausschließlich dem Skill `build-ad-suite-release`.
+- Kein Release erfolgt mit rotem Delivery-Gate. Filzmann-Full-Suite-Bau und -Abnahme
+  folgen ausschließlich dem Skill `build-flz-full-suite-release`.
 
 ## Stop-Regeln
 

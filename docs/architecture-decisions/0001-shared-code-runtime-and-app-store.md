@@ -11,7 +11,7 @@
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
 - Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
-  `filzmann_permission_matrix` als erstem Consumer einschließlich
+  `flz_permission_matrix` als erstem Consumer einschließlich
   In-place-Update, Provider-Deaktivierung, -Entfernung, -Wiederinstallation
   und Rückbau auf einen Stand ohne V1; die übrige LocalBase-Migration bleibt
   offen
@@ -27,7 +27,7 @@ App pauschal eingestuft, sondern jeder Bestandteil einzeln.
 
 Diese Bestandsaufnahme berücksichtigt den uncommitteten Arbeitsstand vom
 2026-08-08. Insbesondere die Organisationsversion 3 und der
-`AdOrganizationSnapshot` waren in `localbase` noch nicht vollständig
+`FlzOrganizationSnapshot` waren in `localbase` noch nicht vollständig
 versioniert. Die Statusangaben bedeuten:
 
 - **verifiziert**: im aktuellen Code, in Metadaten oder durch bestehende Tests
@@ -48,11 +48,11 @@ versioniert. Die Statusangaben bedeuten:
 | Datenbanktabellen | Keine eigene Fach- oder Cachetabelle gefunden | verifiziert: `localbase/lib/Migration/Version000001Date202607220001.php` registriert nur einen Job; Suche in `localbase/lib` findet kein `createTable` |
 | Migration | Eine Migration registriert den Kalenderjob additiv | verifiziert: `localbase/lib/Migration/Version000001Date202607220001.php` |
 | Hintergrundjob | Tägliche Aktualisierung des laufenden und der zwei folgenden Kalenderjahre | verifiziert: `localbase/appinfo/info.xml`, `localbase/lib/BackgroundJob/RefreshHolidayCalendarJob.php` |
-| Gemeinsam gespeicherte Daten | Kalenderkontext, Feiertagsjahre, Organisationsdefinition, Peerfreigaben und Demo-Kontoregister liegen in `IAppConfig`; persönliche Adminanordnung liegt in `IUserConfig` | verifiziert: `localbase/lib/Calendar/CalendarContextSettingsService.php`, `HolidayCalendarCacheStore.php`, `localbase/lib/Organization/AdOrganizationSettingsService.php`, `AdSuiteAdminSettingsService.php`, `localbase/lib/Service/DemoAccountProvisioningService.php`, `AdSuiteAdminLayoutService.php` |
+| Gemeinsam gespeicherte Daten | Kalenderkontext, Feiertagsjahre, Organisationsdefinition, Peerfreigaben und Demo-Kontoregister liegen in `IAppConfig`; persönliche Adminanordnung liegt in `IUserConfig` | verifiziert: `localbase/lib/Calendar/CalendarContextSettingsService.php`, `HolidayCalendarCacheStore.php`, `localbase/lib/Organization/FlzOrganizationSettingsService.php`, `FlzSuiteAdminSettingsService.php`, `localbase/lib/Service/DemoAccountProvisioningService.php`, `FlzSuiteAdminLayoutService.php` |
 | Öffentliche Laufzeitdienste | PHP-Klassen unter `OCA\LocalBase`, Event-/Capability-Verträge und per DI konsumierte Services | verifiziert: `localbase/docs/architecture.md` sowie Consumerstellen unten |
-| Capabilities | Keine Nextcloud-`ICapability` in `info.xml`; vorhanden ist ein eigener öffentlicher Eventvertrag für Integrationsfähigkeiten | verifiziert: `localbase/lib/Integration/IntegrationCapabilityQueryEvent.php`, `AdIntegrationCapabilities.php`, `IntegrationCapabilityService.php` |
+| Capabilities | Keine Nextcloud-`ICapability` in `info.xml`; vorhanden ist ein eigener öffentlicher Eventvertrag für Integrationsfähigkeiten | verifiziert: `localbase/lib/Integration/IntegrationCapabilityQueryEvent.php`, `FlzIntegrationCapabilities.php`, `IntegrationCapabilityService.php` |
 | Benutzeroberfläche | Organisationseditor mit CSS, JavaScript, Template und Settings-Adaptern | verifiziert: `localbase/templates/organization-admin.php`, `localbase/js/admin/organization-admin.js`, `localbase/css/organization-admin.css`, `localbase/lib/Settings/StandaloneOrganizationAdmin.php` |
-| Routen und API | Fünf geschützte Adminrouten für Lesen, Kalenderkontext, Organisation, Freigaben und persönliches Layout | verifiziert: `localbase/appinfo/routes.php`, `localbase/lib/Controller/AdSuiteAdminApiController.php` |
+| Routen und API | Fünf geschützte Adminrouten für Lesen, Kalenderkontext, Organisation, Freigaben und persönliches Layout | verifiziert: `localbase/appinfo/routes.php`, `localbase/lib/Controller/FlzSuiteAdminApiController.php` |
 | Externer Dienst | OpenHolidays-Adapter ohne Schlüssel, mit LocalBase-Cache und Fehlerzuständen | verifiziert: `localbase/lib/Calendar/OpenHolidaysClient.php`, `HolidayCalendarService.php` |
 
 Es gibt damit keine LocalBase-eigenen Tabellen, aber sehr wohl zentralen
@@ -64,34 +64,34 @@ persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus
 | Consumer | Verifizierte Laufzeitverwendung | Kopplungsbelege |
 | --- | --- | --- |
 | `brtop` | API-Responder, Modelltrait, Logger, Gruppenservice sowie LocalBase-JavaScript | `brtop/lib/Controller/ApiController.php`, `lib/Model/Meeting.php`, `lib/Service/BrtopLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `adplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `adplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
+| `flzplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `flzplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
 | `brstunden` | API-Responder, Modelltrait, Logger, Gruppenservice und LocalBase-JavaScript | `brstunden/lib/Controller/ApiController.php`, `lib/Model/HourEntry.php`, `lib/Service/BrStundenLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `filzmann_permission_matrix` | optionaler Organisationssnapshot über `OCA\\LocalBase\\PublicApi\\V1`; eigenständiger Test-Runner und Nextcloud-Navigation | `filzmann_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `filzmann_permission_matrix/tests/run.php`, `filzmann_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
-| `adcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
-| `adurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `adurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
+| `flz_permission_matrix` | optionaler Organisationssnapshot über `OCA\\LocalBase\\PublicApi\\V1`; eigenständiger Test-Runner und Nextcloud-Navigation | `flz_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `flz_permission_matrix/tests/run.php`, `flz_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
+| `flzcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `flzcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
+| `flzurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `flzurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
 | `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `orgsuite/tests/http-smoke.sh` |
-| `adroom` | Kalenderkontext/Feiertage, Demokonten, Navigation/Capability und LocalBase-JavaScript | `adroom/lib/Service/BookingService.php`, `lib/Service/HolidayService.php`, `lib/Service/RoomDemoPackService.php`, `templates/index.php` |
-| `adrecruitment` | unveränderlicher Organisationssnapshot, Rechtepolicy und Standalone-Navigation | `adrecruitment/lib/Service/RecruitmentAccessService.php`, `lib/Service/RecruitmentPermissionPolicy.php`, `lib/Listener/StandaloneNavigationListener.php` |
+| `flzroom` | Kalenderkontext/Feiertage, Demokonten, Navigation/Capability und LocalBase-JavaScript | `flzroom/lib/Service/BookingService.php`, `lib/Service/HolidayService.php`, `lib/Service/RoomDemoPackService.php`, `templates/index.php` |
+| `flzrecruitment` | unveränderlicher Organisationssnapshot, Rechtepolicy und Standalone-Navigation | `flzrecruitment/lib/Service/RecruitmentAccessService.php`, `lib/Service/RecruitmentPermissionPolicy.php`, `lib/Listener/StandaloneNavigationListener.php` |
 
 Zusätzlich laden zahlreiche App-Tests Dateien relativ aus dem benachbarten
-LocalBase-Repository, beispielsweise `adcalendar/tests/run.php`,
-`adurlaub/tests/VacationAccessServiceTest.php` und
+LocalBase-Repository, beispielsweise `flzcalendar/tests/run.php`,
+`flzurlaub/tests/VacationAccessServiceTest.php` und
 `orgsuite/tests/EntryControllerTest.php`. Das ist eine Entwicklungs- und
 Testkopplung, keine auslieferbare Produktionsabhängigkeit.
 
 Der Parent-Releasecode liest LocalBase-Interna direkt:
-`scripts/read-ad-product-catalog.php` lädt
-`localbase/lib/Catalog/AdProductCatalog.php`, und
-`scripts/build-ad-suite-release.sh` liest
-`localbase/resources/ad-product-catalog.json`. Diese Quellbaumkopplung ist für
+`scripts/read-flz-product-catalog.php` lädt
+`localbase/lib/Catalog/FlzProductCatalog.php`, und
+`scripts/build-flz-full-suite-release.sh` liest
+`localbase/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
 den internen Suite-Build belegt, aber kein zulässiges Modell für ein
 eigenständiges App-Store-Archiv.
 
 Direkte Produktivzugriffe eines Consumers auf LocalBase-Tabellen wurden nicht
 gefunden; LocalBase besitzt derzeit auch keine eigenen Tabellen. Direkte
 Produktivzugriffe auf die privaten LocalBase-AppConfig-Schlüssel wurden
-ebenfalls nicht gefunden. `adrecruitment/tests/integration/AuthenticatedPageSmoke.php`
-ändert `ad_organization_definition` direkt, aber ausschließlich als
+ebenfalls nicht gefunden. `flzrecruitment/tests/integration/AuthenticatedPageSmoke.php`
+ändert `flz_organization_definition` direkt, aber ausschließlich als
 Integrationstest-Fixture. Direkte interne Kopplung besteht dennoch durch
 konkrete `OCA\LocalBase`-Klassen, LocalBase-JavaScript-Globals, das
 LocalBase-Template, LocalBase-Routen und die interne Produktkatalogdatei.
@@ -99,16 +99,16 @@ LocalBase-Template, LocalBase-Routen und die interne Produktkatalogdatei.
 ### Installations- und Store-Fähigkeit heute
 
 Die fünf im Produktkatalog als `product` und `standalone` geführten Apps
-`adcalendar`, `adplaner`, `adurlaub`, `adroom` und `adrecruitment` sind die
+`flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom` und `flzrecruitment` sind die
 verifizierten Kandidaten für getrennte Produktveröffentlichungen
-(`localbase/resources/ad-product-catalog.json`,
-`ad-suite/docs/ARCHITECTURE.md`). Die BR-Apps besitzen derzeit ebenso wie die
+(`localbase/resources/flz-product-catalog.json`,
+`flz-full-suite/docs/ARCHITECTURE.md`). Die BR-Apps besitzen derzeit ebenso wie die
 übrigen Workspace-Apps kein freigegebenes öffentliches Store-Ziel. Eine
 spätere Veröffentlichung bleibt eine gesonderte Entscheidung je App;
 Metadaten und heutige OrgSuite-/LocalBase-Kopplung ersetzen diese Freigabe
 nicht.
 
-Ergänzung vom 2026-08-15: `adbqplanung` ist als sechstes AD-Fachprodukt in
+Ergänzung vom 2026-08-15: `flzbqplanung` ist als sechstes FLZ-Fachprodukt in
 denselben Kategorie-B-Laufzeitvertrag für Produktkatalog und Navigation
 aufgenommen. Die getrennten Katalogflags bleiben maßgeblich: Solange
 `fullSuiteBundle` und `productBundle` auf `false` stehen, ist die App ein
@@ -117,17 +117,17 @@ App-Store-Kandidaten. Diese Aufnahme verschiebt weder BQ-Fachcode nach
 LocalBase noch ersetzt sie die ausstehenden Datenschutz-, Rechte- und
 Integrationsnachweise der Fachapp.
 
-Die aktuelle AD-Lieferung ist ein privates Multi-App-Produktbundle: jedes
+Die aktuelle FLZ-Lieferung ist ein privates Multi-App-Produktbundle: jedes
 Fachproduktbundle enthält LocalBase, OrgSuite und das Fachprodukt
-(`ad-suite/docs/INSTALLATION.md`, `scripts/build-ad-suite-release.sh`). Das ist
+(`flz-full-suite/docs/INSTALLATION.md`, `scripts/build-flz-full-suite-release.sh`). Das ist
 kein einzelnes offizielles App-Store-Paket. Die Fachapps importieren zur
 Laufzeit LocalBase-Klassen oder -Assets, deklarieren LocalBase in ihren
 `appinfo/info.xml` jedoch nicht. `orgsuite` rendert sogar ein
-LocalBase-Template. Der dokumentierte AD-Installer kompensiert dies durch
+LocalBase-Template. Der dokumentierte FLZ-Installer kompensiert dies durch
 Installationsreihenfolge; eine saubere Einzelinstallation nur des
 Fachapp-Archivs ist dadurch nicht belegt. Ein vorhandener manueller Befund
-dokumentiert für AD Raumplaner HTTP 500 bei vollständig deaktivierter
-LocalBase (`adroom/docs/manual-acceptance.md`).
+dokumentiert für Filzmann Raumplaner HTTP 500 bei vollständig deaktivierter
+LocalBase (`flzroom/docs/manual-acceptance.md`).
 
 Damit verhindern oder gefährden die aktuellen Kopplungen eine unabhängige
 Installation, Aktualisierung, Deinstallation und App-Store-Veröffentlichung.
@@ -209,16 +209,16 @@ den inzwischen je App nachgewiesenen Stand fest:
 | App | Ausgangsstatus | Verbindlicher Auslöser | Abschlussnachweis |
 | --- | --- | --- | --- |
 | `brtop` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
-| `adplaner` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap; Einzeltests laden nur diesen Bootstrap, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
+| `flzplaner` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap; Einzeltests laden nur diesen Bootstrap, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
 | `brstunden` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
 | `localbase` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine Produktiv-Fallbacks oder verteilten Test-Klassenpfade, grüne PHP-Suite |
-| `filzmann_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
-| `adcalendar` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap mit genau einem LocalBase-Testübergang, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
-| `adurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
+| `flz_permission_matrix` | verifiziert am 23. August 2026 | abgeschlossen | zentraler vollständiger Bootstrap und eigener Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
+| `flzcalendar` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap mit genau einem LocalBase-Testübergang, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
+| `flzurlaub` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Klassenpfade, grüne PHP-Suite |
 | `orgsuite` | verifiziert am 23. August 2026 | abgeschlossen | lokaler Bootstrap und Runner; LocalBase-Laufzeitvertrag nur am zentralen Testübergang; grüne PHP-Suite |
-| `adroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
-| `adrecruitment` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap und eigener Autoload-Contract-Test, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
-| `adbqplanung` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
+| `flzroom` | verifiziert am 12. August 2026 | abgeschlossen | zentraler lokaler Bootstrap, keine verteilten Test-Klassenpfade, grüne PHP-Suite |
+| `flzrecruitment` | verifiziert am 24. August 2026 | abgeschlossen | zentraler lokaler Bootstrap und eigener Autoload-Contract-Test, keine Produktiv-Fallbacks oder verteilten Klassenpfade, grüne PHP-Suite |
+| `flzbqplanung` | umgesetzt und verifiziert | vor der Privacy-Provider-Arbeit am 24. August 2026 bestätigt | zentraler app-lokaler Test-Bootstrap, keine verteilten Produktiv-Klassenpfade, grüne PHP-Suite |
 
 Der Status wird nur mit dem jeweiligen verifizierten App-Lauf geändert. Eine
 bloße zentrale Dokumentationsänderung erklärt keine App als migriert.
@@ -384,21 +384,21 @@ aktuelle offizielle Dokumentation geprüft.
 
 | Bestandteil / heutiger Ort | Aktuelle Nutzer | Kategorie und Sicherheit | Begründung / Zielstruktur | Risiko / Store-Auswirkung | Priorität |
 | --- | --- | --- | --- | --- | --- |
-| `Controller/ApiResponder.php`, `Model/ModelApiTrait.php`, `Service/AppLogger.php` | BRTop, AdPlaner, BRStunden; Trait zusätzlich AD Urlaub | A, **sofort eindeutig / verifiziert** | zustandslose technische Verträge; separates PHP-Paket, beim App-Build geprefixt und gebundelt | mittel: Klassenidentität und BC testen; beseitigt harte LocalBase-App-Pflicht | 1 |
-| `js/api`, `js/models`, `js/repositories`, kleine `js/ui`-Primitives | BRTop, AdPlaner, BRStunden, AD Kalender, AD Urlaub, AD Raumplaner | A, **sofort eindeutig / verifiziert** | gleiche Basisklassen/Clientprimitives; separates Frontend-Paket, app-lokal gebaut, keine globalen `window.LocalBase`-Kollisionen | hoch: viele Consumer und Ladeordnung; wesentlich für Store-Standalone | 1 |
+| `Controller/ApiResponder.php`, `Model/ModelApiTrait.php`, `Service/AppLogger.php` | BRTop, FlzPlaner, BRStunden; Trait zusätzlich Filzmann Urlaubsplanung | A, **sofort eindeutig / verifiziert** | zustandslose technische Verträge; separates PHP-Paket, beim App-Build geprefixt und gebundelt | mittel: Klassenidentität und BC testen; beseitigt harte LocalBase-App-Pflicht | 1 |
+| `js/api`, `js/models`, `js/repositories`, kleine `js/ui`-Primitives | BRTop, FlzPlaner, BRStunden, Filzmann Kalender, Filzmann Urlaubsplanung, Filzmann Raumplaner | A, **sofort eindeutig / verifiziert** | gleiche Basisklassen/Clientprimitives; separates Frontend-Paket, app-lokal gebaut, keine globalen `window.LocalBase`-Kollisionen | hoch: viele Consumer und Ladeordnung; wesentlich für Store-Standalone | 1 |
 | app-lokale Test-Support-Verzeichnisse, Assertions, JS-Fakes und Coverage-Tooling | fast alle App-Testläufer/CI | A, **sofort eindeutig / verifiziert**, test-only | separat versioniertes Dev-Paket oder reproduzierbare Testtool-Abhängigkeit; niemals Produktivarchiv | niedrig für Runtime, mittel für CI-Reproduzierbarkeit/Lizenz | 2 |
 | `GroupProvisioningService.php` | BRTop, BRStunden | A, **wahrscheinlich / plausible Einordnung** | native, zustandslose Gruppenoperation; Semantik beider Consumer vor Extraktion als Contract bestätigen | mittel: Rechte-/Backend-Negativfälle; keine Basis-App nur für Helfer | 2 |
-| `AdDemoFixtureCatalog.php` | AD Kalender, AD Urlaub | A-intern oder C, **noch zu prüfen** | gleiche Demo-Semantik und öffentliche Eignung der Organisationsbeispiele prüfen; sonst app-lokal | mittel: interne Namen/Fixtures dürfen nicht in Store-Paket rutschen | 4 |
+| `FlzDemoFixtureCatalog.php` | Filzmann Kalender, Filzmann Urlaubsplanung | A-intern oder C, **noch zu prüfen** | gleiche Demo-Semantik und öffentliche Eignung der Organisationsbeispiele prüfen; sonst app-lokal | mittel: interne Namen/Fixtures dürfen nicht in Store-Paket rutschen | 4 |
 | Kalender-Value-Objects ohne Persistenz (`CalendarContext`, `HolidayPeriod`, `HolidayCalendar`) | Kalender, Urlaub, Raum | A, **wahrscheinlich** | reine Werte/Serialisierung in isoliertes PHP-Paket; nicht den Cache/Provider versteckt mitnehmen | mittel: Vertrag muss unabhängig vom Laufzeitdienst testbar sein | 2 |
 | Organisations-Value-Objects/-Policy/-Snapshot ohne Persistenz | Kalender, Urlaub, Planer, Recruitment | A als Vertragstypen, **wahrscheinlich** | schmale versionierte DTO-/Policy-Bibliothek; gespeicherte Definition bleibt B | hoch: Sicherheitsinvariante und Versionshandshake vollständig testen | 2 |
 | `CalendarContextSettingsService`, `HolidayCalendarCacheStore`, `HolidayCalendarService`, `OpenHolidaysClient`, Refresh-Job | Kalender, Urlaub, Raum; Admin | B, **sofort eindeutig / verifiziert** | zentrale Konfiguration, Cache, Provider und Job bleiben eigenständiger Laufzeitdienst mit Version/Deinstallationsvertrag | hoch: Cache/Netzwerk/Update/Deinstallation; externe Store-Abhängigkeit begründen | 1 |
 | Organisationspersistenz, Snapshot-Service, Hierarchie-/Rechtequelle, Peerfreigaben | Kalender, Urlaub, Planer, Recruitment, OrgSuite | B, **sofort eindeutig / verifiziert** | fachlich führende organisationsweite Konfiguration und Sicherheitsquelle; öffentliche versionierte API statt interner Klassen | sehr hoch: Berechtigungen, Bestands-AppConfig, Migration und Deny-by-default | 1 |
 | Admincontroller, Routen, Settings, Template, Organisationseditor und persönliches Layout | einzelne Fachapp oder OrgSuite als Adapter | B, **sofort eindeutig / verifiziert** | eigene Administration und API beim verantwortlichen Laufzeitdienst; Consumer rendert kein fremdes internes Template | hoch: CSRF/Adminrechte, Assets, App-Store-Zumutbarkeit | 1 |
-| Abwesenheits-, Konflikt- und Capability-Events | AD Kalender, AD Urlaub, AdPlaner, AD Raumplaner | B, **wahrscheinlich** | appübergreifender In-Process-Eventbus benötigt eine einzige Klassenidentität; schmale versionierte öffentliche Runtime-API | hoch: gebundelte, geprefixte Kopien wären nicht eventidentisch; fehlender Provider muss gültig bleiben | 2 |
-| `DemoAccountProvisioningService` mit zentralem Kontoregister | mehrere AD-Demo-Packs | B-intern, **wahrscheinlich / nicht migrieren bis Produktentscheid** | gemeinsam gespeicherte Eigentümerschaft verhindert lokale A-Einstufung; für öffentliche Releases optionalen Demo-Lebenszyklus und Entfernung klären | hoch: Konten/Gruppen, Datenschutz, LDAP und Deinstallation | 4 |
-| Produktkatalog und `StandaloneAppNavigationService` | alle AD-Produkte, OrgSuite, Parent-Installer | A für statischen Vertrag/Adapter oder B als Suite-Dienst, **derzeit nicht entscheidbar** | Produktownership, externe Namen und Updatequelle zuerst entscheiden; keine private Katalogdatei still in Store-App voraussetzen | hoch: Installation, Navigation, interne IDs, Releasekopplung | 3 |
-| OrgSuite-Adapterlogik | OrgSuite und einzelne AD-Produkte | B, **wahrscheinlich** | Navigation/Adminplatzierung gehört zu einer bewusst versionierten Suite-Laufzeit, nicht in generische Bibliothek | mittel bis hoch: öffentliche Zusatz-App muss sachlich zumutbar sein | 3 |
-| Privacy-DTOs, Providerinterfaces, Registry, Aggregation, Self-Service, Admin-Auskunft und künftige Privacy-Jobs; heute im LocalBase-Pilot | LocalBase sowie reale Provider in AD Kalender, AD Raumplaner, AD Urlaub, AD Planer und AD Recruitment | B, **sofort eindeutig / verifiziert**; Ziel durch ADR 0002 entschieden | geschlossene Migration in die Standalone-App `filzmann_data_protection`; Fachprovider bleiben lokal, kein Daten-Fallback und keine zweite aktive Vertragsquelle | sehr hoch: öffentliche API, Rechte, Versionshandshake, optionale Installation, Consumer-Migration und Rückbau; Store-Gate bis zum Nachweis blockiert | 1 |
+| Abwesenheits-, Konflikt- und Capability-Events | Filzmann Kalender, Filzmann Urlaubsplanung, FlzPlaner, Filzmann Raumplaner | B, **wahrscheinlich** | appübergreifender In-Process-Eventbus benötigt eine einzige Klassenidentität; schmale versionierte öffentliche Runtime-API | hoch: gebundelte, geprefixte Kopien wären nicht eventidentisch; fehlender Provider muss gültig bleiben | 2 |
+| `DemoAccountProvisioningService` mit zentralem Kontoregister | mehrere FLZ-Demo-Packs | B-intern, **wahrscheinlich / nicht migrieren bis Produktentscheid** | gemeinsam gespeicherte Eigentümerschaft verhindert lokale A-Einstufung; für öffentliche Releases optionalen Demo-Lebenszyklus und Entfernung klären | hoch: Konten/Gruppen, Datenschutz, LDAP und Deinstallation | 4 |
+| Produktkatalog und `StandaloneAppNavigationService` | alle FLZ-Produkte, OrgSuite, Parent-Installer | A für statischen Vertrag/Adapter oder B als Suite-Dienst, **derzeit nicht entscheidbar** | Produktownership, externe Namen und Updatequelle zuerst entscheiden; keine private Katalogdatei still in Store-App voraussetzen | hoch: Installation, Navigation, interne IDs, Releasekopplung | 3 |
+| OrgSuite-Adapterlogik | OrgSuite und einzelne FLZ-Produkte | B, **wahrscheinlich** | Navigation/Adminplatzierung gehört zu einer bewusst versionierten Suite-Laufzeit, nicht in generische Bibliothek | mittel bis hoch: öffentliche Zusatz-App muss sachlich zumutbar sein | 3 |
+| Privacy-DTOs, Providerinterfaces, Registry, Aggregation, Self-Service, Admin-Auskunft und künftige Privacy-Jobs; heute im LocalBase-Pilot | LocalBase sowie reale Provider in Filzmann Kalender, Filzmann Raumplaner, Filzmann Urlaubsplanung, Filzmann Assistenzplanung und Filzmann Recruitment | B, **sofort eindeutig / verifiziert**; Ziel durch ADR 0002 entschieden | geschlossene Migration in die Standalone-App `flz_data_protection`; Fachprovider bleiben lokal, kein Daten-Fallback und keine zweite aktive Vertragsquelle | sehr hoch: öffentliche API, Rechte, Versionshandshake, optionale Installation, Consumer-Migration und Rückbau; Store-Gate bis zum Nachweis blockiert | 1 |
 | LocalBase-spezifischer Organisationseditor/Exporter | keine zweite semantisch identische UI gefunden | B als Adminoberfläche, nicht A; **nicht migrieren** | gehört zur zentralen Organisationsverwaltung; ähnliche Fachapp-UIs sind keine zweite Verwendung | hoch: Personendarstellung, Export, Accessibility | 3 |
 | app-spezifische Fachmodelle, Repositorys, Workflows und UI-Komponenten außerhalb LocalBase | jeweilige Fachapp | C, **verifiziert / nicht migrieren** | ähnliche CRUD-/Dialog-/Kalenderformen haben unterschiedliche Fachsemantik und Änderungsgründe | niedrig bei lokalem Verbleib; voreilige Abstraktion wäre Store-Kopplung | fortlaufend |
 
@@ -417,7 +417,7 @@ Name, App-ID und Umfang des späteren Laufzeitdienstes sind noch nicht
 entschieden.
 
 Für die Privacy-Komponente sind Produktname und App-ID mit
-`Data Protection Center` beziehungsweise `filzmann_data_protection`
+`Data Protection Center` beziehungsweise `flz_data_protection`
 entschieden. ADR 0002 ordnet sie als Standalone-App der Kategorie B ein und
 ersetzt damit ausschließlich die frühere Zielannahme, die öffentliche
 Privacy-Runtime dauerhaft in LocalBase zu belassen.

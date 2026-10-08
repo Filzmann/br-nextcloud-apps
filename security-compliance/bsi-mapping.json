@@ -20,7 +20,7 @@
       "topic": "application scope, platform boundary and lifecycle responsibility",
       "status": "implemented",
       "implementation_refs": ["security-compliance/scope.json", "docs/architecture.md", "config/workspace-repositories.tsv"],
-      "verification_refs": ["tests/check-security-compliance.sh", "tests/check-ad-product-catalog.sh"],
+      "verification_refs": ["tests/check-security-compliance.sh", "tests/check-flz-product-catalog.sh"],
       "evidence": ["successful Parent consistency check", "appinfo support-range evidence"],
       "scope": ["all-apps", "parent"],
       "residual_risk": "Deployment-operator controls are outside the app repositories."
@@ -75,10 +75,10 @@
       "bsi_module": "CON.8",
       "topic": "components, dependencies, integrity and vulnerability status",
       "status": "implemented",
-      "implementation_refs": ["scripts/build-ad-suite-release.sh", "scripts/generate-cyclonedx-sbom.php", "scripts/run-security-scanners", "security-compliance/scanner-tools.json", "security-compliance/osv-scanner.toml", "security-compliance/vulnerability-exceptions.json"],
-      "verification_refs": ["tests/check-reproducible-release-archive.sh", "tests/check-security-scanners.sh", "tests/check-ad-suite-ci-contract.sh"],
+      "implementation_refs": ["scripts/build-flz-full-suite-release.sh", "scripts/generate-cyclonedx-sbom.php", "scripts/run-security-scanners", "security-compliance/scanner-tools.json", "security-compliance/osv-scanner.toml", "security-compliance/vulnerability-exceptions.json"],
+      "verification_refs": ["tests/check-reproducible-release-archive.sh", "tests/check-security-scanners.sh", "tests/check-flz-full-suite-ci-contract.sh"],
       "evidence": ["CycloneDX 1.6 release SBOM", "SHA-256 manifests", "SHA-256-pinned OSV-Scanner results", "expiry-validated vulnerability exceptions"],
-      "scope": ["all-apps", "ad-suite-release", "build-tooling"],
+      "scope": ["all-apps", "flz-full-suite-release", "build-tooling"],
       "residual_risk": "OSV covers supported dependency manifests, not GitHub Action provenance or vulnerabilities without a published advisory."
     },
     {
@@ -87,9 +87,9 @@
       "topic": "static analysis, secret detection and prohibited release content",
       "status": "implemented",
       "implementation_refs": ["scripts/check-fast", "scripts/run-security-scanners", "security-compliance/gitleaks.toml", "security-compliance/gitleaks-ignore.txt", "security-compliance/semgrep-rules.yml", "security-compliance/analysis-exceptions.json", ".github/workflows/deploy-staging.yml"],
-      "verification_refs": ["tests/check-security-scanners.sh", "tests/check-staging-deployment.sh", "tests/check-ad-suite-standalone-contract.sh"],
+      "verification_refs": ["tests/check-security-scanners.sh", "tests/check-staging-deployment.sh", "tests/check-flz-full-suite-standalone-contract.sh"],
       "evidence": ["content-aware current-worktree Gitleaks scan", "offline project-specific Semgrep analysis", "expiry-validated fingerprint exceptions", "sanitized scanner and release evidence"],
-      "scope": ["all-apps", "parent", "ad-suite-release"],
+      "scope": ["all-apps", "parent", "flz-full-suite-release"],
       "residual_risk": "Project rules, pattern-based secret detection and static analysis cannot prove the absence of every vulnerable data flow."
     },
     {
@@ -97,10 +97,10 @@
       "bsi_module": "OPS.1.1.6",
       "topic": "tests, coverage, release approval and reproducible evidence",
       "status": "implemented",
-      "implementation_refs": ["scripts/check-full", "scripts/check-ad-suite-delivery", "scripts/build-ad-suite-release.sh"],
-      "verification_refs": ["tests/check-ad-suite-ci-contract.sh", "tests/check-reproducible-release-archive.sh"],
+      "implementation_refs": ["scripts/check-full", "scripts/check-flz-full-suite-delivery", "scripts/build-flz-full-suite-release.sh"],
+      "verification_refs": ["tests/check-flz-full-suite-ci-contract.sh", "tests/check-reproducible-release-archive.sh"],
       "evidence": ["CI PHP/JavaScript tests and coverage", "provider/consumer contracts", "clean delivery gate", "reproducible archives and hashes"],
-      "scope": ["all-apps", "ad-suite-release"],
+      "scope": ["all-apps", "flz-full-suite-release"],
       "residual_risk": "Green workspace checks are not an organizational production approval."
     },
     {
@@ -132,7 +132,7 @@
       "topic": "request validation, CSRF, bound SQL, output escaping and safe paths",
       "status": "implemented",
       "implementation_refs": ["AGENTS.md", "docs/architecture.md"],
-      "verification_refs": ["adcalendar/tests/Controller/ControllerSecuritySmokeTest.php", "adroom/tests/Controller/ControllerSecuritySmokeTest.php"],
+      "verification_refs": ["flzcalendar/tests/Controller/ControllerSecuritySmokeTest.php", "flzroom/tests/Controller/ControllerSecuritySmokeTest.php"],
       "evidence": ["controller attribute tests", "API execution tests", "repository and file-service tests"],
       "scope": ["all-apps"],
       "residual_risk": "Representative central references do not replace every app-local controller and integration test."
@@ -154,7 +154,7 @@
       "topic": "security-relevant events, diagnosability and data-minimized logs",
       "status": "partial",
       "implementation_refs": ["AGENTS.md", "docs/architecture.md", "security-compliance/README.md"],
-      "verification_refs": ["localbase/tests/Service/AppLoggerSmokeTest.php", "filzmann_permission_matrix/tests/unit/AccessServiceTest.php"],
+      "verification_refs": ["localbase/tests/Service/AppLoggerSmokeTest.php", "flz_permission_matrix/tests/unit/AccessServiceTest.php"],
       "evidence": ["safe scalar logger context", "app-local admin grant and permission-matrix audit records", "error isolation tests"],
       "scope": ["all-apps"],
       "gap": "No cross-app security-event taxonomy or organizational retention/monitoring owner is approved.",
@@ -165,8 +165,8 @@
       "bsi_module": "APP.7",
       "topic": "private reporting, triage, fix, regression, release and incident response",
       "status": "partial",
-      "implementation_refs": ["SECURITY.md", "security-compliance/README.md", "ad-suite/SECURITY.md"],
-      "verification_refs": ["tests/check-security-compliance.sh", "scripts/check-ad-suite-delivery"],
+      "implementation_refs": ["SECURITY.md", "security-compliance/README.md", "flz-full-suite/SECURITY.md"],
+      "verification_refs": ["tests/check-security-compliance.sh", "scripts/check-flz-full-suite-delivery"],
       "evidence": ["private-reporting guidance", "TDD regression requirement", "release gate and advisory step"],
       "scope": ["all-apps", "parent"],
       "gap": "Security contact and organizational incident owner are not configured.",

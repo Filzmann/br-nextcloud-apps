@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 $workspace = dirname(__DIR__);
 
-require_once $workspace . '/filzmann_permission_matrix/tests/bootstrap.php';
-require_once $workspace . '/filzmann_data_protection/tests/bootstrap.php';
+require_once $workspace . '/flz_permission_matrix/tests/bootstrap.php';
+require_once $workspace . '/flz_data_protection/tests/bootstrap.php';
 
 $apps = [
-    'OCA\\AdCalendar\\' => $workspace . '/adcalendar/lib/',
-    'OCA\\AdPlaner\\' => $workspace . '/adplaner/lib/',
-    'OCA\\AdUrlaub\\' => $workspace . '/adurlaub/lib/',
-    'OCA\\AdRoom\\' => $workspace . '/adroom/lib/',
+    'OCA\\FlzCalendar\\' => $workspace . '/flzcalendar/lib/',
+    'OCA\\FlzPlaner\\' => $workspace . '/flzplaner/lib/',
+    'OCA\\FlzUrlaub\\' => $workspace . '/flzurlaub/lib/',
+    'OCA\\FlzRoom\\' => $workspace . '/flzroom/lib/',
     'OCA\\BrTop\\' => $workspace . '/brtop/lib/',
     'OCA\\BrStunden\\' => $workspace . '/brstunden/lib/',
-    'OCA\\Recruitment\\' => $workspace . '/adrecruitment/lib/',
-    'OCA\\AdBqPlanning\\' => $workspace . '/adbqplanung/lib/',
-    'OCA\\FilzmannDataProtection\\' => $workspace . '/filzmann_data_protection/lib/',
+    'OCA\\FlzRecruitment\\' => $workspace . '/flzrecruitment/lib/',
+    'OCA\\FlzBqPlanning\\' => $workspace . '/flzbqplanung/lib/',
+    'OCA\\FlzDataProtection\\' => $workspace . '/flz_data_protection/lib/',
     'OCA\\LocalBase\\' => $workspace . '/localbase/lib/',
 ];
 
@@ -34,30 +34,30 @@ spl_autoload_register(static function (string $class) use ($apps): void {
     }
 });
 
-use OCA\AdCalendar\Permission\CalendarPermissionProvider;
-use OCA\AdCalendar\Permission\CalendarPermissionSourceInterface;
-use OCA\AdBqPlanning\Permission\BqPermissionProvider;
-use OCA\AdBqPlanning\Permission\BqPermissionSourceInterface;
-use OCA\AdPlaner\Permission\PlanerPermissionProvider;
-use OCA\AdPlaner\Permission\PlanerPermissionSourceInterface;
-use OCA\AdRoom\Permission\RoomPermissionProvider;
-use OCA\AdUrlaub\Permission\VacationPermissionProvider;
-use OCA\AdUrlaub\Permission\VacationPermissionSourceInterface;
+use OCA\FlzCalendar\Permission\CalendarPermissionProvider;
+use OCA\FlzCalendar\Permission\CalendarPermissionSourceInterface;
+use OCA\FlzBqPlanning\Permission\BqPermissionProvider;
+use OCA\FlzBqPlanning\Permission\BqPermissionSourceInterface;
+use OCA\FlzPlaner\Permission\PlanerPermissionProvider;
+use OCA\FlzPlaner\Permission\PlanerPermissionSourceInterface;
+use OCA\FlzRoom\Permission\RoomPermissionProvider;
+use OCA\FlzUrlaub\Permission\VacationPermissionProvider;
+use OCA\FlzUrlaub\Permission\VacationPermissionSourceInterface;
 use OCA\BrStunden\Permission\BrStundenPermissionProvider;
 use OCA\BrStunden\Permission\BrStundenPermissionSourceInterface;
 use OCA\BrTop\Permission\BrTopPermissionProvider;
 use OCA\BrTop\Permission\BrTopPermissionSourceInterface;
-use OCA\FilzmannDataProtection\Permission\DataProtectionPermissionProvider;
-use OCA\FilzmannDataProtection\Service\RetentionSettingsService;
-use OCA\FilzmannPermissionMatrix\PublicApi\V1\PermissionProvider;
-use OCA\LocalBase\Organization\AdOrganizationDefinition;
-use OCA\LocalBase\Organization\AdOrganizationSnapshot;
-use OCA\Recruitment\Permission\RecruitmentPermissionProvider;
-use OCA\Recruitment\Permission\RecruitmentPermissionSourceInterface;
+use OCA\FlzDataProtection\Permission\DataProtectionPermissionProvider;
+use OCA\FlzDataProtection\Service\RetentionSettingsService;
+use OCA\FlzPermissionMatrix\PublicApi\V1\PermissionProvider;
+use OCA\FlzRecruitment\Organization\OrganizationSnapshot as RecruitmentOrganizationSnapshot;
+use OCA\LocalBase\Organization\FlzOrganizationDefinition;
+use OCA\FlzRecruitment\Permission\RecruitmentPermissionProvider;
+use OCA\FlzRecruitment\Permission\RecruitmentPermissionSourceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 
-$definition = AdOrganizationDefinition::defaults();
+$definition = FlzOrganizationDefinition::defaults();
 $retentionSettings = new RetentionSettingsService(
     new class implements IAppConfig {
         public function getValueArray(string $appId, string $key, array $default = [], bool $lazy = false): array {
@@ -77,20 +77,20 @@ $retentionSettings = new RetentionSettingsService(
 );
 $providers = [
     new CalendarPermissionProvider(new class($definition) implements CalendarPermissionSourceInterface {
-        public function __construct(private AdOrganizationDefinition $definition) {}
-        public function definition(): AdOrganizationDefinition { return $this->definition; }
-        public function peerGroups(): array { return ['ad-EB']; }
+        public function __construct(private FlzOrganizationDefinition $definition) {}
+        public function definition(): FlzOrganizationDefinition { return $this->definition; }
+        public function peerGroups(): array { return ['flz-EB']; }
     }),
     new PlanerPermissionProvider(new class implements PlanerPermissionSourceInterface {
-        public function teamGroupIds(): array { return ['ad-ASN-Test']; }
-        public function ebGroupId(): string { return 'ad-EB'; }
+        public function teamGroupIds(): array { return ['flz-ASN-Test']; }
+        public function ebGroupId(): string { return 'flz-EB'; }
     }),
     new VacationPermissionProvider(new class($definition) implements VacationPermissionSourceInterface {
-        public function __construct(private AdOrganizationDefinition $definition) {}
-        public function definition(): AdOrganizationDefinition { return $this->definition; }
-        public function teamGroupIds(): array { return ['ad-ASN-Test']; }
+        public function __construct(private FlzOrganizationDefinition $definition) {}
+        public function definition(): FlzOrganizationDefinition { return $this->definition; }
+        public function teamGroupIds(): array { return ['flz-ASN-Test']; }
         public function enabledPeerGroups(): array { return []; }
-        public function asnPeerGroup(): string { return 'ad-ASN-*'; }
+        public function asnPeerGroup(): string { return 'flz-ASN-*'; }
     }),
     new RoomPermissionProvider(),
     new BrTopPermissionProvider(new class implements BrTopPermissionSourceInterface {
@@ -100,17 +100,17 @@ $providers = [
         public function memberGroupId(): string { return 'br-members'; }
     }),
     new RecruitmentPermissionProvider(new class implements RecruitmentPermissionSourceInterface {
-        public function organization(): AdOrganizationSnapshot {
-            return new AdOrganizationSnapshot(true, 4, [
-                'staff_hr' => ['groupId' => 'ad-HR', 'label' => 'HR'],
-                'payroll' => ['groupId' => 'ad-Payroll', 'label' => 'Lohn'],
-                'eb' => ['groupId' => 'ad-EB', 'label' => 'Einsatzbegleitung'],
+        public function organization(): RecruitmentOrganizationSnapshot {
+            return RecruitmentOrganizationSnapshot::valid('1.0', 4, 'synthetic-checksum', [
+                'staff_hr' => ['groupId' => 'flz-HR', 'label' => 'HR'],
+                'payroll' => ['groupId' => 'flz-Payroll', 'label' => 'Lohn'],
+                'eb' => ['groupId' => 'flz-EB', 'label' => 'Einsatzbegleitung'],
             ], [
-                'north' => ['groupId' => 'ad-Area-North', 'label' => 'Nord'],
+                'north' => ['groupId' => 'flz-Area-North', 'label' => 'Nord'],
             ]);
         }
         public function permissionSettings(): array {
-            return ['firstGuideGroupId' => 'ad-first-guides', 'representatives' => []];
+            return ['firstGuideGroupId' => 'flz-first-guides', 'representatives' => []];
         }
     }),
     new BqPermissionProvider(new class implements BqPermissionSourceInterface {

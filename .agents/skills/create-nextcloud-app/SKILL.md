@@ -24,7 +24,7 @@ description: Create and wire a new, separately versioned Nextcloud app repositor
 6. If personal data or app-specific permissions are already part of the
    requested scope, read `docs/privacy-architecture.md`,
    `docs/privacy-provider-guide.md`, and the public permission-provider V1
-   guide in `filzmann_permission_matrix/docs/permission-provider-v1.md`.
+   guide in `flz_permission_matrix/docs/permission-provider-v1.md`.
    Identify the real subject types, person references, canonical permission
    source, and relevant secondary stores before choosing the provider design.
 

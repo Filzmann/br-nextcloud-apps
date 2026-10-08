@@ -3,20 +3,20 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 manifest="$workspace/config/workspace-repositories.tsv"
-php_coverage_baseline="$workspace/scripts/ad-suite-php-coverage-baseline.tsv"
+php_coverage_baseline="$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv"
 mapfile -t apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
-consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden filzmann_permission_matrix adrecruitment)
-branch_matched_consumers=(orgsuite adcalendar adplaner adurlaub adroom brtop brstunden filzmann_permission_matrix adrecruitment)
+consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
+branch_matched_consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
 declare -A consumer_repositories=(
     [orgsuite]='nextcloud-orgsuite'
-    [adcalendar]='nextcloud-adcalendar'
-    [adplaner]='nextcloud-adplaner'
-    [adurlaub]='nextcloud-adurlaub'
-    [adroom]='nextcloud-adroom'
+    [flzcalendar]='nextcloud-flzcalendar'
+    [flzplaner]='nextcloud-flzplaner'
+    [flzurlaub]='nextcloud-flzurlaub'
+    [flzroom]='nextcloud-flzroom'
     [brtop]='nextcloud-brtop'
     [brstunden]='nextcloud-brstunden'
-    [filzmann_permission_matrix]='nextcloud-filzmann-permission-matrix'
-    [adrecruitment]='nextcloud-recruitment'
+    [flz_permission_matrix]='nextcloud-flz-permission-matrix'
+    [flzrecruitment]='nextcloud-flzrecruitment'
 )
 
 require_text() {

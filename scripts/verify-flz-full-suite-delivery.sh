@@ -2,15 +2,15 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 support_range_checker="$workspace/scripts/validate-nextcloud-support-range.php"
 nextcloud_target_major="${NEXTCLOUD_TARGET_MAJOR:-34}"
 php "$catalog_reader" validate >/dev/null
 mapfile -t apps < <(php "$catalog_reader" full-suite)
 mapfile -t products < <(php "$catalog_reader" bundle-products)
 
-if [[ "${AD_SUITE_GATE_WRAPPER:-0}" != '1' ]]; then
-    echo 'Direkter Aufruf ist nicht freigabefähig; scripts/check-ad-suite-delivery verwenden.' >&2
+if [[ "${FLZ_SUITE_GATE_WRAPPER:-0}" != '1' ]]; then
+    echo 'Direkter Aufruf ist nicht freigabefähig; scripts/check-flz-full-suite-delivery verwenden.' >&2
     exit 2
 fi
 if [[ "${PARENT_FAST_CHECK_VERIFIED:-0}" != '1' ]]; then
@@ -40,7 +40,7 @@ for command in bash git php node tar sha256sum; do
 done
 
 for document in README.md LICENSE SECURITY.md docs/INSTALLATION.md docs/OPERATIONS.md docs/ACCEPTANCE.md docs/DELIVERY-GATE.md docs/LDAP-UNIVENTION.md; do
-    if [[ ! -f "$workspace/ad-suite/$document" ]]; then
+    if [[ ! -f "$workspace/flz-full-suite/$document" ]]; then
         echo "Öffentliche Suite-Dokumentation fehlt: $document" >&2
         exit 1
     fi
@@ -72,7 +72,7 @@ for app in "${apps[@]}"; do
         if ((string)$xml->id !== $expectedId) throw new RuntimeException("App-ID stimmt nicht mit dem Ordner überein");
         if (strtolower((string)$xml->licence) !== "agpl") throw new RuntimeException("Lizenzmetadatum ist nicht AGPL");
         if (version_compare((string)$xml->dependencies->php["min-version"], "8.3", "<")) throw new RuntimeException("PHP-Minimum liegt unter 8.3");
-        if ((string)$xml->website !== "https://github.com/Filzmann/ad-suite") throw new RuntimeException("Zentrale Projektseite fehlt");
+        if ((string)$xml->website !== "https://github.com/Filzmann/flz-full-suite") throw new RuntimeException("Zentrale Projektseite fehlt");
         if (!str_starts_with((string)$xml->bugs, "https://github.com/Filzmann/nextcloud-") || !str_ends_with((string)$xml->bugs, "/issues")) throw new RuntimeException("Öffentlicher Fehlerkanal ist ungültig");
         if (!str_starts_with((string)$xml->repository, "https://github.com/Filzmann/nextcloud-")) throw new RuntimeException("Öffentliches Quellrepository ist ungültig");
     ' "$info" "$app"
@@ -120,51 +120,51 @@ if [[ "${RUN_DDEV_CHECKS:-0}" == '1' ]]; then
 fi
 
 if [[ "${RUN_HTTP_SMOKES:-0}" == '1' ]]; then
-    : "${AD_SUITE_BASE_URL:?AD_SUITE_BASE_URL fehlt für HTTP-Smokes}"
-    : "${AD_SUITE_USER:?AD_SUITE_USER fehlt für HTTP-Smokes}"
-    : "${AD_SUITE_PASSWORD:?AD_SUITE_PASSWORD fehlt für HTTP-Smokes}"
+    : "${FLZ_SUITE_BASE_URL:?FLZ_SUITE_BASE_URL fehlt für HTTP-Smokes}"
+    : "${FLZ_SUITE_USER:?FLZ_SUITE_USER fehlt für HTTP-Smokes}"
+    : "${FLZ_SUITE_PASSWORD:?FLZ_SUITE_PASSWORD fehlt für HTTP-Smokes}"
 
     echo '== Authentifizierte HTTP- und CSRF-Smokes =='
-    ORGS_BASE_URL="$AD_SUITE_BASE_URL" ORGS_ADMIN_USER="$AD_SUITE_USER" ORGS_ADMIN_PASSWORD="$AD_SUITE_PASSWORD" \
+    ORGS_BASE_URL="$FLZ_SUITE_BASE_URL" ORGS_ADMIN_USER="$FLZ_SUITE_USER" ORGS_ADMIN_PASSWORD="$FLZ_SUITE_PASSWORD" \
         "$workspace/orgsuite/tests/http-smoke.sh"
-    ADC_BASE_URL="$AD_SUITE_BASE_URL" ADC_USER="$AD_SUITE_USER" ADC_PASSWORD="$AD_SUITE_PASSWORD" \
-        "$workspace/adcalendar/tests/http-smoke.sh"
-    ADP_BASE_URL="$AD_SUITE_BASE_URL" ADP_USER="$AD_SUITE_USER" ADP_PASSWORD="$AD_SUITE_PASSWORD" \
-        "$workspace/adplaner/tests/http-smoke.sh"
-    ADU_BASE_URL="$AD_SUITE_BASE_URL" ADU_USER="$AD_SUITE_USER" ADU_PASSWORD="$AD_SUITE_PASSWORD" \
-        "$workspace/adurlaub/tests/http-smoke.sh"
-    ADR_BASE_URL="$AD_SUITE_BASE_URL" ADR_USER="$AD_SUITE_USER" ADR_PASSWORD="$AD_SUITE_PASSWORD" \
-        "$workspace/adroom/tests/http-smoke.sh"
+    FLZC_BASE_URL="$FLZ_SUITE_BASE_URL" FLZC_USER="$FLZ_SUITE_USER" FLZC_PASSWORD="$FLZ_SUITE_PASSWORD" \
+        "$workspace/flzcalendar/tests/http-smoke.sh"
+    FLZP_BASE_URL="$FLZ_SUITE_BASE_URL" FLZP_USER="$FLZ_SUITE_USER" FLZP_PASSWORD="$FLZ_SUITE_PASSWORD" \
+        "$workspace/flzplaner/tests/http-smoke.sh"
+    FLZU_BASE_URL="$FLZ_SUITE_BASE_URL" FLZU_USER="$FLZ_SUITE_USER" FLZU_PASSWORD="$FLZ_SUITE_PASSWORD" \
+        "$workspace/flzurlaub/tests/http-smoke.sh"
+    FLZR_BASE_URL="$FLZ_SUITE_BASE_URL" FLZR_USER="$FLZ_SUITE_USER" FLZR_PASSWORD="$FLZ_SUITE_PASSWORD" \
+        "$workspace/flzroom/tests/http-smoke.sh"
 fi
 
 if [[ "${RUN_ACCESS_MATRICES:-0}" == '1' ]]; then
     echo '== Selbstbereinigende DDEV-Rechtematrizen =='
-    ADP_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
-        "$workspace/adplaner/tests/access-matrix-ddev-smoke.sh"
-    ADC_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
-        "$workspace/adcalendar/tests/access-matrix-ddev-smoke.sh"
-    ADU_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
-        "$workspace/adurlaub/tests/access-matrix-ddev-smoke.sh"
+    FLZP_BASE_URL="${FLZ_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/flzplaner/tests/access-matrix-ddev-smoke.sh"
+    FLZC_BASE_URL="${FLZ_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/flzcalendar/tests/access-matrix-ddev-smoke.sh"
+    FLZU_BASE_URL="${FLZ_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/flzurlaub/tests/access-matrix-ddev-smoke.sh"
 fi
 
 if [[ "${RUN_INTEGRATION_SMOKES:-0}" == '1' ]]; then
     echo '== Reale DDEV-Integrations- und Migrations-Smokes =='
-    "$workspace/adplaner/tests/integration-ddev-smoke.sh"
-    ADC_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
-        "$workspace/adcalendar/tests/admin-defaults-ddev-smoke.sh"
-    "$workspace/adcalendar/tests/integration-ddev-smoke.sh"
-    "$workspace/adurlaub/tests/migration-schema-ddev-smoke.sh"
-    RECR_BASE_URL="${AD_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
-        "$workspace/adrecruitment/tests/ddev-smoke.sh"
+    "$workspace/flzplaner/tests/integration-ddev-smoke.sh"
+    FLZC_BASE_URL="${FLZ_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/flzcalendar/tests/admin-defaults-ddev-smoke.sh"
+    "$workspace/flzcalendar/tests/integration-ddev-smoke.sh"
+    "$workspace/flzurlaub/tests/migration-schema-ddev-smoke.sh"
+    RECR_BASE_URL="${FLZ_SUITE_BASE_URL:-https://nextcloud-dev.ddev.site}" \
+        "$workspace/flzrecruitment/tests/ddev-smoke.sh"
 fi
 
 echo '== Reproduzierbarer Paketbau =='
 DIST_ROOT="$temporary_dist" RELEASE_LABEL='delivery-check' SKIP_TESTS=1 \
     NEXTCLOUD_TARGET_MAJOR="$nextcloud_target_major" \
-    "$workspace/scripts/build-ad-suite-release.sh"
-(cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.tar.gz.sha256)
-(cd "$temporary_dist" && sha256sum --check ad-suite-delivery-check.release-evidence.json.sha256)
-(cd "$temporary_dist/ad-suite-delivery-check" && sha256sum --check SHA256SUMS)
+    "$workspace/scripts/build-flz-full-suite-release.sh"
+(cd "$temporary_dist" && sha256sum --check flz-full-suite-delivery-check.tar.gz.sha256)
+(cd "$temporary_dist" && sha256sum --check flz-full-suite-delivery-check.release-evidence.json.sha256)
+(cd "$temporary_dist/flz-full-suite-delivery-check" && sha256sum --check SHA256SUMS)
 evidence_release_mode='candidate'
 if [[ "${DIAGNOSTIC_MODE:-0}" == '1' ]]; then
     evidence_release_mode='diagnostic'
@@ -182,22 +182,22 @@ php -r '
     if ($evidence["build_context"]["dirty_sources"] !== $expectedDirty) throw new RuntimeException("Dirty-Status ist unzutreffend");
     if ($evidence["build_context"]["publishable"] !== false) throw new RuntimeException("Builder behauptet Veröffentlichbarkeit");
     if ($evidence["compliance"]["certification"] !== "not-certified") throw new RuntimeException("Zertifizierungsgrenze fehlt");
-' "$temporary_dist/ad-suite-delivery-check.release-evidence.json" "$temporary_dist/ad-suite-delivery-check.tar.gz" "$evidence_release_mode"
-full_bundle_members="$(tar -tzf "$temporary_dist/ad-suite-delivery-check.tar.gz")"
+' "$temporary_dist/flz-full-suite-delivery-check.release-evidence.json" "$temporary_dist/flz-full-suite-delivery-check.tar.gz" "$evidence_release_mode"
+full_bundle_members="$(tar -tzf "$temporary_dist/flz-full-suite-delivery-check.tar.gz")"
 for contract in \
-    'ad-suite-delivery-check/install.sh' \
-    'ad-suite-delivery-check/ad-product-catalog.json' \
-    'ad-suite-delivery-check/sbom.cdx.json' \
-    'ad-suite-delivery-check/LDAP-UNIVENTION.md'; do
+    'flz-full-suite-delivery-check/install.sh' \
+    'flz-full-suite-delivery-check/flz-product-catalog.json' \
+    'flz-full-suite-delivery-check/sbom.cdx.json' \
+    'flz-full-suite-delivery-check/LDAP-UNIVENTION.md'; do
     if ! grep -Fq "$contract" <<< "$full_bundle_members"; then
         echo "Vollständiger Suite-Bundle-Vertrag fehlt: $contract" >&2
         exit 1
     fi
 done
 for product in "${products[@]}"; do
-    product_bundle="$temporary_dist/ad-product-$product-delivery-check.tar.gz"
+    product_bundle="$temporary_dist/flz-product-$product-delivery-check.tar.gz"
     product_hash="$product_bundle.sha256"
-    product_evidence="$temporary_dist/ad-product-$product-delivery-check.release-evidence.json"
+    product_evidence="$temporary_dist/flz-product-$product-delivery-check.release-evidence.json"
     product_evidence_hash="$product_evidence.sha256"
     if [[ ! -f "$product_bundle" || ! -f "$product_hash" || ! -f "$product_evidence" || ! -f "$product_evidence_hash" ]]; then
         echo "Produktpaket fehlt: $product" >&2
@@ -213,15 +213,15 @@ for product in "${products[@]}"; do
     ' "$product_evidence" "$product_bundle" "$evidence_release_mode"
     product_members="$(tar -tzf "$product_bundle")"
     for contract in \
-        "ad-product-$product-delivery-check/install.sh" \
-        "ad-product-$product-delivery-check/INSTALLATION.md" \
-        "ad-product-$product-delivery-check/BETRIEB-UND-RUECKBAU.md" \
-        "ad-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
-        "ad-product-$product-delivery-check/ad-product-catalog.json" \
-        "ad-product-$product-delivery-check/sbom.cdx.json" \
-        "ad-product-$product-delivery-check/localbase-" \
-        "ad-product-$product-delivery-check/orgsuite-" \
-        "ad-product-$product-delivery-check/$product-"; do
+        "flz-product-$product-delivery-check/install.sh" \
+        "flz-product-$product-delivery-check/INSTALLATION.md" \
+        "flz-product-$product-delivery-check/BETRIEB-UND-RUECKBAU.md" \
+        "flz-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
+        "flz-product-$product-delivery-check/flz-product-catalog.json" \
+        "flz-product-$product-delivery-check/sbom.cdx.json" \
+        "flz-product-$product-delivery-check/localbase-" \
+        "flz-product-$product-delivery-check/orgsuite-" \
+        "flz-product-$product-delivery-check/$product-"; do
         if ! grep -Fq "$contract" <<< "$product_members"; then
             echo "Produktpaketvertrag fehlt für $product: $contract" >&2
             exit 1
@@ -229,7 +229,7 @@ for product in "${products[@]}"; do
     done
     for other_product in "${products[@]}"; do
         [[ "$other_product" == "$product" ]] && continue
-        if grep -Eq "ad-product-$product-delivery-check/$other_product-[^/]+\\.tar\\.gz$" <<< "$product_members"; then
+        if grep -Eq "flz-product-$product-delivery-check/$other_product-[^/]+\\.tar\\.gz$" <<< "$product_members"; then
             echo "Fremdes Fachprodukt im Produktpaket $product: $other_product" >&2
             exit 1
         fi
@@ -239,5 +239,5 @@ done
 if [[ "${DIAGNOSTIC_MODE:-0}" == '1' ]]; then
     echo 'DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL'
 else
-    echo 'AD-Suite Delivery-Gate: OK'
+    echo 'Filzmann Full Suite Delivery-Gate: OK'
 fi

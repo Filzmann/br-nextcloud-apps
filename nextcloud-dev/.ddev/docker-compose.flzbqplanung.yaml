@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - ${DDEV_APPROOT}/../flzbqplanung:/var/www/html/html/custom_apps/flzbqplanung:cached

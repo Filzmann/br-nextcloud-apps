@@ -42,7 +42,7 @@ Nach [ADR 0001](architecture-decisions/0001-shared-code-runtime-and-app-store.md
 die Privacy-Plattform eine eigenständige Kategorie B-Nextcloud-App.
 [ADR 0002](architecture-decisions/0002-standalone-privacy-platform.md)
 (`docs/architecture-decisions/0002-standalone-privacy-platform.md`)
-legt `filzmann_data_protection` als neutrale Standalone-App und Runtime-Owner
+legt `flz_data_protection` als neutrale Standalone-App und Runtime-Owner
 fest. Fachapps bleiben ohne aktive Privacy-App fachlich standalone. Fehlende
 oder inkompatible Provider werden sichtbar und nutzen keinen Daten-Fallback
 über SQL, Reflection, Dateien, Konfiguration oder `IUserMigrator`. Der

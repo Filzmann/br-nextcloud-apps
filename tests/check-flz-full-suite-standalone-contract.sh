@@ -2,7 +2,7 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t products < <(php "$catalog_reader" products)
 
@@ -42,7 +42,7 @@ fi
 
 # Execute the existing optional inventory stage in isolation. This checks its
 # process boundary without building release archives or starting real DDEV.
-python3 - "$workspace/scripts/verify-ad-suite-delivery.sh" <<'PY'
+python3 - "$workspace/scripts/verify-flz-full-suite-delivery.sh" <<'PY'
 import os
 from pathlib import Path
 import subprocess
@@ -92,4 +92,4 @@ esac
             assert all(app in result.stdout.splitlines() for app in ('alpha', 'beta', 'gamma'))
 PY
 
-echo 'AD-Suite-Standalone-Vertrag: OK'
+echo 'Filzmann-Full-Suite-Standalone-Vertrag: OK'

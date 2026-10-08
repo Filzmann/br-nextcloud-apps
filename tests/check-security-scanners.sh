@@ -71,7 +71,7 @@ done
 if [[ "${MOCK_GITLEAKS_ERROR:-0}" == '1' ]]; then
     exit 2
 fi
-if [[ "${MOCK_GITLEAKS_FINDING:-0}" == '1' && "$source" == *'/adcalendar' ]]; then
+if [[ "${MOCK_GITLEAKS_FINDING:-0}" == '1' && "$source" == *'/flzcalendar' ]]; then
     printf '%s\n' '[{"RuleID":"generic-api-key","File":"appinfo/info.xml","StartLine":7,"Secret":"SYNTHETIC_SHOULD_NEVER_ESCAPE"}]' > "$report"
 else
     printf '%s\n' '[]' > "$report"
@@ -95,13 +95,13 @@ if [[ -n "$sentinel" ]]; then
     relative="${sentinel#"$source"/}"
     finding="[{\"check_id\":\"filzmann.third-party-entered-first-party-sast\",\"path\":\"$relative\",\"start\":{\"line\":1},\"end\":{\"line\":1},\"extra\":{\"severity\":\"ERROR\"}}]"
 fi
-if [[ "${MOCK_SEMGREP_FINDING:-0}" == '1' && "$source" == *'/adcalendar' ]]; then
+if [[ "${MOCK_SEMGREP_FINDING:-0}" == '1' && "$source" == *'/flzcalendar' ]]; then
     finding='[{"check_id":"filzmann.php.eval","path":"appinfo/info.xml","start":{"line":7},"end":{"line":7},"extra":{"severity":"ERROR","lines":"synthetic"}}]'
 fi
 issues='[]'
-if [[ "${MOCK_SEMGREP_WARNING:-0}" == '1' && "$source" == *'/adcalendar' ]]; then
+if [[ "${MOCK_SEMGREP_WARNING:-0}" == '1' && "$source" == *'/flzcalendar' ]]; then
     issues='[{"code":3,"level":"warn","type":"PartialParsing","message":"synthetic partial parsing warning","path":"appinfo/info.xml"}]'
-elif [[ "${MOCK_SEMGREP_REPORT_ERROR:-0}" == '1' && "$source" == *'/adcalendar' ]]; then
+elif [[ "${MOCK_SEMGREP_REPORT_ERROR:-0}" == '1' && "$source" == *'/flzcalendar' ]]; then
     issues='[{"code":3,"level":"error","type":"ParseError","message":"synthetic parser error","path":"appinfo/info.xml"}]'
 fi
 printf '{"results":%s,"errors":%s}\n' "$finding" "$issues"
@@ -220,7 +220,7 @@ php -r '
         if (($data["scanners"][$scanner]["scanned_repositories"] ?? null) !== 13) throw new RuntimeException("Scanner-Scope ist unvollständig: {$scanner}");
     }
     $thirdParty = $data["scope"]["third_party_components"] ?? [];
-    if (count($thirdParty) !== 1 || ($thirdParty[0]["repository"] ?? null) !== "adrecruitment" || ($thirdParty[0]["purl"] ?? null) !== "pkg:npm/pdfjs-dist@6.2.108") throw new RuntimeException("App-lokales Third-Party-Inventar fehlt im Scanner-Scope");
+    if (count($thirdParty) !== 1 || ($thirdParty[0]["repository"] ?? null) !== "flzrecruitment" || ($thirdParty[0]["purl"] ?? null) !== "pkg:npm/pdfjs-dist@6.2.108") throw new RuntimeException("App-lokales Third-Party-Inventar fehlt im Scanner-Scope");
     if (($data["scanners"]["osv-scanner"]["scanned_inventories"] ?? null) !== 1) throw new RuntimeException("PURL-Inventar wurde nicht per OSV geprüft");
 ' "$temporary/passed.json"
 
@@ -370,7 +370,7 @@ printf '%s\n' one two three four five six 'first synthetic content' \
 git -C "$temporary/fingerprint-repository" init -q
 git -C "$temporary/fingerprint-repository" add appinfo/info.xml
 MOCK_GITLEAKS_FINDING=1 run_scanners "$temporary/fingerprint-first.json" \
-    --repository "adcalendar=$temporary/fingerprint-repository" >/dev/null 2>&1 || true
+    --repository "flzcalendar=$temporary/fingerprint-repository" >/dev/null 2>&1 || true
 php -r '
     $finding = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR)["findings"][0];
     $data = json_decode(file_get_contents($argv[2]), true, 512, JSON_THROW_ON_ERROR);
@@ -391,12 +391,12 @@ php -r '
     file_put_contents($argv[3], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/fingerprint-first.json" "$analysis_exceptions" "$temporary/fingerprint-exception.json"
 MOCK_GITLEAKS_FINDING=1 run_scanners "$temporary/fingerprint-accepted.json" \
-    --repository "adcalendar=$temporary/fingerprint-repository" \
+    --repository "flzcalendar=$temporary/fingerprint-repository" \
     --analysis-exceptions "$temporary/fingerprint-exception.json" >/dev/null
 printf '%s\n' one two three four five six 'changed synthetic content' \
     > "$temporary/fingerprint-repository/appinfo/info.xml"
 if MOCK_GITLEAKS_FINDING=1 run_scanners "$temporary/fingerprint-changed.json" \
-    --repository "adcalendar=$temporary/fingerprint-repository" \
+    --repository "flzcalendar=$temporary/fingerprint-repository" \
     --analysis-exceptions "$temporary/fingerprint-exception.json" >/dev/null 2>&1; then
     echo 'Eine Ausnahme blieb nach geändertem Fundinhalt wirksam.' >&2
     exit 1
@@ -413,7 +413,7 @@ php -r '
     file_put_contents($argv[2], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/analysis-accepted.json" "$temporary/gitleaks-risk-accepted.json"
 if MOCK_GITLEAKS_FINDING=1 run_scanners "$temporary/gitleaks-risk-accepted-evidence.json" \
-    --repository "adcalendar=$workspace/adcalendar" \
+    --repository "flzcalendar=$workspace/flzcalendar" \
     --analysis-exceptions "$temporary/gitleaks-risk-accepted.json" >/dev/null 2>&1; then
     echo 'Ein tatsächlicher Gitleaks-Fund wurde im Teil-Scope als Risiko akzeptiert.' >&2
     exit 1
@@ -548,7 +548,7 @@ php -r '
 
 mkdir -p "$temporary/builder-test-mode"
 if SECURITY_SCANNER_TEST_MODE=1 DIST_ROOT="$temporary/builder-test-mode" RELEASE_LABEL='test-mode-rejected' \
-    "$workspace/scripts/build-ad-suite-release.sh" >"$temporary/builder-test-mode.out" 2>&1; then
+    "$workspace/scripts/build-flz-full-suite-release.sh" >"$temporary/builder-test-mode.out" 2>&1; then
     echo 'Der Release-Builder akzeptiert SECURITY_SCANNER_TEST_MODE.' >&2
     exit 1
 fi
@@ -561,7 +561,7 @@ fi
 for expected in \
     'run-security-scanners' \
     '--security-scan-evidence'; do
-    grep -Fq -- "$expected" "$workspace/scripts/build-ad-suite-release.sh" || {
+    grep -Fq -- "$expected" "$workspace/scripts/build-flz-full-suite-release.sh" || {
         echo "Release-Builder integriert den Scannervertrag nicht: $expected" >&2
         exit 1
     }

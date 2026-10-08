@@ -26,30 +26,30 @@ br-nextcloud-apps/
 |   `-- .ddev/
 |       |-- config.yaml
 |       |-- docker-compose.brtop.yaml
-|       |-- docker-compose.adplaner.yaml
+|       |-- docker-compose.flzplaner.yaml
 |       |-- docker-compose.brstunden.yaml
 |       |-- docker-compose.localbase.yaml
-|       |-- docker-compose.filzmann_permission_matrix.yaml
-|       |-- docker-compose.adcalendar.yaml
-|       |-- docker-compose.adurlaub.yaml
+|       |-- docker-compose.flz_permission_matrix.yaml
+|       |-- docker-compose.flzcalendar.yaml
+|       |-- docker-compose.flzurlaub.yaml
 |       |-- docker-compose.orgsuite.yaml
-|       |-- docker-compose.adroom.yaml
-|       |-- docker-compose.adrecruitment.yaml
-|       |-- docker-compose.adbqplanung.yaml
-|       `-- docker-compose.filzmann_data_protection.yaml
+|       |-- docker-compose.flzroom.yaml
+|       |-- docker-compose.flzrecruitment.yaml
+|       |-- docker-compose.flzbqplanung.yaml
+|       `-- docker-compose.flz_data_protection.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
-|-- adplaner/   # eigenes Git-Repo, im Parent ignoriert
+|-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
-|-- filzmann_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
-|-- adcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
-|-- adurlaub/   # eigenes Git-Repo, Urlaubsplanung
-|-- orgsuite/   # eigenes Git-Repo, gemeinsame AD-/BR-Navigation
-|-- adroom/     # eigenes Git-Repo, Raumplanung
-|-- adrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
-|-- adbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
-|-- filzmann_data_protection/ # eigenes Git-Repo, Datenschutz-Center
-`-- ad-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
+|-- flz_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
+|-- flzcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
+|-- flzurlaub/   # eigenes Git-Repo, Urlaubsplanung
+|-- orgsuite/   # eigenes Git-Repo, gemeinsame FLZ-/BR-Navigation
+|-- flzroom/     # eigenes Git-Repo, Raumplanung
+|-- flzrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
+|-- flzbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
+|-- flz_data_protection/ # eigenes Git-Repo, Datenschutz-Center
+`-- flz-full-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
 ## Aktuelle App-Repos
@@ -59,19 +59,19 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | App | App-ID | App-Repo | Lokale URL |
 | --- | --- | --- | --- |
 | BRTop | `brtop` | `brtop/` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
-| AdPlaner | `adplaner` | `adplaner/` | `https://nextcloud-dev.ddev.site/apps/adplaner/` |
+| FlzPlaner | `flzplaner` | `flzplaner/` | `https://nextcloud-dev.ddev.site/apps/flzplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
 | LocalBase | `localbase` | `localbase/` | keine Navigation |
-| Berechtigungsmatrix | `filzmann_permission_matrix` | `filzmann_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/filzmann_permission_matrix/` |
-| AD Kalender | `adcalendar` | `adcalendar/` | `https://nextcloud-dev.ddev.site/apps/adcalendar/` |
-| AD Urlaub | `adurlaub` | `adurlaub/` | `https://nextcloud-dev.ddev.site/apps/adurlaub/` |
-| AD-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/ad` und `/br` |
-| AD Raumplaner | `adroom` | `adroom/` | `https://nextcloud-dev.ddev.site/apps/adroom/` |
-| AD Recruitment | `adrecruitment` | `adrecruitment/` | `https://nextcloud-dev.ddev.site/apps/adrecruitment/` |
-| AD BQ-Planer | `adbqplanung` | `adbqplanung/` | `https://nextcloud-dev.ddev.site/apps/adbqplanung/` |
-| Datenschutz-Center | `filzmann_data_protection` | `filzmann_data_protection/` | `https://nextcloud-dev.ddev.site/apps/filzmann_data_protection/` |
+| Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
+| Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
+| Filzmann Urlaubsplanung | `flzurlaub` | `flzurlaub/` | `https://nextcloud-dev.ddev.site/apps/flzurlaub/` |
+| FLZ-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/flz` und `/br` |
+| Filzmann Raumplaner | `flzroom` | `flzroom/` | `https://nextcloud-dev.ddev.site/apps/flzroom/` |
+| Filzmann Recruitment | `flzrecruitment` | `flzrecruitment/` | `https://nextcloud-dev.ddev.site/apps/flzrecruitment/` |
+| Filzmann BQ-Planer | `flzbqplanung` | `flzbqplanung/` | `https://nextcloud-dev.ddev.site/apps/flzbqplanung/` |
+| Datenschutz-Center | `flz_data_protection` | `flz_data_protection/` | `https://nextcloud-dev.ddev.site/apps/flz_data_protection/` |
 
-Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `ad-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
+Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `flz-full-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
 ## Lokale Test- und Demokonten
 
@@ -103,7 +103,7 @@ Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `adplaner/`, `brstunden/`, `localbase/`, `filzmann_permission_matrix/`, `adcalendar/`, `adurlaub/`, `orgsuite/`, `adroom/`, `adrecruitment/`, `adbqplanung/`, `filzmann_data_protection/` und `ad-suite/` sind eigene Git-Repositories.
+- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/` und `flz-full-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -126,17 +126,17 @@ ddev restart
 ddev describe
 ddev exec -d /var/www/html/html php occ status
 ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
-ddev exec -d /var/www/html/html php occ app:list | grep -i adplaner
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
-ddev exec -d /var/www/html/html php occ app:list | grep -i filzmann_permission_matrix
-ddev exec -d /var/www/html/html php occ app:list | grep -i adcalendar
-ddev exec -d /var/www/html/html php occ app:list | grep -i adurlaub
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_permission_matrix
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzcalendar
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzurlaub
 ddev exec -d /var/www/html/html php occ app:list | grep -i orgsuite
-ddev exec -d /var/www/html/html php occ app:list | grep -i adroom
-ddev exec -d /var/www/html/html php occ app:list | grep -i adrecruitment
-ddev exec -d /var/www/html/html php occ app:list | grep -i adbqplanung
-ddev exec -d /var/www/html/html php occ app:list | grep -i filzmann_data_protection
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzroom
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzrecruitment
+ddev exec -d /var/www/html/html php occ app:list | grep -i flzbqplanung
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_data_protection
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -193,17 +193,17 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.brtop.yaml
 ```
 
-AdPlaner:
+FlzPlaner:
 
 ```text
-${WORKSPACE_ROOT}/adplaner
--> /var/www/html/html/custom_apps/adplaner
+${WORKSPACE_ROOT}/flzplaner
+-> /var/www/html/html/custom_apps/flzplaner
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.adplaner.yaml
+nextcloud-dev/.ddev/docker-compose.flzplaner.yaml
 ```
 
 BRStunden:
@@ -235,40 +235,40 @@ nextcloud-dev/.ddev/docker-compose.localbase.yaml
 Berechtigungsmatrix:
 
 ```text
-${WORKSPACE_ROOT}/filzmann_permission_matrix
--> /var/www/html/html/custom_apps/filzmann_permission_matrix
+${WORKSPACE_ROOT}/flz_permission_matrix
+-> /var/www/html/html/custom_apps/flz_permission_matrix
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.filzmann_permission_matrix.yaml
+nextcloud-dev/.ddev/docker-compose.flz_permission_matrix.yaml
 ```
 
-AD Kalender:
+Filzmann Kalender:
 
 ```text
-${WORKSPACE_ROOT}/adcalendar
--> /var/www/html/html/custom_apps/adcalendar
-```
-
-Konfiguration:
-
-```text
-nextcloud-dev/.ddev/docker-compose.adcalendar.yaml
-```
-
-AD Urlaub:
-
-```text
-${WORKSPACE_ROOT}/adurlaub
--> /var/www/html/html/custom_apps/adurlaub
+${WORKSPACE_ROOT}/flzcalendar
+-> /var/www/html/html/custom_apps/flzcalendar
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.adurlaub.yaml
+nextcloud-dev/.ddev/docker-compose.flzcalendar.yaml
+```
+
+Filzmann Urlaubsplanung:
+
+```text
+${WORKSPACE_ROOT}/flzurlaub
+-> /var/www/html/html/custom_apps/flzurlaub
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flzurlaub.yaml
 ```
 
 OrgSuite:
@@ -284,56 +284,56 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.orgsuite.yaml
 ```
 
-AD Raumplaner:
+Filzmann Raumplaner:
 
 ```text
-${WORKSPACE_ROOT}/adroom
--> /var/www/html/html/custom_apps/adroom
+${WORKSPACE_ROOT}/flzroom
+-> /var/www/html/html/custom_apps/flzroom
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.adroom.yaml
+nextcloud-dev/.ddev/docker-compose.flzroom.yaml
 ```
 
-AD Recruitment:
+Filzmann Recruitment:
 
 ```text
-${WORKSPACE_ROOT}/adrecruitment
--> /var/www/html/html/custom_apps/adrecruitment
-```
-
-Konfiguration:
-
-```text
-nextcloud-dev/.ddev/docker-compose.adrecruitment.yaml
-```
-
-AD BQ-Planer:
-
-```text
-${WORKSPACE_ROOT}/adbqplanung
--> /var/www/html/html/custom_apps/adbqplanung
+${WORKSPACE_ROOT}/flzrecruitment
+-> /var/www/html/html/custom_apps/flzrecruitment
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.adbqplanung.yaml
+nextcloud-dev/.ddev/docker-compose.flzrecruitment.yaml
+```
+
+Filzmann BQ-Planer:
+
+```text
+${WORKSPACE_ROOT}/flzbqplanung
+-> /var/www/html/html/custom_apps/flzbqplanung
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flzbqplanung.yaml
 ```
 
 Datenschutz-Center:
 
 ```text
-${WORKSPACE_ROOT}/filzmann_data_protection
--> /var/www/html/html/custom_apps/filzmann_data_protection
+${WORKSPACE_ROOT}/flz_data_protection
+-> /var/www/html/html/custom_apps/flz_data_protection
 ```
 
 Konfiguration:
 
 ```text
-nextcloud-dev/.ddev/docker-compose.filzmann_data_protection.yaml
+nextcloud-dev/.ddev/docker-compose.flz_data_protection.yaml
 ```
 
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
@@ -381,7 +381,7 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Schneller Parent-Check: `scripts/check-fast`
 - Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`
 - Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
-- Echtes sauberes AD-Suite-Delivery-Gate: `scripts/check-ad-suite-delivery`
+- Echtes sauberes Filzmann-Full-Suite-Delivery-Gate: `scripts/check-flz-full-suite-delivery`
 - Automatisches RC-Deployment auf Teamcloud: `docs/staging-deployment.md`
 
 ## Lokaler Markdown- und Abnahme-Viewer
@@ -420,14 +420,14 @@ Die lokale HTTP-Grenze wird in Umgebungen, die Loopback-Sockets erlauben,
 zusätzlich mit `RUN_LOCAL_SOCKET_TESTS=1` aktiviert. `scripts/check-fast`
 enthält den socketfreien Contract-Test bereits.
 
-`check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-ad-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
+`check-full` ist bewusst kein Release-Urteil und baut keine Delivery-Artefakte. Das Delivery-Gate lehnt standardmäßig jedes schmutzige enthaltene Repository ab und führt den strikten Parent-Fast-Pfad genau einmal aus; ein zusätzlicher vorgelagerter `check-fast` im selben Releasepfad ist unnötig. Nur `scripts/check-flz-full-suite-delivery --diagnostic` akzeptiert einen schmutzigen Stand zur Fehlersuche und endet ausdrücklich mit `DIAGNOSE ABGESCHLOSSEN – KEIN RELEASE-URTEIL`.
 
 Ein Releasebau löscht keine älteren Release Candidates. Eine Bereinigung ist
 ein eigener Auftrag nach erfolgreichem Neubau. Zuerst wird ausschließlich die
 Vorschau geprüft:
 
 ```bash
-scripts/prune-ad-suite-release-candidates.sh \
+scripts/prune-flz-full-suite-release-candidates.sh \
   --dist-root <DIST-ROOT> \
   --keep-label nc<major>-rcN
 ```
@@ -438,7 +438,7 @@ Der benannte RC, Kandidaten anderer Majorserien und finale Releases bleiben
 erhalten. Gelöschte Artefakte sind nur aus einer anderen Kopie oder durch
 einen reproduzierbaren Neubau der exakten Quellcommits wiederherstellbar.
 
-DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `scripts/verify-ad-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
+DDEV-, HTTP- oder Rechtematrix-Smokes laufen nicht automatisch. Sie bleiben über die in `scripts/verify-flz-full-suite-delivery.sh` dokumentierten `RUN_*`-Variablen bewusst opt-in.
 
 ### Auswahl der Verifikation
 

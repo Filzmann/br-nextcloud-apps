@@ -50,7 +50,7 @@ cp "$workspace/security-compliance/scope.json" "$temporary/duplicate-scope.json"
 php -r '
     $path = $argv[1];
     $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
-    $data["product_sets"] = [["id" => "duplicate", "members" => ["adcalendar"]]];
+    $data["product_sets"] = [["id" => "duplicate", "members" => ["flzcalendar"]]];
     $data["applications"][0]["runtime_dependencies"] = ["nextcloud"];
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/duplicate-scope.json"
@@ -212,11 +212,11 @@ fi
 grep -Fq 'Ungültiger Toolpin: gitleaks/linux-amd64' "$temporary/scanner-tools.out"
 
 impact="$($checker \
-    --changed-file adcalendar/appinfo/routes.php \
-    --changed-file adcalendar/lib/Service/CalendarAccessService.php \
-    --changed-file adcalendar/lib/Migration/Version999Date.php \
+    --changed-file flzcalendar/appinfo/routes.php \
+    --changed-file flzcalendar/lib/Service/CalendarAccessService.php \
+    --changed-file flzcalendar/lib/Migration/Version999Date.php \
     --changed-file localbase/tests/coverage/composer.lock)"
-grep -Fq 'Review-Kontext: adcalendar/appinfo/routes.php -> api-contract' <<< "$impact" || {
+grep -Fq 'Review-Kontext: flzcalendar/appinfo/routes.php -> api-contract' <<< "$impact" || {
     echo 'Der Security-Impact nennt keinen konkreten App-/Dateikontext.' >&2
     exit 1
 }
@@ -233,7 +233,7 @@ for expected in \
     }
 done
 
-neutral="$($checker --changed-file adcalendar/docs/manual-acceptance.md)"
+neutral="$($checker --changed-file flzcalendar/docs/manual-acceptance.md)"
 grep -Fqx 'Security-Impact: keine kontextuelle Prüfung ausgelöst' <<< "$neutral"
 
 echo 'Security-Compliance-Vertrag: OK'

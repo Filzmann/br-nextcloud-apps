@@ -5,7 +5,9 @@ workspace="$(cd "$(dirname "$0")/.." && pwd)"
 package_script="$workspace/scripts/package-staging-app.sh"
 installer="$workspace/scripts/install-staging-app.sh"
 server_wrapper="$workspace/scripts/teamcloud-staging-install"
+ssh_gate="$workspace/scripts/teamcloud-staging"
 workflow="$workspace/.github/workflows/deploy-staging.yml"
+runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
 
 cleanup() {
@@ -190,6 +192,22 @@ if "$installer" \
 fi
 
 assert_file "$workflow"
+assert_file "$runbook"
+assert_contains "$runbook" 'Einmaliger Rebranding-Reinstall beim nächsten Staging-Lauf'
+assert_contains "$runbook" 'Automatische Deployments vor dem Push anhalten'
+assert_contains "$runbook" 'Installationsreihenfolge des Clean Installs'
+assert_contains "$runbook" '1. `localbase`'
+assert_contains "$runbook" '2. `flz_data_protection`'
+assert_contains "$runbook" '3. `flz_permission_matrix`'
+assert_contains "$runbook" '4. `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom` und `flzrecruitment`'
+assert_contains "$runbook" '5. `flzbqplanung`'
+assert_contains "$runbook" '6. `orgsuite`'
+for legacy_app_id in adcalendar adplaner adurlaub adroom adrecruitment adbqplanung filzmann_data_protection filzmann_permission_matrix; do
+    assert_contains "$runbook" "$legacy_app_id"
+done
+for target_app_id in flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzbqplanung flz_data_protection flz_permission_matrix; do
+    assert_contains "$runbook" "$target_app_id"
+done
 assert_contains "$workflow" 'workflow_call:'
 assert_contains "$workflow" 'environment: staging'
 assert_contains "$workflow" 'STAGING_SSH_PRIVATE_KEY'
@@ -235,7 +253,25 @@ if "$server_wrapper" /tmp/demoapp.tar.gz demoapp "$commit" "$hash" >/dev/null 2>
     fail 'Server-Wrapper akzeptiert ein Archiv außerhalb des Incoming-Verzeichnisses.'
 fi
 
-for app_id in brtop adplaner brstunden localbase filzmann_permission_matrix adcalendar adurlaub orgsuite adroom adrecruitment; do
+deployment_apps=(
+    brtop
+    flzplaner
+    brstunden
+    localbase
+    flz_permission_matrix
+    flzcalendar
+    flzurlaub
+    orgsuite
+    flzroom
+    flzrecruitment
+    flzbqplanung
+    flz_data_protection
+)
+
+for app_id in "${deployment_apps[@]}"; do
+    assert_contains "$workflow" "$app_id"
+    assert_contains "$ssh_gate" "$app_id"
+    assert_contains "$server_wrapper" "$app_id"
     caller="$workspace/$app_id/.github/workflows/tests.yml"
     assert_contains "$caller" 'deploy-staging:'
     assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main'

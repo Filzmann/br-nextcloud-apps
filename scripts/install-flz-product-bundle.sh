@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: install-ad-product-bundle.sh --nextcloud-root <Pfad> --bundle-dir <Pfad> --product <App-ID|suite>' >&2
+    echo 'Aufruf: install-flz-product-bundle.sh --nextcloud-root <Pfad> --bundle-dir <Pfad> --product <App-ID|suite>' >&2
 }
 
 nextcloud_root=''
@@ -19,13 +19,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-catalog_file="$bundle_dir/ad-product-catalog.json"
+catalog_file="$bundle_dir/flz-product-catalog.json"
 if ! command -v "$php_bin" >/dev/null 2>&1; then
     echo "Erforderlicher Befehl fehlt: $php_bin" >&2
     exit 2
 fi
 if [[ ! -f "$catalog_file" ]]; then
-    echo "AD-Produktkatalog fehlt im Paket: $catalog_file" >&2
+    echo "FLZ-Produktkatalog fehlt im Paket: $catalog_file" >&2
     exit 2
 fi
 catalog_products="$($php_bin -r '
@@ -70,7 +70,7 @@ catalog_products="$($php_bin -r '
     foreach ($products as $entry) {
         echo $entry["id"], "\t", $entry["fullSuiteBundle"] ? "1" : "0", "\t", $entry["productBundle"] ? "1" : "0", "\n";
     }
-' "$catalog_file")" || { echo 'AD-Produktkatalog im Paket ist ungültig.' >&2; exit 2; }
+' "$catalog_file")" || { echo 'FLZ-Produktkatalog im Paket ist ungültig.' >&2; exit 2; }
 
 products=()
 selected_products=()
@@ -84,7 +84,7 @@ while IFS=$'\t' read -r catalog_product in_full_suite has_product_bundle; do
     fi
 done <<< "$catalog_products"
 if [[ "${#selected_products[@]}" -eq 0 ]]; then
-    echo "Unbekanntes oder nicht paketiertes AD-Produkt: $product" >&2
+    echo "Unbekanntes oder nicht paketiertes FLZ-Produkt: $product" >&2
     exit 2
 fi
 
@@ -136,7 +136,7 @@ done < <(printf '%s' "$enabled_before" | "$php_bin" -r '
 ')
 
 stage="$(mktemp -d)"
-backup_root="$nextcloud_root/.ad-product-backup-$(date +%Y%m%d%H%M%S)-$$"
+backup_root="$nextcloud_root/.flz-product-backup-$(date +%Y%m%d%H%M%S)-$$"
 declare -a replaced=()
 declare -a created=()
 declare -a enabled_by_installer=()
@@ -263,9 +263,9 @@ product_count="$(printf '%s' "$enabled_json" | "$php_bin" -r '
 if [[ "$product_count" -ge 2 ]]; then
     "$php_bin" "$nextcloud_root/occ" app:enable orgsuite
     [[ -n "${originally_enabled[orgsuite]:-}" ]] || enabled_by_installer+=(orgsuite)
-    echo "OrgSuite wurde für $product_count aktive AD-Produkte aktiviert."
+    echo "OrgSuite wurde für $product_count aktive FLZ-Produkte aktiviert."
 else
-    echo 'OrgSuite bleibt bei einer einzelnen AD-Fachapp deaktiviert.'
+    echo 'OrgSuite bleibt bei einer einzelnen FLZ-Fachapp deaktiviert.'
 fi
 
 database_upgrade_started=1
@@ -273,4 +273,4 @@ database_upgrade_started=1
 database_upgrade_started=0
 
 finished=1
-echo "AD-Produktinstallation abgeschlossen: $product"
+echo "FLZ-Produktinstallation abgeschlossen: $product"

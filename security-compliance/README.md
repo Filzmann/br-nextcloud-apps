@@ -10,8 +10,8 @@ liegt nicht vor und wird hier nicht behauptet.
 ## Kanonische Quellen
 
 - `scope.json` bestimmt Repository-, Verantwortungs- und Plattformgrenzen.
-- AD-Produktmengen stammen ausschließlich aus
-  `localbase/resources/ad-product-catalog.json`; App-Laufzeitabhängigkeiten
+- FLZ-Produktmengen stammen ausschließlich aus
+  `localbase/resources/flz-product-catalog.json`; App-Laufzeitabhängigkeiten
   stammen ausschließlich aus der jeweiligen `appinfo/info.xml`. Der
   Security-Scope dupliziert beide Aussagen bewusst nicht.
 - `bsi-mapping.json` ist die einzige zentrale Zuordnung von
@@ -45,8 +45,8 @@ Security-Prüfung nennen:
 
 ```bash
 scripts/check-security-compliance \
-  --changed-file adcalendar/appinfo/routes.php \
-  --changed-file adcalendar/lib/Service/CalendarAccessService.php
+  --changed-file flzcalendar/appinfo/routes.php \
+  --changed-file flzcalendar/lib/Service/CalendarAccessService.php
 ```
 
 Der reale app-übergreifende Harness `scripts/check-apps` ruft denselben Check
@@ -73,8 +73,8 @@ oder geänderte Aussage wird in den zentralen Dateien aktualisiert.
    Reinstall-, Migrations- oder Zugriffs-Smokes ausführen.
 4. Parent-Änderungen mit `scripts/check-fast`, vollständige Workspace-Prüfung
    mit `scripts/check-full` prüfen. Beide sind kein Releaseurteil.
-5. Ein AD-Suite-Release ist nur nach dem sauberen
-   `scripts/check-ad-suite-delivery` freigabefähig. Der Builder erzeugt
+5. Ein Filzmann-Full-Suite-Release ist nur nach dem sauberen
+   `scripts/check-flz-full-suite-delivery` freigabefähig. Der Builder erzeugt
    CycloneDX-SBOM, Quellcommit-/Versionsmanifest, SHA-256-Prüfsummen und eine
    maschinenlesbare Release-Evidence. Generierte Evidence bleibt im
    `dist`-/CI-Artefakt und wird nicht im Git-Tree gepflegt.
@@ -121,7 +121,7 @@ Release-Evidence-Generator abgelehnt. Der Contract-Test ergänzt die Doubles um
 einen echten synthetischen Gitleaks-/Semgrep-/OSV-Lauf, der lokale
 Suppressionsversuche nachweislich nicht wirksam werden lässt.
 
-Der AD-Release-Builder führt diesen Lauf nach seinem Kollisionsguard und vor
+Der FLZ-Release-Builder führt diesen Lauf nach seinem Kollisionsguard und vor
 dem ersten Release-Write aus. Die normalisierte, datensparsame Scanner-Evidence
 wird gehasht in die Release-Evidence übernommen. Der wiederverwendbare
 Staging-CI-Pfad prüft den Parent und die konkret auszurollende App vor dem

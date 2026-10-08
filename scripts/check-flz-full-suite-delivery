@@ -2,10 +2,10 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-catalog_reader="$workspace/scripts/read-ad-product-catalog.php"
+catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t delivery_apps < <(php "$catalog_reader" full-suite)
-delivery_repositories=(. ad-suite "${delivery_apps[@]}")
+delivery_repositories=(. flz-full-suite "${delivery_apps[@]}")
 diagnostic=0
 
 if [[ "${1:-}" == '--diagnostic' ]]; then
@@ -13,22 +13,22 @@ if [[ "${1:-}" == '--diagnostic' ]]; then
     shift
 fi
 if (( $# != 0 )); then
-    echo 'Verwendung: scripts/check-ad-suite-delivery [--diagnostic]' >&2
+    echo 'Verwendung: scripts/check-flz-full-suite-delivery [--diagnostic]' >&2
     exit 2
 fi
 
 if (( diagnostic )); then
-    echo '== AD-Suite-Diagnose; schmutzige Repositories sind sichtbar, aber kein Release-Urteil ist möglich =='
+    echo '== Filzmann-Full-Suite-Diagnose; schmutzige Repositories sind sichtbar, aber kein Release-Urteil ist möglich =='
     for repository in "${delivery_repositories[@]}"; do
         echo "-- Status: $repository --"
         git -C "$workspace/$repository" status --short
     done
     "$workspace/scripts/check-fast"
-    AD_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 ALLOW_DIRTY=1 DIAGNOSTIC_MODE=1 "$workspace/scripts/verify-ad-suite-delivery.sh"
+    FLZ_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 ALLOW_DIRTY=1 DIAGNOSTIC_MODE=1 "$workspace/scripts/verify-flz-full-suite-delivery.sh"
     exit 0
 fi
 
-echo '== AD-Suite-Delivery-Gate; alle Delivery-Repositories müssen sauber sein =='
+echo '== Filzmann-Full-Suite-Delivery-Gate; alle Delivery-Repositories müssen sauber sein =='
 for repository in "${delivery_repositories[@]}"; do
     if [[ -n "$(git -C "$workspace/$repository" status --porcelain --untracked-files=all)" ]]; then
         echo "Delivery-Repository ist nicht sauber: $repository" >&2
@@ -38,4 +38,4 @@ for repository in "${delivery_repositories[@]}"; do
 done
 
 REQUIRE_TRACKED_STRUCTURE=1 "$workspace/scripts/check-fast"
-AD_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 "$workspace/scripts/verify-ad-suite-delivery.sh"
+FLZ_SUITE_GATE_WRAPPER=1 PARENT_FAST_CHECK_VERIFIED=1 "$workspace/scripts/verify-flz-full-suite-delivery.sh"

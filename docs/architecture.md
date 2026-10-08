@@ -24,11 +24,11 @@ in jedem betroffenen Repository separat geprüft.
 `localbase` stellt kleine, dependency-arme gemeinsame Verträge bereit.
 Gemeinsamer Code wird erst aufgenommen, wenn mindestens zwei Apps denselben
 semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
-gemeinsamen AD-/BR-Einstiege und den Adminadapter für app-übergreifende
+gemeinsamen FLZ-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
-Die sechs AD-Fachprodukte `adcalendar`, `adplaner`, `adurlaub`, `adroom`,
-`adrecruitment` und `adbqplanung` bleiben einzeln installierbar. Der BQ-Planer
+Die sechs FLZ-Fachprodukte `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`,
+`flzrecruitment` und `flzbqplanung` bleiben einzeln installierbar. Der BQ-Planer
 ist als Entwicklungsprodukt im gemeinsamen Menü und Standalone-Vertrag
 registriert, bis zur dokumentierten Release-Reife jedoch aus Full-Suite- und
 Einzelprodukt-Bundles ausgeschlossen. Bei genau einem aktiven Fachprodukt bleibt
@@ -37,7 +37,7 @@ Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
 geprüfte Installer OrgSuite. LocalBase und OrgSuite sind Infrastruktur, keine
 eigenständigen Fachprodukte.
 
-Noch nicht freigegebene künftige AD-Suite-Module, insbesondere DPA-
+Noch nicht freigegebene künftige Filzmann Nextcloud Plugins-Module, insbesondere DPA-
 Fallsteuerung und Schichtvermittlung, stehen ausschließlich in der
 [`systemweiten Zukunftsplanung`](zukunftsplan.md). Diese Vormerkung
 ändert weder den geltenden Produktkatalog noch Repositoryinventar,
@@ -55,9 +55,9 @@ keine Kopien. Konfiguration und Darstellung sind app-lokal in
 `orgsuite/AGENTS.md` und `orgsuite/docs/architecture.md` festgelegt. Der oben
 genannte Grundsatz, dass Navigation keine Rechte erweitert, gilt auch hier.
 
-`adbqplanung` konsumiert den öffentlichen LocalBase-Jahreskalender Version 1
+`flzbqplanung` konsumiert den öffentlichen LocalBase-Jahreskalender Version 1
 über einen app-eigenen Port. Fachliche Planungsregeln und das Verhalten bei
-eingeschränkter Kalenderverfügbarkeit stehen in `adbqplanung/AGENTS.md`.
+eingeschränkter Kalenderverfügbarkeit stehen in `flzbqplanung/AGENTS.md`.
 
 Die normative Einteilung gemeinsamen Codes und app-übergreifender
 Laufzeitdienste, die Store-Regeln sowie die komponentenweise
@@ -108,9 +108,9 @@ Read-only-/Bearbeitungsrollen und Hintergrundjobs werden nicht gleichgesetzt.
 
 Der öffentliche LocalBase-Organisationsvertrag Version 3 trennt `finance`
 und `payroll` unter derselben `finance_lead`. Fachapps lesen Rollen und
-Bürobereiche über den datensparsamen `AdOrganizationSnapshot`; ein fehlender,
+Bürobereiche über den datensparsamen `FlzOrganizationSnapshot`; ein fehlender,
 ungültiger oder nur aus Defaults rekonstruierter Persistenzstand erteilt keine
-Fachrechte. AD Recruitment verwendet diesen Vertrag für Personalreferat,
+Fachrechte. Filzmann Recruitment verwendet diesen Vertrag für Personalreferat,
 Lohn, bereichsgebundene Erstbegleitungen und granulare Vertretungsscopes,
 ohne Tabellen oder Controller anderer Fachapps zu lesen.
 
@@ -153,7 +153,7 @@ semantischen, tastaturbedienbaren Tab-Muster wie die übrigen Apps. Planung,
 Termine beziehungsweise Tagesprogramm, Ressourcen und Einstellungen bleiben
 dadurch klar getrennt. Eine Verwaltung von Bewerber*innen oder ihrer
 Zuordnung zu einem BQ-Durchlauf ist kein Tab und keine Funktion der
-BQ-Planungs-App; diese Zuständigkeit bleibt vollständig bei AD Recruitment.
+BQ-Planungs-App; diese Zuständigkeit bleibt vollständig bei Filzmann Recruitment.
 
 Neue und wesentlich überarbeitete Menüs arbeiten möglichst kompakt: häufige
 Aktionen bleiben direkt erreichbar, zusammengehörige seltene Optionen werden

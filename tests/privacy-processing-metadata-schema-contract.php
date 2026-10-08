@@ -37,10 +37,10 @@ $assertSame(
 $contractOwner = $schema['x-contract-owner'] ?? null;
 $assertSame(
     [
-        'app_id' => 'filzmann_data_protection',
+        'app_id' => 'flz_data_protection',
         'product_name' => 'Data Protection Center',
         'german_product_name' => 'Datenschutz-Center',
-        'php_namespace' => 'OCA\\FilzmannDataProtection',
+        'php_namespace' => 'OCA\\FlzDataProtection',
     ],
     $contractOwner,
     'Contract-Owner muss die kanonische Identität der Datenschutz-App verwenden.',

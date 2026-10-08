@@ -1,17 +1,17 @@
 ---
-name: build-ad-suite-release
-description: Build or validate AD-Suite and standalone AD-product release bundles with the repository's existing scripts. Use for explicit release-candidate, delivery-gate, installer, manifest, signing, or package requests; do not use for ordinary app development, production deployment, or publishing without explicit authorization.
+name: build-flz-full-suite-release
+description: Build or validate the Filzmann Full Suite and standalone FLZ-product release bundles with the repository's existing scripts. Use for explicit release-candidate, delivery-gate, installer, manifest, signing, or package requests; do not use for ordinary app development, production deployment, or publishing without explicit authorization.
 ---
 
-# Build and validate AD-Suite releases
+# Build and validate Filzmann Full Suite releases
 
 ## Safety gates
 
-1. Read Root `AGENTS.md`, `docs/workspace.md`, `ad-suite/AGENTS.md`, and the `AGENTS.md` of every included app.
+1. Read Root `AGENTS.md`, `docs/workspace.md`, `flz-full-suite/AGENTS.md`, and the `AGENTS.md` of every included app.
    Read and apply
    `docs/architecture-decisions/0001-shared-code-runtime-and-app-store.md`.
 2. Before a release candidate may be published or handed off as publishable, use the sibling skill `verify-nextcloud-future-compatibility` against the exact included commits. Require its green publication verdict, align every `info.xml` range and the suite ceiling, and rerun it when an upstream moving ref or candidate commit changed. An exploratory failure outside the declared range is acceptable only under that skill's limited-ceiling rule; a declared or explicitly targeted failure blocks the release.
-3. Inspect status in Parent, `ad-suite`, `localbase`, `orgsuite`, `adcalendar`, `adplaner`, `adurlaub`, `adroom`, and `adrecruitment`.
+3. Inspect status in Parent, `flz-full-suite`, `localbase`, `orgsuite`, `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, and `flzrecruitment`.
 4. Stop on dirty included repositories unless the user explicitly accepts a non-release diagnostic build. Do not silently set `ALLOW_DIRTY=1` or `SKIP_TESTS=1`.
 5. Stop the release workflow if the future-compatibility gate, any required fast test, or the applicable target-specific Delivery Gate is red or unverified. A diagnostic build may expose a failure but must not be described or handed off as a release.
 6. Building local artifacts is not authorization to sign, publish, deploy, enable apps, upgrade Nextcloud, or contact a production/staging system.
@@ -21,32 +21,32 @@ description: Build or validate AD-Suite and standalone AD-product release bundle
 
 1. For a release candidate intended for publication, complete `verify-nextcloud-future-compatibility` first and apply its approved metadata and release-contract updates. A diagnostic build may skip this only when it is explicitly labelled non-publishable.
 2. Select and name the delivery target before running a gate:
-   - **Private AD-Suite/product delivery:** run
-     `scripts/check-ad-suite-delivery`, then for an explicitly requested build
+   - **Private Filzmann Full Suite/product delivery:** run
+     `scripts/check-flz-full-suite-delivery`, then for an explicitly requested build
      choose a unique `RELEASE_LABEL` and run
-     `scripts/build-ad-suite-release.sh`. This is the existing multi-app path.
+     `scripts/build-flz-full-suite-release.sh`. This is the existing multi-app path.
    - **Official App-Store single-app candidate:** work from the named app
      repository, read its local instructions, and require its documented
      reproducible production-build command and app-local Store gate.
-     Do not run or cite the AD-Suite builder or Delivery Gate as proof for this artifact.
+     Do not run or cite the Filzmann Full Suite builder or Delivery Gate as proof for this artifact.
      The Parent currently has no generic App-Store builder. If the app has no
      truthful build/gate that produces and tests exactly one app-root archive,
      stop and report that no publishable Store candidate can be produced.
-3. For the private AD-Suite path, the clean Delivery Gate runs the strict
+3. For the private Filzmann Full Suite path, the clean Delivery Gate runs the strict
    tracked `scripts/check-fast` path exactly once, so do not prepend a duplicate
    fast run. `scripts/check-full` is deliberately not a release verdict.
 4. For either authorized build path, keep generated archives under ignored
    build output; do not stage them in Git.
 5. A successful build never removes older release candidates automatically.
    If the user separately authorizes cleanup, first run
-   `scripts/prune-ad-suite-release-candidates.sh --dist-root <path> --keep-label <label>`
+   `scripts/prune-flz-full-suite-release-candidates.sh --dist-root <path> --keep-label <label>`
    without `--execute` and review every printed target. Repeat the identical
    command with `--execute` only after that preview is accepted. Cleanup is
    limited to validated local `nc<major>-rcN` artifacts from the selected
    major series, preserves the named RC and
    all final releases, and is not recoverable except from another copy or by
    rebuilding the exact source commits.
-6. For the private AD-Suite path, validate the generated `manifest.tsv`,
+6. For the private Filzmann Full Suite path, validate the generated `manifest.tsv`,
    `SHA256SUMS`, outer `.sha256`, nested archive roots, mandatory documentation,
    and absence of `.git`, tests, `AGENTS.md`, symlinks, secrets, internal paths,
    and foreign products.
@@ -67,8 +67,8 @@ description: Build or validate AD-Suite and standalone AD-product release bundle
    complete, and the app passed a sauberen Installation with exactly its
    documented prerequisites. Static grep evidence alone is not a complete
    verdict for these review decisions.
-10. The current private AD-Suite product bundles contain `localbase`,
-   `orgsuite`, and exactly one requested AD Fachprodukt; the full suite contains
+10. The current private Filzmann Full Suite product bundles contain `localbase`,
+   `orgsuite`, and exactly one requested FLZ Fachprodukt; the full suite contains
    all supported products. This multi-app delivery model is not an official
    single-app App-Store archive and must not be reported as one.
 11. If authorized staging acceptance is in scope, use the real hosting configuration: domain CLI-PHP, configured app paths, PHP-FPM/domain user, and Static-Webserver user/group. Apply only minimal permission changes.

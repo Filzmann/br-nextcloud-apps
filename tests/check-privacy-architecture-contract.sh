@@ -85,7 +85,7 @@ for contract in \
         || fail "Providerleitfaden enthält den Vertrag nicht: $contract"
 done
 
-adr_text="$(<"$workspace/$standalone_adr")"
+flz_room_text="$(<"$workspace/$standalone_adr")"
 for contract in \
     'Status: angenommen' \
     'Kategorie B' \
@@ -93,7 +93,7 @@ for contract in \
     'neutrale Standalone-App' \
     'keine automatische App-zu-App-Installation' \
     'kein Daten-Fallback'; do
-    [[ "$adr_text" == *"$contract"* ]] \
+    [[ "$flz_room_text" == *"$contract"* ]] \
         || fail "Standalone-ADR enthält den Vertrag nicht: $contract"
 done
 

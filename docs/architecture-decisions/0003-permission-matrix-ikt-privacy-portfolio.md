@@ -3,7 +3,7 @@
 - Status: angenommen
 - Entscheidung: 2026-08-23
 - Geltungsbereich: Produktzuordnung, Navigation und künftige Integration der
-  App `filzmann_permission_matrix`
+  App `flz_permission_matrix`
 - Umsetzung: abgeschlossen für Identität, Standalone-Navigation,
   OrgSuite-Entkopplung, Privacy-Provider, Retention-Preview und den
   versionsgebundenen Groupfolders-22.x-Adapter; fachliche
@@ -105,7 +105,7 @@ Die Ausnahme gilt nur gemeinsam mit diesen Schutzgrenzen:
   `files_groupfolders`, abweichende Versionen und Quellfehler führen sichtbar
   zu `UNKNOWN` beziehungsweise `PARTIAL`;
 - vor jedem Release mit diesem Adapter prüft
-  `filzmann_permission_matrix/scripts/check-groupfolders-source-compatibility`
+  `flz_permission_matrix/scripts/check-groupfolders-source-compatibility`
   einen
   frischen offiziellen Groupfolders-Checkout. Änderungen an Version,
   Ziel-Nextcloud, DTO-Feldern oder Methode blockieren die Freigabe, bis
@@ -119,7 +119,7 @@ und erhält den zu prüfenden offiziellen Checkout als expliziten Parameter.
 
 Die frühere OrgSuite-Kopplung und `data-suite="br"` waren ein historischer
 Ist-Zustand, nicht die Zielklassifikation. Sie wurden am 23. August 2026 aus
-`filzmann_permission_matrix` und OrgSuite entfernt. Die Matrix registriert
+`flz_permission_matrix` und OrgSuite entfernt. Die Matrix registriert
 einen eigenen Nextcloud-Navigationseintrag und prüft dessen Sichtbarkeit über
 ihren bestehenden serverseitigen `AccessService`. OrgSuite führt die Matrix nicht
 mehr als BR-Ziel oder Weiterleitungsziel.
@@ -141,7 +141,7 @@ umgesetzt. Eine zweite unabhängig gepflegte Linkliste entsteht nicht.
 
 Die frühere App-ID `br_permission_matrix` und der frühere PHP-Namespace
 enthielten eine historische BR-Zuordnung. Am 23. August 2026 wurde die
-öffentliche Zielidentität `filzmann_permission_matrix` umgesetzt. Der
+öffentliche Zielidentität `flz_permission_matrix` umgesetzt. Der
 Stagingbestand ist ausdrücklich nicht erhaltenswert; Produktions- oder
 veröffentlichte Store-Bestände sind nicht bekannt. Eine Datenübernahme fand
 nicht statt und der Stagingbestand wurde durch diesen Lauf nicht verändert.
@@ -156,9 +156,9 @@ Die zuvor bewerteten Varianten waren:
 Entschieden wurde Variante 2 als sauberer Identitätswechsel vor einer
 öffentlichen Veröffentlichung. Wegen AppConfig, Routen, Namespaces, Jobs,
 Kommandos, CI, Workspace- und Integrationsreferenzen bleibt eine bloße
-Verzeichnisumbenennung unzulässig. Die neutral benannten Tabellen
-`permission_matrix_*` können bei einem nachweislich wegwerfbaren Bestand
-unverändert neu angelegt werden; eine Datenübernahme wird nicht unterstellt.
+Verzeichnisumbenennung unzulässig. Die technisch auf Filzmann ausgerichteten
+Tabellen `flz_pm_*` werden bei einem nachweislich wegwerfbaren Bestand neu
+angelegt; eine Datenübernahme wird nicht unterstellt.
 
 Die Ausgangsbeispiele `Betriebsrat`, `IKT-Ausschuss`,
 `Datenschutzbeauftragte` und `IT-Administration` bleiben erhalten, sind aber
@@ -177,7 +177,7 @@ Portfoliozuordnung allein erteilt niemandem Zugriff.
    Entscheidungen dokumentieren; kein App-Code.
 2. **App-Auftrag:** aktuelles Navigations-, OrgSuite-, Daten-, Konfigurations-
    und Releaseinventar gegen den dann aktuellen Code bestätigen.
-3. **Identitätsgate:** Ziel-ID `filzmann_permission_matrix`, fehlender
+3. **Identitätsgate:** Ziel-ID `flz_permission_matrix`, fehlender
    Erhaltungsbedarf und Referenzen bestätigt; umgesetzt.
 4. **Standalone-Navigation:** Erreichbarkeit ohne OrgSuite test-first
    hergestellt; vorhandene Rechte blieben unverändert.

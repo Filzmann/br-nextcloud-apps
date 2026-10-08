@@ -20,7 +20,7 @@ for contract in \
     'eigenständige App' \
     'nicht in die Privacy-App verschmolzen' \
     'ohne aktive Privacy-App' \
-    'filzmann_permission_matrix' \
+    'flz_permission_matrix' \
     'Umsetzung: abgeschlossen' \
     'eigenen Nextcloud-Navigationseintrag' \
     'OrgSuite führt die Matrix nicht' \

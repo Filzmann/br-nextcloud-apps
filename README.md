@@ -52,6 +52,6 @@ scripts/check-fast  # Parent
 scripts/check-full  # enthält check-fast bereits
 ```
 
-`check-full` ist kein Releaseurteil. Das saubere AD-Suite-Delivery-Gate ist
-`scripts/check-ad-suite-delivery` und wird nur für ausdrücklich beauftragte
+`check-full` ist kein Releaseurteil. Das saubere Filzmann-Full-Suite-Delivery-Gate ist
+`scripts/check-flz-full-suite-delivery` und wird nur für ausdrücklich beauftragte
 Delivery-Arbeit verwendet.

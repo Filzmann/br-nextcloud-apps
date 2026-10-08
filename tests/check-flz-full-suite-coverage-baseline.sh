@@ -2,10 +2,10 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-checker="$workspace/scripts/check-ad-suite-coverage-baseline.sh"
+checker="$workspace/scripts/check-flz-full-suite-coverage-baseline.sh"
 manifest="$workspace/config/workspace-repositories.tsv"
-workspace_baseline="$workspace/scripts/ad-suite-php-coverage-baseline.tsv"
-measurement="$workspace/scripts/measure-ad-suite-php-coverage.sh"
+workspace_baseline="$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv"
+measurement="$workspace/scripts/measure-flz-full-suite-php-coverage.sh"
 temporary="$(mktemp -d)"
 
 cleanup() {

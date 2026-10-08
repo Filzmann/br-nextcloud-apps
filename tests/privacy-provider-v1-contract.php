@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 $workspace = dirname(__DIR__);
 
-require_once $workspace . '/filzmann_data_protection/tests/bootstrap.php';
+require_once $workspace . '/flz_data_protection/tests/bootstrap.php';
 
 $apps = [
-    'OCA\\AdRoom\\' => $workspace . '/adroom/lib/',
-    'OCA\\FilzmannPermissionMatrix\\' => $workspace . '/filzmann_permission_matrix/lib/',
-    'OCA\\AdUrlaub\\' => $workspace . '/adurlaub/lib/',
-    'OCA\\AdPlaner\\' => $workspace . '/adplaner/lib/',
-    'OCA\\AdCalendar\\' => $workspace . '/adcalendar/lib/',
-    'OCA\\Recruitment\\' => $workspace . '/adrecruitment/lib/',
+    'OCA\\FlzRoom\\' => $workspace . '/flzroom/lib/',
+    'OCA\\FlzPermissionMatrix\\' => $workspace . '/flz_permission_matrix/lib/',
+    'OCA\\FlzUrlaub\\' => $workspace . '/flzurlaub/lib/',
+    'OCA\\FlzPlaner\\' => $workspace . '/flzplaner/lib/',
+    'OCA\\FlzCalendar\\' => $workspace . '/flzcalendar/lib/',
+    'OCA\\FlzRecruitment\\' => $workspace . '/flzrecruitment/lib/',
     'OCA\\BrStunden\\' => $workspace . '/brstunden/lib/',
     'OCA\\BrTop\\' => $workspace . '/brtop/lib/',
-    'OCA\\AdBqPlanning\\' => $workspace . '/adbqplanung/lib/',
+    'OCA\\FlzBqPlanning\\' => $workspace . '/flzbqplanung/lib/',
 ];
 
 spl_autoload_register(static function (string $class) use ($apps): void {
@@ -32,22 +32,22 @@ spl_autoload_register(static function (string $class) use ($apps): void {
     }
 });
 
-use OCA\AdBqPlanning\Privacy\BqPersonalDataProvider;
-use OCA\AdCalendar\Privacy\CalendarPersonalDataProvider;
-use OCA\AdPlaner\Privacy\PlanerPersonalDataProvider;
-use OCA\AdRoom\Privacy\RoomPersonalDataProvider;
-use OCA\AdUrlaub\Privacy\VacationPersonalDataProvider;
+use OCA\FlzBqPlanning\Privacy\BqPersonalDataProvider;
+use OCA\FlzCalendar\Privacy\CalendarPersonalDataProvider;
+use OCA\FlzPlaner\Privacy\PlanerPersonalDataProvider;
+use OCA\FlzRoom\Privacy\RoomPersonalDataProvider;
+use OCA\FlzUrlaub\Privacy\VacationPersonalDataProvider;
 use OCA\BrStunden\Privacy\BrStundenPersonalDataProvider;
 use OCA\BrTop\Privacy\BrTopPersonalDataProvider;
-use OCA\FilzmannDataProtection\PublicApi\V1\DataSubjectRef;
-use OCA\FilzmannDataProtection\PublicApi\V1\PersonalDataProvider;
-use OCA\FilzmannDataProtection\PublicApi\V1\PersonalDataRequest;
-use OCA\FilzmannDataProtection\PublicApi\V1\RegisterPersonalDataProvidersEvent;
-use OCA\FilzmannDataProtection\PublicApi\V1\Testing\PersonalDataProviderContractTestKit;
-use OCA\FilzmannPermissionMatrix\Db\PersonalDataProjectionRepository;
-use OCA\FilzmannPermissionMatrix\Privacy\PermissionMatrixPersonalDataProvider;
-use OCA\FilzmannPermissionMatrix\Service\ConfigService;
-use OCA\Recruitment\Privacy\RecruitmentPersonalDataProvider;
+use OCA\FlzDataProtection\PublicApi\V1\DataSubjectRef;
+use OCA\FlzDataProtection\PublicApi\V1\PersonalDataProvider;
+use OCA\FlzDataProtection\PublicApi\V1\PersonalDataRequest;
+use OCA\FlzDataProtection\PublicApi\V1\RegisterPersonalDataProvidersEvent;
+use OCA\FlzDataProtection\PublicApi\V1\Testing\PersonalDataProviderContractTestKit;
+use OCA\FlzPermissionMatrix\Db\PersonalDataProjectionRepository;
+use OCA\FlzPermissionMatrix\Privacy\PermissionMatrixPersonalDataProvider;
+use OCA\FlzPermissionMatrix\Service\ConfigService;
+use OCA\FlzRecruitment\Privacy\RecruitmentPersonalDataProvider;
 
 $assertSame = static function (mixed $expected, mixed $actual, string $message): void {
     if ($expected !== $actual) {
@@ -57,15 +57,15 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message):
 
 /** @var array<string, class-string<PersonalDataProvider>> $providerClasses */
 $providerClasses = [
-    'adroom' => RoomPersonalDataProvider::class,
-    'filzmann_permission_matrix' => PermissionMatrixPersonalDataProvider::class,
-    'adurlaub' => VacationPersonalDataProvider::class,
-    'adplaner' => PlanerPersonalDataProvider::class,
-    'adcalendar' => CalendarPersonalDataProvider::class,
-    'adrecruitment' => RecruitmentPersonalDataProvider::class,
+    'flzroom' => RoomPersonalDataProvider::class,
+    'flz_permission_matrix' => PermissionMatrixPersonalDataProvider::class,
+    'flzurlaub' => VacationPersonalDataProvider::class,
+    'flzplaner' => PlanerPersonalDataProvider::class,
+    'flzcalendar' => CalendarPersonalDataProvider::class,
+    'flzrecruitment' => RecruitmentPersonalDataProvider::class,
     'brstunden' => BrStundenPersonalDataProvider::class,
     'brtop' => BrTopPersonalDataProvider::class,
-    'adbqplanung' => BqPersonalDataProvider::class,
+    'flzbqplanung' => BqPersonalDataProvider::class,
 ];
 
 $providers = [];
@@ -106,10 +106,10 @@ $assertSame(array_keys($providerClasses), array_keys($registration->providers())
 $assertSame([], $registration->registrationFailures(), 'Kompatible reale Provider erzeugen Registrierungsfehler.');
 
 $duplicateRegistration = new RegisterPersonalDataProvidersEvent();
-$duplicateRegistration->register($providers['adroom']);
-$duplicateRegistration->register($providers['adroom']);
+$duplicateRegistration->register($providers['flzroom']);
+$duplicateRegistration->register($providers['flzroom']);
 $assertSame(
-    ['adroom' => 'Provider incompatible.'],
+    ['flzroom' => 'Provider incompatible.'],
     $duplicateRegistration->registrationFailures(),
     'Eine doppelte reale Provider-ID wird nicht kontrolliert abgewiesen.',
 );
@@ -181,7 +181,7 @@ $secondPage = PersonalDataProviderContractTestKit::verifyScenario(
         'de',
         'access-report',
         1,
-        ['filzmann_permission_matrix' => $firstPage->nextCursor()],
+        ['flz_permission_matrix' => $firstPage->nextCursor()],
     ),
 );
 if ($secondPage->nextCursor() === $firstPage->nextCursor()) {
