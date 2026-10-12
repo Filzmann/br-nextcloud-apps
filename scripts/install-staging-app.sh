@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> [--state-dir <Pfad>] [--candidate-id <ID> --deployment-id <ID> --build-id <ID>]' >&2
+    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> [--state-dir <Pfad>] [--candidate-id <ID> --deployment-id <ID> --build-id <ID> --active-reader-user <User>]' >&2
 }
 
 nextcloud_root=''
@@ -16,6 +16,7 @@ state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/br-nextcloud-staging"
 candidate_id=''
 deployment_id=''
 build_id=''
+active_reader_user=''
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -30,6 +31,7 @@ while [[ $# -gt 0 ]]; do
         --candidate-id) candidate_id="${2:-}"; shift 2 ;;
         --deployment-id) deployment_id="${2:-}"; shift 2 ;;
         --build-id) build_id="${2:-}"; shift 2 ;;
+        --active-reader-user) active_reader_user="${2:-}"; shift 2 ;;
         *) usage; exit 2 ;;
     esac
 done
@@ -40,6 +42,14 @@ if [[ -z "$nextcloud_root" || -z "$php_bin" || -z "$archive" || -z "$expected_ha
 fi
 if [[ -n "$candidate_id$deployment_id$build_id" && !( "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ) ]]; then
     echo 'Candidate-, Deployment- oder Build-ID ist ungültig oder unvollständig.' >&2
+    exit 2
+fi
+if [[ -n "$candidate_id" && ! "$active_reader_user" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+    echo 'Candidate-Deployments benötigen einen gültigen Acceptance-Lesebenutzer.' >&2
+    exit 2
+fi
+if [[ -n "$active_reader_user" ]] && ! getent passwd "$active_reader_user" >/dev/null; then
+    echo 'Acceptance-Lesebenutzer existiert nicht.' >&2
     exit 2
 fi
 if [[ ! "$app_id" =~ ^[a-z][a-z0-9_]*$ ]]; then
@@ -66,7 +76,7 @@ php_command=("$php_bin")
 if [[ -n "$php_memory_limit" ]]; then
     php_command+=(-d "memory_limit=$php_memory_limit")
 fi
-for command in tar sha256sum find flock cp mv rm mkdir date; do
+for command in tar sha256sum find flock cp mv rm mkdir date getent setfacl; do
     command -v "$command" >/dev/null 2>&1 || { echo "Erforderlicher Befehl fehlt: $command" >&2; exit 2; }
 done
 
@@ -94,6 +104,10 @@ if tar -tvzf "$archive" | awk 'substr($1,1,1) != "d" && substr($1,1,1) != "-" { 
 fi
 
 mkdir -p "$state_dir/tmp" "$state_dir/backups/$app_id" "$state_dir/deployed" "$state_dir/active"
+if [[ -n "$active_reader_user" ]]; then
+    setfacl -m "u:$active_reader_user:--x" "$state_dir"
+    setfacl -m "u:$active_reader_user:r-x" "$state_dir/active"
+fi
 exec 9>"$state_dir/deploy.lock"
 if ! flock -w 600 9; then
     echo 'Ein anderes Staging-Deployment hat die Wartezeit von zehn Minuten überschritten.' >&2
@@ -216,6 +230,7 @@ if [[ -n "$candidate_id" ]]; then
         echo json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), "\n";
     ' "$candidate_id" "$deployment_id" "$commit" "$build_id" "$actual_hash" "$app_id" "$deployed_at" > "$active_tmp"
     chmod 600 "$active_tmp"
+    setfacl -m "u:$active_reader_user:r--" "$active_tmp"
     mv "$active_tmp" "$active_record"
 fi
 rm -rf "$displaced"

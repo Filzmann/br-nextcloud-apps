@@ -8,6 +8,7 @@ usage() {
 state_dir='/var/lib/teamcloud-staging'
 php_bin='/opt/plesk/php/8.4/bin/php'
 verifier='/usr/local/libexec/teamcloud-staging/verify-staging-deployment-marker.php'
+active_reader='filzmann_acceptance'
 
 if [[ "${1:-}" == 'verify' ]]; then
     [[ $# -eq 7 ]] || { usage; exit 2; }
@@ -26,7 +27,8 @@ if [[ "${1:-}" == 'verify' ]]; then
         --source-commit "$5" \
         --build-sha256 "$6" \
         --build-id "$7" \
-        --verified-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        --verified-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --active-reader-user "$active_reader"
 fi
 
 if [[ $# -ne 4 && $# -ne 7 ]]; then
@@ -95,4 +97,5 @@ exec "$installer" \
     --state-dir "$state_dir" \
     --candidate-id "$candidate_id" \
     --deployment-id "$deployment_id" \
-    --build-id "$build_id"
+    --build-id "$build_id" \
+    --active-reader-user "$active_reader"
