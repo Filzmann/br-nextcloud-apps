@@ -9,9 +9,9 @@ function fail(string $message): never {
 
 $allowed = [
     '--active-file', '--lock-file', '--app-id', '--candidate-id', '--deployment-id',
-    '--source-commit', '--build-id', '--build-sha256', '--verified-at',
+    '--source-commit', '--build-id', '--build-sha256', '--verified-at', '--active-reader-user',
 ];
-if ($argc !== 19) {
+if ($argc !== 21) {
     fail('Ungültiger Aufruf für die Staging-Deployment-Verifikation.');
 }
 $arguments = [];
@@ -31,6 +31,7 @@ if (!preg_match('/^[a-z][a-z0-9_]{1,63}$/D', $arguments['--app-id'])
     || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/D', $arguments['--candidate-id'])
     || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/D', $arguments['--deployment-id'])
     || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/D', $arguments['--build-id'])
+    || !preg_match('/^[a-z_][a-z0-9_-]{0,31}$/D', $arguments['--active-reader-user'])
     || !preg_match('/^[0-9a-f]{40}([0-9a-f]{24})?$/D', $arguments['--source-commit'])
     || !preg_match('/^[0-9a-f]{64}$/D', $arguments['--build-sha256'])
     || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $arguments['--verified-at'])) {
@@ -97,6 +98,25 @@ try {
     }
 } finally {
     fclose($output);
+}
+$aclProcess = @proc_open(
+    ['/usr/bin/setfacl', '-m', 'u:' . $arguments['--active-reader-user'] . ':r--', $temporary],
+    [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+    $aclPipes,
+);
+if (!is_resource($aclProcess)) {
+    @unlink($temporary);
+    fail('Acceptance-Leserecht konnte nicht vorbereitet werden.');
+}
+foreach ($aclPipes as $pipe) {
+    if (is_resource($pipe)) {
+        stream_get_contents($pipe);
+        fclose($pipe);
+    }
+}
+if (proc_close($aclProcess) !== 0) {
+    @unlink($temporary);
+    fail('Acceptance-Leserecht konnte nicht gesetzt werden.');
 }
 $current = @lstat($activeFile);
 $currentDigest = @hash_file('sha256', $activeFile);

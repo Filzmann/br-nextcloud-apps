@@ -33,6 +33,24 @@ einzige Kopie. Reverse Proxy, Servicekonto und Serverpfade werden aus der
 tatsächlichen Zielumgebung konfiguriert und sind in diesem Quellstand nicht
 betriebsbereit behauptet.
 
+Der eigenständige Dienst läuft unter dem nicht interaktiven Benutzer
+`filzmann_acceptance` und bindet ausschließlich an Loopback. Seine vom Harness
+erzeugte systemd-Unit erhält Schreibzugriff nur auf den Evidence-Checkout und
+Lesezugriff auf Proxy-Token sowie
+`/var/lib/teamcloud-staging/active`. Installer und HTTPS-Verifier geben diesem
+Benutzer per benannter POSIX-ACL ausschließlich Traverse auf das
+Staging-Statusverzeichnis, Lesen/Traverse auf dessen `active`-Unterverzeichnis
+und Lesen auf die jeweilige atomar ersetzte Markerdatei. Backups, Archive,
+Nextcloud-Code und übrige Zustandsdateien bleiben unzugänglich.
+
+Der Dienst scannt direkte `<app-id>.json`-Marker aller freigegebenen Apps.
+Aufgelistet und finalisierbar sind nur Candidates, deren App, Candidate-ID,
+Deployment-ID, Commit, Build und Digest mit ihrem aktuell `verified` Marker
+übereinstimmen. Ein späteres Deployment entfernt oder ersetzt den Marker und
+entzieht dem älteren Candidate sofort die Abnahmefähigkeit. Der Reverse Proxy
+entfernt eingehende Identitäts- und Rollenheader und setzt sie erst nach
+erfolgreicher Webauthentifizierung zusammen mit dem internen Proxy-Token neu.
+
 ```text
 automatische Prüfungen → READY → Candidate → Staging-Deployment
 → manuelle Staging-Abnahme → PASS-Evidence → filzmann-accept

@@ -130,6 +130,8 @@ exit(25);
 PHP
 
 hash="$(sha256sum "$archive" | cut -d' ' -f1)"
+command -v setfacl >/dev/null || fail 'setfacl fehlt für den Acceptance-Lesevertrag.'
+command -v getfacl >/dev/null || fail 'getfacl fehlt für den Acceptance-Lesevertrag.'
 FAKE_OCC_LOG="$stage/occ-success.log" \
 FAKE_OCC_STATE="$stage/occ-enabled" \
 FAKE_OCC_STATUS_COUNT="$stage/occ-status-count" \
@@ -144,7 +146,8 @@ FAKE_OCC_STATUS_COUNT="$stage/occ-status-count" \
     --state-dir "$state" \
     --candidate-id CAND-2026-0001 \
     --deployment-id github-42-1-demoapp \
-    --build-id build-17
+    --build-id build-17 \
+    --active-reader-user nobody
 
 assert_file "$nextcloud/custom_apps/demoapp/new-code.txt"
 [[ ! -e "$nextcloud/custom_apps/demoapp/old-code.txt" ]] || fail 'Alter Code blieb nach erfolgreicher Installation aktiv.'
@@ -155,6 +158,10 @@ assert_contains "$state/active/demoapp.json" '"candidate_id": "CAND-2026-0001"'
 assert_contains "$state/active/demoapp.json" '"deployment_id": "github-42-1-demoapp"'
 assert_contains "$state/active/demoapp.json" '"deployed_at":'
 assert_contains "$state/active/demoapp.json" '"status": "pending-https-verification"'
+getfacl -cp "$state/active" | grep -Fqx 'user:nobody:r-x' \
+    || fail 'Acceptance-Dienst besitzt kein minimales Traverse-/Leserecht auf dem Marker-Verzeichnis.'
+getfacl -cp "$state/active/demoapp.json" | grep -Fqx 'user:nobody:r--' \
+    || fail 'Acceptance-Dienst besitzt kein minimales Leserecht auf dem aktiven Marker.'
 
 "$(command -v php)" "$deployment_verifier" \
     --active-file "$state/active/demoapp.json" \
@@ -165,9 +172,12 @@ assert_contains "$state/active/demoapp.json" '"status": "pending-https-verificat
     --source-commit "$commit" \
     --build-id build-17 \
     --build-sha256 "$hash" \
-    --verified-at 2026-10-11T08:25:00Z
+    --verified-at 2026-10-11T08:25:00Z \
+    --active-reader-user nobody
 assert_contains "$state/active/demoapp.json" '"status": "verified"'
 assert_contains "$state/active/demoapp.json" '"verified_at": "2026-10-11T08:25:00Z"'
+getfacl -cp "$state/active/demoapp.json" | grep -Fqx 'user:nobody:r--' \
+    || fail 'Acceptance-Leserecht ging bei der atomaren HTTPS-Verifikation verloren.'
 if "$(command -v php)" "$deployment_verifier" \
     --active-file "$state/active/demoapp.json" \
     --lock-file "$state/deploy.lock" \
@@ -177,7 +187,8 @@ if "$(command -v php)" "$deployment_verifier" \
     --source-commit "$commit" \
     --build-id build-17 \
     --build-sha256 "$hash" \
-    --verified-at 2026-10-11T08:26:00Z >/dev/null 2>&1; then
+    --verified-at 2026-10-11T08:26:00Z \
+    --active-reader-user nobody >/dev/null 2>&1; then
     fail 'Ein widersprüchlicher HTTPS-Verifikationsbeleg wurde akzeptiert.'
 fi
 
@@ -300,6 +311,8 @@ assert_contains "$server_wrapper" '/var/lib/teamcloud-staging'
 assert_contains "$server_wrapper" '--php-memory-limit 512M'
 assert_contains "$server_wrapper" '--candidate-id "$candidate_id"'
 assert_contains "$server_wrapper" '--deployment-id "$deployment_id"'
+assert_contains "$server_wrapper" "active_reader='filzmann_acceptance'"
+assert_contains "$server_wrapper" '--active-reader-user "$active_reader"'
 assert_contains "$server_wrapper" 'verify-staging-deployment-marker.php'
 assert_contains "$server_wrapper" '--lock-file "$state_dir/deploy.lock"'
 assert_contains "$deployment_verifier" 'flock($deployLock, LOCK_EX)'
