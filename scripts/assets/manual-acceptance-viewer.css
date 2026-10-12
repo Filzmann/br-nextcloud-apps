@@ -13,8 +13,8 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--text); background: var(--background); }
-button, input { font: inherit; }
-button, input[type="text"], input[type="search"] { border: 1px solid var(--border); border-radius: .45rem; }
+button, input, select { font: inherit; }
+button, input[type="text"], input[type="search"], select { border: 1px solid var(--border); border-radius: .45rem; }
 button { padding: .55rem .8rem; background: var(--surface); color: var(--text); cursor: pointer; }
 button:hover { border-color: var(--accent); }
 button:disabled { cursor: default; opacity: .55; }
@@ -36,6 +36,8 @@ main { min-width: 0; padding: 0 2rem 4rem; }
 .toolbar span { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
 #status { min-height: 1.5rem; color: var(--muted); }
 #status.error { color: #a1242f; font-weight: 650; }
+#acceptance-decision { display: grid; grid-template-columns: max-content minmax(10rem, 1fr); gap: .6rem 1rem; align-items: center; max-width: 54rem; margin-top: 1rem; }
+#acceptance-decision input, #acceptance-decision select { width: 100%; padding: .55rem; color: var(--text); background: var(--surface); }
 #content { max-width: 100rem; padding: 1rem 0; line-height: 1.55; }
 #content h1 { font-size: 2rem; }
 #content h2 { margin-top: 2.2rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
@@ -54,6 +56,7 @@ pre { overflow: auto; padding: 1rem; border: 1px solid var(--border); border-rad
     main { padding: 0 1rem 3rem; }
     .toolbar { flex-wrap: wrap; }
     .toolbar > div { flex-basis: 100%; }
+    #acceptance-decision { grid-template-columns: 1fr; }
 }
 
 @media print {

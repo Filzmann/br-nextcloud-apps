@@ -15,7 +15,7 @@ wenn sie einen klar benannten, app-spezifischen Vertrag enthalten und in
 | `<app>/LICENSE` | vollständiger Lizenztext passend zur Deklaration in `appinfo/info.xml` |
 | `<app>/AGENTS.md` | verbindliche app-lokale Arbeits-, Sicherheits-, Architektur- und Prüfregeln |
 | `<app>/docs/architecture.md` | geltende fachliche und technische Architektur, Daten- und Integrationsgrenzen |
-| `<app>/docs/manual-acceptance.md` | versioniertes Formular und aktueller Nachweis der manuellen Abnahme, keine Aufgabenplanung |
+| `<app>/docs/manual-acceptance.md` | versionierte, unausgefüllte Prüfvorschrift; lokale Einträge besitzen keinen Freigabestatus |
 | `<app>/.agents/skills/*/SKILL.md` | synchronisierte wiederholbare Arbeitsabläufe |
 | `<app>/appinfo/info.xml` | App-Metadaten und deklarierter Nextcloud-Supportbereich |
 | `<app>/.gitignore` | ausschließlich lokale und generierte Artefakte |
@@ -46,20 +46,22 @@ eine tatsächlich verbleibende Restaufgabe bleibt in der Roadmap.
 
 ## Lebenszyklus der manuellen Abnahme
 
-`<app>/docs/manual-acceptance.md` ist zugleich wiederverwendbare
-Prüfvorschrift und versionierter aktueller Abnahmenachweis. Ausgefüllte Kopfdaten, markierte
-`[x]`-Ergebnisse und datensparsame Belege bleiben deshalb in derselben Datei
-und werden mit dem geprüften Stand committed. Eine getrennte historische
-Abnahmedatei oder eine generierte HTML-Kopie wird nicht als zweite Wahrheit
-geführt; die Git-Historie bewahrt frühere Stände.
+`<app>/docs/manual-acceptance.md` ist ausschließlich die versionierte
+Prüfvorschrift. Ein Candidate übernimmt ihren Inhalt und SHA-256-Digest in
+seine unveränderliche Protokollbindung. Ausgefüllte Abnahmen werden weder in
+diese Datei noch nachträglich in den geprüften Code-Commit geschrieben.
 
-Bei einer Codeänderung werden vor dem Commit genau die Ergebnisfelder und
-Belege der davon fachlich oder technisch betroffenen Prüffälle zurückgesetzt.
-Ergebnisse zu nachweislich unverändertem Verhalten bleiben erhalten. Die
-erneute manuelle Prüfung füllt die zurückgesetzten Felder wieder aus; der
-zugehörige Code-Commit enthält das aktualisierte Formular immer mit. Das
-Zurücksetzen des gesamten Formulars ist nur erforderlich, wenn die Änderung
-tatsächlich alle Prüffälle entwertet.
+Der lokale Viewer darf die Vorlage für Entwurf, Vorschau oder lokale
+Erprobung bearbeiten. Solche Änderungen erzeugen keinen Status und sind keine
+Freigabe-Evidence. READY, Candidate-Erzeugung und Staging-Deployment hängen
+niemals von einer lokal ausgefüllten Abnahme ab. Für die endgültige Integration
+eines abnahmepflichtigen Candidates zählt ausschließlich gültige
+Staging-PASS-Evidence aus dem zentralen Evidence-Store.
+
+PASS und FAIL bleiben unveränderlich an Work Order, Candidate, Source-Commit,
+Build-Digest, aktives Staging-Deployment sowie Protokollversion und -digest
+gebunden. Ein FAIL wird nicht überschrieben; eine Änderung oder erneute
+Prüfung benötigt einen neuen Candidate.
 
 Damit das Formular im Parent-Viewer ohne verlustbehaftete Markdown-
 Rückkonvertierung bearbeitbar bleibt, verwendet es diese stabilen Strukturen:
@@ -88,8 +90,7 @@ Repository-Steuerung bilden.
 
 `tests/check-codex-structure.sh` prüft die Pflichtdateien, lokale Skills,
 Symlinkfreiheit, Dokumentationsindizes und offensichtliche erledigte
-Checklisten in Roadmaps. Markierte Checkboxen und ausgefüllte Nachweise im
-manuellen Abnahmeformular sind ausdrücklich gültige versionierte Evidenz. Der
-Referenzcheck prüft relative Markdown-Links. Die inhaltliche Richtigkeit und
-Vollständigkeit bleibt zusätzlich Gegenstand der app-lokalen Reviews und
-Tests.
+Checklisten in Roadmaps. Markierte Checkboxen oder lokale Einträge im
+manuellen Abnahmeformular sind keine Release- oder Integrations-Evidence. Der
+Referenzcheck prüft relative Markdown-Links. Die Staging-Evidence wird vom
+separaten Harness gegen ihren Candidate-Vertrag validiert.

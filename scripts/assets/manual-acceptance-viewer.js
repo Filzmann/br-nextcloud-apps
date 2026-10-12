@@ -2,6 +2,8 @@
     'use strict';
 
     const token = document.querySelector('meta[name="viewer-token"]').content;
+    const mode = document.querySelector('meta[name="viewer-mode"]');
+    const acceptanceMode = Boolean(mode && mode.content === 'acceptance');
     const documentList = document.getElementById('documents');
     const content = document.getElementById('content');
     const title = document.getElementById('title');
@@ -11,6 +13,8 @@
     const reloadButton = document.getElementById('reload');
     const printButton = document.getElementById('print');
     const filter = document.getElementById('filter');
+    const outcome = document.getElementById('acceptance-outcome');
+    const comments = document.getElementById('acceptance-comments');
     let documents = [];
     let current = null;
     let dirty = false;
@@ -45,6 +49,10 @@
 
     function bindFields() {
         content.querySelectorAll('[data-field-id]').forEach((control) => {
+            if (!current.is_manual_acceptance) {
+                control.disabled = true;
+                return;
+            }
             control.addEventListener('change', () => {
                 const group = control.dataset.choiceGroup;
                 if (group && control.checked) {
@@ -65,6 +73,12 @@
         path.textContent = current.id;
         content.innerHTML = current.html;
         bindFields();
+        if (acceptanceMode) {
+            outcome.value = current.final ? current.final.outcome : '';
+            comments.value = current.final ? current.final.comments : '';
+            outcome.disabled = !current.is_manual_acceptance;
+            comments.disabled = !current.is_manual_acceptance;
+        }
         reloadButton.disabled = false;
         printButton.disabled = false;
         setDirty(false);
@@ -121,15 +135,33 @@
             values[control.dataset.fieldId] = control.type === 'checkbox' ? control.checked : control.value;
         });
         saveButton.disabled = true;
-        setStatus('Änderungen werden atomar gespeichert …', false);
+        setStatus(acceptanceMode ? 'Finale Abnahme wird unveränderlich gespeichert …' : 'Änderungen werden atomar gespeichert …', false);
         try {
-            current = await api('/api/document', {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: current.id, etag: current.etag, values}),
-            });
+            if (acceptanceMode) {
+                if (!outcome.value) {
+                    throw new Error('Bitte PASS oder FAIL wählen.');
+                }
+                await api('/api/acceptance', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        candidate_id: current.id,
+                        deployment_id: current.deployment_id,
+                        outcome: outcome.value,
+                        comments: comments.value,
+                        answers: values,
+                    }),
+                });
+                current = await api(`/api/document?id=${encodeURIComponent(current.id)}`);
+            } else {
+                current = await api('/api/document', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: current.id, etag: current.etag, values}),
+                });
+            }
             renderCurrent();
-            setStatus('In dieselbe Markdown-Datei gespeichert.', false);
+            setStatus(acceptanceMode ? 'Finale Abnahme wurde zentral gespeichert und ist schreibgeschützt.' : 'In dieselbe Markdown-Datei gespeichert.', false);
         } catch (error) {
             setDirty(true);
             setStatus(error.status === 409 ? `${error.message} Bitte neu laden.` : error.message, true);
@@ -140,6 +172,10 @@
     reloadButton.addEventListener('click', () => current && loadDocument(current.id, false));
     printButton.addEventListener('click', () => window.print());
     filter.addEventListener('input', renderList);
+    if (acceptanceMode) {
+        outcome.addEventListener('change', () => current && current.is_manual_acceptance && setDirty(true));
+        comments.addEventListener('input', () => current && current.is_manual_acceptance && setDirty(true));
+    }
     window.addEventListener('beforeunload', (event) => {
         if (dirty) {
             event.preventDefault();

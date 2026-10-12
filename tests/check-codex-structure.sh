@@ -110,7 +110,7 @@ def parse_manifest() -> list[dict[str, str]]:
             fail(f'Repository-Pfad ist doppelt: {path}')
         if path != '.' and (Path(path).is_absolute() or len(Path(path).parts) != 1):
             fail(f'Repository muss direkt unter dem Parent liegen: {path}')
-        if kind not in {'parent', 'app', 'product-docs'}:
+        if kind not in {'parent', 'app', 'product-docs', 'tool', 'evidence'}:
             fail(f'Unbekannter Repository-Typ für {path}: {kind}')
         required_skills = required_skills_value.split(',')
         if kind == 'app' and (app_id == '-' or required_skills_value == '-'):
@@ -771,6 +771,8 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
         done
     elif [[ "$kind" == 'product-docs' ]]; then
         control_files+=("docs/DELIVERY-GATE.md")
+    elif [[ "$kind" == 'tool' || "$kind" == 'evidence' ]]; then
+        control_files+=(README.md .gitignore)
     fi
     for control_file in "${control_files[@]}"; do
         if git -C "$repo" check-ignore -q "$control_file"; then

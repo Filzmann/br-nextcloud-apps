@@ -53,6 +53,14 @@
       "path": "flz_data_protection"
     },
     {
+      "name": "filzmann-ai-harness",
+      "path": "filzmann-ai-harness"
+    },
+    {
+      "name": "filzmann-ai-evidence",
+      "path": "filzmann-ai-evidence"
+    },
+    {
       "name": "flz-full-suite",
       "path": "flz-full-suite"
     }

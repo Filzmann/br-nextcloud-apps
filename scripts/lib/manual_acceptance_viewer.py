@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local Markdown viewer with constrained manual-acceptance form editing."""
+"""Shared Markdown viewer with constrained manual-acceptance form editing."""
 
 from __future__ import annotations
 
@@ -172,7 +172,7 @@ def _manual_fields(source: str) -> tuple[_EditableField, ...]:
         for match in checkbox_matches:
             checkbox_ordinal += 1
             label_tail = line[match.end() :].lstrip()
-            label = re.split(r"\s+\[[ xX]\]", label_tail, maxsplit=1)[0].strip(" |")
+            label = re.split(r"\s+\[[ xX]\]|\|", label_tail, maxsplit=1)[0].strip(" |")
             public = FormField(
                 _field_id("checkbox", index + 1, checkbox_ordinal, label),
                 "checkbox",

@@ -2,10 +2,34 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: teamcloud-staging-install <Archiv> <App-ID> <Commit> <SHA-256>' >&2
+    echo 'Aufruf: teamcloud-staging-install <Archiv> <App-ID> <Commit> <SHA-256> [<Candidate-ID> <Deployment-ID> <Build-ID>] | verify <App-ID> <Candidate-ID> <Deployment-ID> <Commit> <SHA-256> <Build-ID>' >&2
 }
 
-if [[ $# -ne 4 ]]; then
+state_dir='/var/lib/teamcloud-staging'
+php_bin='/opt/plesk/php/8.4/bin/php'
+verifier='/usr/local/libexec/teamcloud-staging/verify-staging-deployment-marker.php'
+
+if [[ "${1:-}" == 'verify' ]]; then
+    [[ $# -eq 7 ]] || { usage; exit 2; }
+    app_id="$2"
+    case "$app_id" in
+        brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
+        *) echo "Nicht freigegebene App-ID: $app_id" >&2; exit 2 ;;
+    esac
+    [[ -x "$php_bin" && -f "$verifier" && ! -L "$verifier" ]] || { echo 'Deployment-Verifikationswerkzeug fehlt oder ist unsicher.' >&2; exit 2; }
+    exec "$php_bin" "$verifier" \
+        --active-file "$state_dir/active/$app_id.json" \
+        --lock-file "$state_dir/deploy.lock" \
+        --app-id "$app_id" \
+        --candidate-id "$3" \
+        --deployment-id "$4" \
+        --source-commit "$5" \
+        --build-sha256 "$6" \
+        --build-id "$7" \
+        --verified-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+fi
+
+if [[ $# -ne 4 && $# -ne 7 ]]; then
     usage
     exit 2
 fi
@@ -14,11 +38,12 @@ archive="$1"
 app_id="$2"
 commit="$3"
 expected_hash="$4"
+candidate_id="${5:-}"
+deployment_id="${6:-}"
+build_id="${7:-}"
 incoming_root='/var/tmp/teamcloud-staging-incoming'
 nextcloud_root='/var/www/vhosts/simonbeyer.de/teamcloud.simonbeyer.de'
-php_bin='/opt/plesk/php/8.4/bin/php'
 installer='/usr/local/libexec/teamcloud-staging/install-staging-app.sh'
-state_dir='/var/lib/teamcloud-staging'
 
 case "$app_id" in
     brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
@@ -26,6 +51,10 @@ case "$app_id" in
 esac
 if [[ ! "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ || ! "$expected_hash" =~ ^[0-9a-f]{64}$ ]]; then
     echo 'Ungültige Commit-ID oder SHA-256-Prüfsumme.' >&2
+    exit 2
+fi
+if [[ -n "$candidate_id$deployment_id$build_id" && !( "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ) ]]; then
+    echo 'Candidate-, Deployment- oder Build-ID ist ungültig oder unvollständig.' >&2
     exit 2
 fi
 if [[ ! "$archive" =~ ^${incoming_root}/[0-9]+-[0-9]+-${app_id}/${app_id}\.tar\.gz$ ]]; then
@@ -63,4 +92,7 @@ exec "$installer" \
     --sha256 "$expected_hash" \
     --app-id "$app_id" \
     --commit "$commit" \
-    --state-dir "$state_dir"
+    --state-dir "$state_dir" \
+    --candidate-id "$candidate_id" \
+    --deployment-id "$deployment_id" \
+    --build-id "$build_id"

@@ -6,6 +6,7 @@ package_script="$workspace/scripts/package-staging-app.sh"
 installer="$workspace/scripts/install-staging-app.sh"
 server_wrapper="$workspace/scripts/teamcloud-staging-install"
 ssh_gate="$workspace/scripts/teamcloud-staging"
+deployment_verifier="$workspace/scripts/verify-staging-deployment-marker.php"
 workflow="$workspace/.github/workflows/deploy-staging.yml"
 runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
@@ -69,6 +70,12 @@ assert_contains "$metadata" 'APP_VERSION=1.2.3'
 assert_contains "$metadata" "GIT_COMMIT=$commit"
 assert_contains "$metadata" 'CSS_ASSET=css/app.css'
 assert_contains "$metadata" 'JS_ASSET=js/app.js'
+
+touch -d '2031-01-01 00:00:00 UTC' "$app/new-code.txt" "$app/css/app.css" "$app/js/app.js"
+second_archive="$stage/output/demoapp-second.tar.gz"
+second_metadata="$stage/output/metadata-second.env"
+"$package_script" --app-root "$app" --app-id demoapp --commit "$commit" --archive "$second_archive" --metadata "$second_metadata"
+cmp "$archive" "$second_archive" || fail 'Identischer Candidate-Quellstand erzeugt kein reproduzierbares Staging-Archiv.'
 
 mapfile -t roots < <(tar -tzf "$archive" | cut -d/ -f1 | sort -u)
 [[ "${#roots[@]}" -eq 1 && "${roots[0]}" == demoapp ]] || fail 'Archiv hat nicht genau den App-Wurzelordner.'
@@ -134,13 +141,45 @@ FAKE_OCC_STATUS_COUNT="$stage/occ-status-count" \
     --sha256 "$hash" \
     --app-id demoapp \
     --commit "$commit" \
-    --state-dir "$state"
+    --state-dir "$state" \
+    --candidate-id CAND-2026-0001 \
+    --deployment-id github-42-1-demoapp \
+    --build-id build-17
 
 assert_file "$nextcloud/custom_apps/demoapp/new-code.txt"
 [[ ! -e "$nextcloud/custom_apps/demoapp/old-code.txt" ]] || fail 'Alter Code blieb nach erfolgreicher Installation aktiv.'
 assert_contains "$state/deployed/demoapp.tsv" "$commit"
 assert_contains "$stage/occ-success.log" 'app:enable demoapp'
 assert_contains "$stage/occ-success.log" 'upgrade'
+assert_contains "$state/active/demoapp.json" '"candidate_id": "CAND-2026-0001"'
+assert_contains "$state/active/demoapp.json" '"deployment_id": "github-42-1-demoapp"'
+assert_contains "$state/active/demoapp.json" '"deployed_at":'
+assert_contains "$state/active/demoapp.json" '"status": "pending-https-verification"'
+
+"$(command -v php)" "$deployment_verifier" \
+    --active-file "$state/active/demoapp.json" \
+    --lock-file "$state/deploy.lock" \
+    --app-id demoapp \
+    --candidate-id CAND-2026-0001 \
+    --deployment-id github-42-1-demoapp \
+    --source-commit "$commit" \
+    --build-id build-17 \
+    --build-sha256 "$hash" \
+    --verified-at 2026-10-11T08:25:00Z
+assert_contains "$state/active/demoapp.json" '"status": "verified"'
+assert_contains "$state/active/demoapp.json" '"verified_at": "2026-10-11T08:25:00Z"'
+if "$(command -v php)" "$deployment_verifier" \
+    --active-file "$state/active/demoapp.json" \
+    --lock-file "$state/deploy.lock" \
+    --app-id demoapp \
+    --candidate-id CAND-2026-0001 \
+    --deployment-id github-foreign \
+    --source-commit "$commit" \
+    --build-id build-17 \
+    --build-sha256 "$hash" \
+    --verified-at 2026-10-11T08:26:00Z >/dev/null 2>&1; then
+    fail 'Ein widersprüchlicher HTTPS-Verifikationsbeleg wurde akzeptiert.'
+fi
 
 if "$installer" \
     --nextcloud-root "$nextcloud" \
@@ -159,6 +198,8 @@ mkdir -p "$rollback_nc/custom_apps/demoapp/appinfo" "$rollback_state"
 cp "$app/appinfo/info.xml" "$rollback_nc/custom_apps/demoapp/appinfo/info.xml"
 cp "$nextcloud/occ" "$rollback_nc/occ"
 printf 'old-code\n' > "$rollback_nc/custom_apps/demoapp/old-code.txt"
+mkdir -p "$rollback_state/active"
+printf '{"candidate_id":"old"}\n' > "$rollback_state/active/demoapp.json"
 if FAKE_OCC_FAIL_SECOND_STATUS=1 \
     FAKE_OCC_STATUS_COUNT="$stage/rollback-status-count" \
     "$installer" \
@@ -173,6 +214,7 @@ if FAKE_OCC_FAIL_SECOND_STATUS=1 \
 fi
 assert_file "$rollback_nc/custom_apps/demoapp/old-code.txt"
 [[ ! -e "$rollback_nc/custom_apps/demoapp/new-code.txt" ]] || fail 'Neuer Code blieb nach Rollback aktiv.'
+[[ ! -e "$rollback_state/active/demoapp.json" ]] || fail 'Alter aktiver Candidate blieb während/nach fehlgeschlagenem Deployment gültig.'
 
 bad="$stage/bad"
 mkdir -p "$bad/demoapp/appinfo"
@@ -209,18 +251,28 @@ for target_app_id in flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzb
     assert_contains "$runbook" "$target_app_id"
 done
 assert_contains "$workflow" 'workflow_call:'
+assert_contains "$workflow" 'candidate-id:'
+assert_contains "$workflow" 'candidate-source-commit:'
+assert_contains "$workflow" 'candidate-build-sha256:'
+assert_contains "$workflow" 'CANDIDATE_ID: ${{ inputs.candidate-id }}'
+assert_contains "$workflow" 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.'
 assert_contains "$workflow" 'environment: staging'
 assert_contains "$workflow" 'STAGING_SSH_PRIVATE_KEY'
 assert_contains "$workflow" 'STAGING_SSH_KNOWN_HOSTS'
 assert_contains "$workflow" '- name: Archiv über SSH-Gate installieren'
 assert_contains "$workflow" 'teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
 assert_contains "$workflow" '< "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"'
-assert_contains "$workflow" 'teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${GITHUB_SHA} ${SHA256}'
+assert_contains "$workflow" 'teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}'
+assert_contains "$workflow" '${CANDIDATE_ID} ${DEPLOYMENT_ID}'
 assert_contains "$workflow" '- name: Temporäre Serverdateien entfernen'
 assert_contains "$workflow" 'if: always()'
 assert_contains "$workflow" 'teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
+asset_line="$(grep -nF -- '- name: Öffentliche Assets prüfen' "$workflow" | cut -d: -f1)"
+verify_line="$(grep -nF -- 'teamcloud-staging verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID}' "$workflow" | cut -d: -f1)"
+[[ -n "$asset_line" && -n "$verify_line" && "$verify_line" -gt "$asset_line" ]] \
+    || fail 'Candidate wird nicht erst nach dem öffentlichen HTTPS-Smoke als verifiziert markiert.'
 if grep -Fq '$STAGING_BASE_URL/apps/$APP_ID/' "$workflow"; then
     fail 'Workflow prüft Custom-App-Assets über den nicht konfigurierten Core-App-URL-Pfad.'
 fi
@@ -246,6 +298,16 @@ assert_contains "$server_wrapper" '/opt/plesk/php/8.4/bin/php'
 assert_contains "$server_wrapper" '/usr/local/libexec/teamcloud-staging/install-staging-app.sh'
 assert_contains "$server_wrapper" '/var/lib/teamcloud-staging'
 assert_contains "$server_wrapper" '--php-memory-limit 512M'
+assert_contains "$server_wrapper" '--candidate-id "$candidate_id"'
+assert_contains "$server_wrapper" '--deployment-id "$deployment_id"'
+assert_contains "$server_wrapper" 'verify-staging-deployment-marker.php'
+assert_contains "$server_wrapper" '--lock-file "$state_dir/deploy.lock"'
+assert_contains "$deployment_verifier" 'flock($deployLock, LOCK_EX)'
+assert_contains "$deployment_verifier" 'hash_equals($originalDigest, $currentDigest)'
+assert_contains "$ssh_gate" 'verify)'
+if tail -n +265 "$ssh_gate" | grep -Fq 'candidate_id'; then
+    fail 'Candidate-Validierung liegt außerhalb der install-Funktion und läuft nach möglichen Seiteneffekten.'
+fi
 if "$server_wrapper" /var/tmp/teamcloud-staging-incoming/1-1-foreign/foreign.tar.gz foreign "$commit" "$hash" >/dev/null 2>&1; then
     fail 'Server-Wrapper akzeptiert eine nicht freigegebene App-ID.'
 fi
