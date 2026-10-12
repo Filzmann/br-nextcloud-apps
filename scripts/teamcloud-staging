@@ -21,7 +21,8 @@ usage() {
     cat >&2 <<'EOF'
 Aufruf:
   teamcloud-staging upload <Run-ID> <Versuch> <App-ID>
-  teamcloud-staging install <Run-ID> <Versuch> <App-ID> <Commit> <SHA-256>
+  teamcloud-staging install <Run-ID> <Versuch> <App-ID> <Commit> <SHA-256> [<Candidate-ID> <Deployment-ID> <Build-ID>]
+  teamcloud-staging verify <App-ID> <Candidate-ID> <Deployment-ID> <Commit> <SHA-256> <Build-ID>
   teamcloud-staging cleanup <Run-ID> <Versuch> <App-ID>
 EOF
 }
@@ -179,11 +180,20 @@ gate_install() {
     local app_id="$3"
     local commit="$4"
     local expected_hash="$5"
+    local candidate_id="${6:-}"
+    local deployment_id="${7:-}"
+    local build_id="${8:-}"
     local run_dir archive
 
     validate_common "$run_id" "$attempt" "$app_id"
     [[ "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ && "$expected_hash" =~ ^[0-9a-f]{64}$ ]] \
         || fail 'Ungültige Commit-ID oder SHA-256-Prüfsumme.'
+    if [[ -n "$candidate_id$deployment_id$build_id" ]]; then
+        [[ "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+            && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+            && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] \
+            || fail 'Candidate-, Deployment- oder Build-ID ist ungültig oder unvollständig.'
+    fi
     require_acl_tools
     [[ -x "$sudo_bin" ]] || fail "Sudo fehlt: $sudo_bin"
     [[ -x "$install_wrapper" ]] || fail "Installationswrapper fehlt: $install_wrapper"
@@ -197,8 +207,13 @@ gate_install() {
     assert_archive_acl "$archive"
 
     "$logger_bin" -t teamcloud-staging-ssh -- "INSTALL run=$run_id attempt=$attempt app=$app_id"
-    "$sudo_bin" -n -u "$installer_user" "$install_wrapper" \
-        "$archive" "$app_id" "$commit" "$expected_hash"
+    if [[ -n "$candidate_id" ]]; then
+        "$sudo_bin" -n -u "$installer_user" "$install_wrapper" \
+            "$archive" "$app_id" "$commit" "$expected_hash" "$candidate_id" "$deployment_id" "$build_id"
+    else
+        "$sudo_bin" -n -u "$installer_user" "$install_wrapper" \
+            "$archive" "$app_id" "$commit" "$expected_hash"
+    fi
 }
 
 gate_cleanup() {
@@ -215,6 +230,30 @@ gate_cleanup() {
     [[ ! -L "$run_dir" ]] || fail 'Run-Verzeichnis ist ein unerlaubter Symlink.'
     rm -rf -- "$run_dir"
     "$logger_bin" -t teamcloud-staging-ssh -- "CLEANUP run=$run_id attempt=$attempt app=$app_id"
+}
+
+gate_verify() {
+    local app_id="$1"
+    local candidate_id="$2"
+    local deployment_id="$3"
+    local commit="$4"
+    local expected_hash="$5"
+    local build_id="$6"
+
+    case "$app_id" in
+        brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
+        *) fail "Nicht freigegebene App-ID: $app_id" ;;
+    esac
+    [[ "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+        && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+        && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+        && "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ \
+        && "$expected_hash" =~ ^[0-9a-f]{64}$ ]] \
+        || fail 'Ungültige Candidate-Bindung für die HTTPS-Verifikation.'
+    [[ -x "$sudo_bin" && -x "$install_wrapper" ]] || fail 'Sudo oder Installationswrapper fehlt.'
+    "$logger_bin" -t teamcloud-staging-ssh -- "VERIFY app=$app_id candidate=$candidate_id deployment=$deployment_id"
+    "$sudo_bin" -n -u "$installer_user" "$install_wrapper" verify \
+        "$app_id" "$candidate_id" "$deployment_id" "$commit" "$expected_hash" "$build_id"
 }
 
 parse_original_command() {
@@ -241,12 +280,16 @@ main() {
             gate_upload "${arguments[1]}" "${arguments[2]}" "${arguments[3]}"
             ;;
         install)
-            [[ "${#arguments[@]}" -eq 6 ]] || { usage; exit 2; }
-            gate_install "${arguments[1]}" "${arguments[2]}" "${arguments[3]}" "${arguments[4]}" "${arguments[5]}"
+            [[ "${#arguments[@]}" -eq 6 || "${#arguments[@]}" -eq 9 ]] || { usage; exit 2; }
+            gate_install "${arguments[1]}" "${arguments[2]}" "${arguments[3]}" "${arguments[4]}" "${arguments[5]}" "${arguments[6]:-}" "${arguments[7]:-}" "${arguments[8]:-}"
             ;;
         cleanup)
             [[ "${#arguments[@]}" -eq 4 ]] || { usage; exit 2; }
             gate_cleanup "${arguments[1]}" "${arguments[2]}" "${arguments[3]}"
+            ;;
+        verify)
+            [[ "${#arguments[@]}" -eq 7 ]] || { usage; exit 2; }
+            gate_verify "${arguments[1]}" "${arguments[2]}" "${arguments[3]}" "${arguments[4]}" "${arguments[5]}" "${arguments[6]}"
             ;;
         *)
             usage

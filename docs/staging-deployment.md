@@ -1,9 +1,43 @@
 # Automatisches Staging-Deployment
 
-Jeder erfolgreiche Testlauf nach einem Push auf `main` installiert den
-zugehörigen App-Commit als Release Candidate auf
-`https://teamcloud.simonbeyer.de`. Pull Requests und fehlgeschlagene Tests
-deployen nicht.
+Erfolgreiche Testläufe nach einem Push auf `main` können weiterhin einen
+nicht abnahmefähigen Integrationsstand auf `https://teamcloud.simonbeyer.de`
+installieren. Pull Requests und fehlgeschlagene Tests deployen nicht. Eine
+solche Installation erzeugt keine manuelle Freigabe-Evidence.
+
+Ein ausgestellter Candidate wird vor der Git-Integration über den manuellen
+Workflow `deploy-staging-candidate.yml` bereitgestellt. Der Workflow checkt
+den exakt gebundenen Commit aus, baut das Archiv erneut, vergleicht dessen
+SHA-256 mit dem Candidate und übergibt Candidate-, Build- und Deployment-ID an
+das vorhandene SSH-Gate. Der Installer hält je App genau den aktuell aktiven
+Candidate-Stand zunächst als `pending-https-verification` fest. Erst nachdem
+der Workflow die öffentlichen CSS- und JavaScript-Assets über HTTPS mit dem
+richtigen Content-Type geprüft hat, bindet ein eigener Gate-Aufruf denselben
+Candidate, Commit, Build und dasselbe Deployment atomar als `verified`. Jedes
+spätere Deployment ohne Candidate-Bindung macht diesen aktiven Marker
+ungültig, damit keine Abnahme für überschriebenen Code entstehen kann.
+
+Beim ersten authentifizierten Abruf synchronisiert der Acceptance-Service
+seinen privaten Evidence-Checkout, übernimmt ausschließlich einen vollständig
+gebundenen `verified`-Marker und veröffentlicht daraus die unveränderliche
+Deployment-Evidence zentral. Ein fehlender, noch ausstehender oder
+widersprüchlicher Marker liefert keinen abnahmefähigen Candidate. GitHub
+Actions erhält dafür keinen Schreibzugriff auf den Evidence-Store.
+
+Nach dem Deployment übernimmt der Acceptance-Service die versionierte
+Markdown-Prüfvorschrift des Candidates. Nur authentifizierte Konten mit der
+Abnehmerrolle dürfen genau eine finale PASS- oder FAIL-Evidence erzeugen.
+Abgeschlossene Evidence wird im privaten Repository
+`Filzmann/filzmann-ai-evidence` dauerhaft abgelegt; Staging ist nicht die
+einzige Kopie. Reverse Proxy, Servicekonto und Serverpfade werden aus der
+tatsächlichen Zielumgebung konfiguriert und sind in diesem Quellstand nicht
+betriebsbereit behauptet.
+
+```text
+automatische Prüfungen → READY → Candidate → Staging-Deployment
+→ manuelle Staging-Abnahme → PASS-Evidence → filzmann-accept
+→ getrennte Git-Integration
+```
 
 Der wiederverwendbare Workflow liegt im Parent-Repository unter
 `.github/workflows/deploy-staging.yml`. Die zwölf App-Repositories rufen ihn
@@ -110,8 +144,9 @@ oder Entwicklungsannahmen werden nicht übernommen.
 - Es wird weder ein Root-Passwort noch ein anderes Serverpasswort in GitHub
   gespeichert.
 - Ein dedizierter Ed25519-Schlüssel ist nur für dieses Staging-Deployment zu
-  verwenden. Der Eintrag in `authorized_keys` erhält mindestens die Option
-  `restrict`.
+  verwenden. Der Eintrag in `authorized_keys` erzwingt zusätzlich zu
+  `restrict` ausschließlich `/usr/local/bin/teamcloud-staging`; das Gate
+  validiert den ursprünglichen Clientbefehl selbst.
 - GitHub vertraut nur dem vorab auf dem Server verifizierten Ed25519-Host-Key;
   der Workflow verwendet kein dynamisches `ssh-keyscan`.
 - Installiert werden Ein-Wurzel-Archive ohne `.git`, `.github`, Tests,
@@ -157,8 +192,11 @@ In `<FILZMANN-HOME>/.ssh/authorized_keys` eine einzelne Zeile in dieser Form
 ergänzen:
 
 ```text
-restrict ssh-ed25519 <PUBLIC-KEY> teamcloud-staging-github
+restrict,command="/usr/local/bin/teamcloud-staging" ssh-ed25519 <PUBLIC-KEY> teamcloud-staging-github
 ```
+
+Ohne die feste `command=`-Option wäre `restrict` allein kein Forced-Command-
+Vertrag und der Schlüssel dürfte nicht verwendet werden.
 
 Anschließend Besitz und Modus minimal setzen:
 
@@ -188,7 +226,7 @@ Das Gate prüft dieselben Voraussetzungen bei Upload, Install und Cleanup erneut
 und bricht bei fehlenden Werkzeugen, unbekanntem Zielbenutzer oder abweichenden
 ACLs fail-closed ab.
 
-Die drei geprüften Parent-Skripte werden zunächst als `filzmann` in ein
+Die vier geprüften Parent-Dateien werden zunächst als `filzmann` in ein
 temporäres Bootstrap-Verzeichnis hochgeladen. Anschließend werden sie als
 Root unveränderlich für den Deploymentbenutzer installiert:
 
@@ -197,6 +235,9 @@ install -d -o root -g root -m 755 /usr/local/libexec/teamcloud-staging
 install -o root -g root -m 755 \
   /tmp/teamcloud-staging-bootstrap/install-staging-app.sh \
   /usr/local/libexec/teamcloud-staging/install-staging-app.sh
+install -o root -g root -m 755 \
+  /tmp/teamcloud-staging-bootstrap/verify-staging-deployment-marker.php \
+  /usr/local/libexec/teamcloud-staging/verify-staging-deployment-marker.php
 install -o root -g root -m 755 \
   /tmp/teamcloud-staging-bootstrap/teamcloud-staging-install \
   /usr/local/sbin/teamcloud-staging-install
@@ -315,8 +356,10 @@ Nachweise liefern:
 3. grüne Archiv-, Prüfsummen-, `occ status`-, Aktivierungs- und Upgradechecks;
 4. HTTP 200 sowie passender Content-Type für mindestens ein CSS- und ein
    JavaScript-Asset;
-5. angemeldeter manueller Sicht- und Funktionscheck der App;
-6. vorhandener Backup- und Commitnachweis unter
+5. einen danach atomar auf `verified` gesetzten, exakt an Candidate,
+   Deployment, Commit, Build-ID und Build-Digest gebundenen aktiven Marker;
+6. angemeldeter manueller Sicht- und Funktionscheck der App;
+7. vorhandener Backup- und Commitnachweis unter
    `<FILZMANN-HOME>/.local/state/br-nextcloud-staging`.
 
 Backups werden zunächst bewusst nicht automatisch gelöscht. Eine spätere

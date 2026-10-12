@@ -401,7 +401,13 @@ kann mit `--port PORT` gewählt werden. Normale Markdown-Dokumente sind
 schreibgeschützt. Dateien mit dem Namen
 `<repo>/docs/manual-acceptance.md` werden als Formular gerendert; „Speichern“
 schreibt erkannte Checkboxen und Eingabefelder atomar in genau diese Datei
-zurück. „Drucken / PDF“ verwendet eine reduzierte Druckansicht.
+zurück. „Drucken / PDF“ verwendet eine reduzierte Druckansicht. Diese lokale
+Bearbeitung dient ausschließlich Entwurf und Vorschau, hat keinen Freigabestatus
+und ist kein Bestandteil der Gate-Kette.
+
+Die kanonische Viewer-Implementierung liegt im getrennten
+`filzmann-ai-harness` und wird für den eigenständig nutzbaren Parent bytegleich
+vendort. Der Parent-Contract-Test verhindert ein Auseinanderlaufen.
 
 Der Dienst bindet ausschließlich an `127.0.0.1`, akzeptiert nur lokale Host-
 und Origin-Werte und schützt die API pro Start mit einem zufälligen Token.

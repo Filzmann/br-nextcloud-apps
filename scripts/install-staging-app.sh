@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> [--state-dir <Pfad>]' >&2
+    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> [--state-dir <Pfad>] [--candidate-id <ID> --deployment-id <ID> --build-id <ID>]' >&2
 }
 
 nextcloud_root=''
@@ -13,6 +13,9 @@ expected_hash=''
 app_id=''
 commit=''
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/br-nextcloud-staging"
+candidate_id=''
+deployment_id=''
+build_id=''
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -24,12 +27,19 @@ while [[ $# -gt 0 ]]; do
         --app-id) app_id="${2:-}"; shift 2 ;;
         --commit) commit="${2:-}"; shift 2 ;;
         --state-dir) state_dir="${2:-}"; shift 2 ;;
+        --candidate-id) candidate_id="${2:-}"; shift 2 ;;
+        --deployment-id) deployment_id="${2:-}"; shift 2 ;;
+        --build-id) build_id="${2:-}"; shift 2 ;;
         *) usage; exit 2 ;;
     esac
 done
 
 if [[ -z "$nextcloud_root" || -z "$php_bin" || -z "$archive" || -z "$expected_hash" || -z "$app_id" || -z "$commit" || -z "$state_dir" ]]; then
     usage
+    exit 2
+fi
+if [[ -n "$candidate_id$deployment_id$build_id" && !( "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ) ]]; then
+    echo 'Candidate-, Deployment- oder Build-ID ist ungültig oder unvollständig.' >&2
     exit 2
 fi
 if [[ ! "$app_id" =~ ^[a-z][a-z0-9_]*$ ]]; then
@@ -83,7 +93,7 @@ if tar -tvzf "$archive" | awk 'substr($1,1,1) != "d" && substr($1,1,1) != "-" { 
     exit 3
 fi
 
-mkdir -p "$state_dir/tmp" "$state_dir/backups/$app_id" "$state_dir/deployed"
+mkdir -p "$state_dir/tmp" "$state_dir/backups/$app_id" "$state_dir/deployed" "$state_dir/active"
 exec 9>"$state_dir/deploy.lock"
 if ! flock -w 600 9; then
     echo 'Ein anderes Staging-Deployment hat die Wartezeit von zehn Minuten überschritten.' >&2
@@ -148,6 +158,8 @@ if [[ "${package_info[0]:-}" != "$app_id" || -z "${package_info[1]:-}" ]]; then
     exit 3
 fi
 version="${package_info[1]}"
+active_record="$state_dir/active/$app_id.json"
+rm -f -- "$active_record"
 
 cp -a "$extract_dir/$app_id" "$candidate"
 if [[ -d "$target" ]]; then
@@ -187,6 +199,25 @@ printf '%s' "$enabled_json" | "${php_command[@]}" -r '
 record_tmp="$state_dir/deployed/$app_id.tsv.tmp.$$"
 printf '%s\t%s\t%s\t%s\n' "$app_id" "$version" "$commit" "$actual_hash" > "$record_tmp"
 mv "$record_tmp" "$state_dir/deployed/$app_id.tsv"
+if [[ -n "$candidate_id" ]]; then
+    active_tmp="$active_record.tmp.$$"
+    deployed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    "${php_command[@]}" -r '
+        $value = [
+            "schema" => "filzmann.active-staging-deployment/v1",
+            "candidate_id" => $argv[1],
+            "deployment_id" => $argv[2],
+            "source_commit" => $argv[3],
+            "build" => ["id" => $argv[4], "sha256" => $argv[5]],
+            "app_id" => $argv[6],
+            "deployed_at" => $argv[7],
+            "status" => "pending-https-verification",
+        ];
+        echo json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), "\n";
+    ' "$candidate_id" "$deployment_id" "$commit" "$build_id" "$actual_hash" "$app_id" "$deployed_at" > "$active_tmp"
+    chmod 600 "$active_tmp"
+    mv "$active_tmp" "$active_record"
+fi
 rm -rf "$displaced"
 finished=1
 

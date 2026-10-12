@@ -51,6 +51,8 @@ flzrecruitment/
 flzbqplanung/
 flz_data_protection/
 flz-full-suite/
+filzmann-ai-harness/
+filzmann-ai-evidence/
 
 # DDEV generated/local runtime
 nextcloud-dev/.ddev/.ddev-docker-compose-full.yaml

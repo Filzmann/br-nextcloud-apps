@@ -1,0 +1,45 @@
+name: Ausgestellten Candidate auf Staging bereitstellen
+
+on:
+  workflow_dispatch:
+    inputs:
+      app-id:
+        description: Registrierte Nextcloud-App-ID
+        required: true
+        type: string
+      source-repository:
+        description: GitHub-Repository, z. B. Filzmann/nextcloud-flzcalendar
+        required: true
+        type: string
+      source-commit:
+        description: Vollständiger, im Candidate gebundener Commit
+        required: true
+        type: string
+      candidate-id:
+        description: Ausgestellte Candidate-ID
+        required: true
+        type: string
+      build-id:
+        description: Im Candidate gebundene Build-ID
+        required: true
+        type: string
+      build-sha256:
+        description: Im Candidate gebundener reproduzierbarer Archivdigest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-staging.yml
+    with:
+      app-id: ${{ inputs.app-id }}
+      source-repository: ${{ inputs.source-repository }}
+      source-ref: ${{ inputs.source-commit }}
+      candidate-id: ${{ inputs.candidate-id }}
+      candidate-source-commit: ${{ inputs.source-commit }}
+      candidate-build-id: ${{ inputs.build-id }}
+      candidate-build-sha256: ${{ inputs.build-sha256 }}
+    secrets: inherit

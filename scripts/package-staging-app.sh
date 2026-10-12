@@ -10,6 +10,7 @@ app_id=''
 commit=''
 archive=''
 metadata=''
+reproducible_archiver="$(cd "$(dirname "$0")" && pwd)/create-reproducible-tar-gz.sh"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -39,7 +40,7 @@ if [[ ! -f "$app_root/appinfo/info.xml" ]]; then
     exit 2
 fi
 
-for command in php tar sha256sum find sort; do
+for command in php tar sha256sum find sort gzip; do
     command -v "$command" >/dev/null 2>&1 || { echo "Erforderlicher Befehl fehlt: $command" >&2; exit 2; }
 done
 
@@ -98,7 +99,7 @@ if find "$stage/$app_id" -type l -print -quit | grep -q .; then
     exit 2
 fi
 
-tar -C "$stage" -czf "$archive" "$app_id"
+"$reproducible_archiver" "$archive" "$stage" "$app_id"
 mapfile -t roots < <(tar -tzf "$archive" | cut -d/ -f1 | sort -u)
 if [[ "${#roots[@]}" -ne 1 || "${roots[0]}" != "$app_id" ]]; then
     echo 'Erzeugtes Archiv verletzt den Ein-Wurzel-Vertrag.' >&2

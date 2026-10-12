@@ -7,6 +7,36 @@ on:
         description: Nextcloud-App-ID des aufrufenden Repositorys
         required: true
         type: string
+      source-repository:
+        description: Repository für einen ausdrücklich ausgestellten Candidate
+        required: false
+        type: string
+        default: ''
+      source-ref:
+        description: Vollständiger Candidate-Commit
+        required: false
+        type: string
+        default: ''
+      candidate-id:
+        description: Ausgestellte Candidate-ID; leer für nicht abnahmefähige Legacy-Deployments
+        required: false
+        type: string
+        default: ''
+      candidate-source-commit:
+        description: Im Candidate gebundener Source-Commit
+        required: false
+        type: string
+        default: ''
+      candidate-build-id:
+        description: Im Candidate gebundene Build-ID
+        required: false
+        type: string
+        default: ''
+      candidate-build-sha256:
+        description: Im Candidate gebundener Archivdigest
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -25,6 +55,10 @@ jobs:
       STAGING_HOST: teamcloud.simonbeyer.de
       STAGING_USER: filzmann
       STAGING_BASE_URL: https://teamcloud.simonbeyer.de
+      CANDIDATE_ID: ${{ inputs.candidate-id }}
+      CANDIDATE_SOURCE_COMMIT: ${{ inputs.candidate-source-commit }}
+      CANDIDATE_BUILD_ID: ${{ inputs.candidate-build-id }}
+      CANDIDATE_BUILD_SHA256: ${{ inputs.candidate-build-sha256 }}
     steps:
       - name: Deploymentparameter validieren
         env:
@@ -36,6 +70,19 @@ jobs:
             brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
             *) echo "Nicht freigegebene App-ID: $APP_ID" >&2; exit 2 ;;
           esac
+          candidate_values=("$CANDIDATE_ID" "$CANDIDATE_SOURCE_COMMIT" "$CANDIDATE_BUILD_ID" "$CANDIDATE_BUILD_SHA256")
+          populated=0
+          for value in "${candidate_values[@]}"; do [[ -n "$value" ]] && populated=$((populated + 1)); done
+          [[ "$populated" -eq 0 || "$populated" -eq 4 ]] || {
+            echo 'Candidate-Parameter müssen vollständig oder vollständig leer sein.' >&2
+            exit 2
+          }
+          if [[ "$populated" -eq 4 ]]; then
+            [[ "$CANDIDATE_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+            [[ "$CANDIDATE_SOURCE_COMMIT" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || exit 2
+            [[ "$CANDIDATE_BUILD_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+            [[ "$CANDIDATE_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+          fi
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || {
             echo 'Mindestens ein erforderliches Staging-Secret fehlt.' >&2
             exit 2
@@ -45,6 +92,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           path: app
+          repository: ${{ inputs.source-repository || github.repository }}
+          ref: ${{ inputs.source-ref || github.sha }}
 
       - name: Zentrale Deploymentwerkzeuge auschecken
         uses: actions/checkout@v7
@@ -64,13 +113,23 @@ jobs:
       - name: Geprüftes App-Archiv bauen
         run: |
           set -euo pipefail
+          SOURCE_COMMIT="$(git -C app rev-parse HEAD)"
+          if [[ -n "$CANDIDATE_ID" && "$SOURCE_COMMIT" != "$CANDIDATE_SOURCE_COMMIT" ]]; then
+            echo 'Candidate-Commit stimmt nicht mit dem ausgecheckten Quellstand überein.' >&2
+            exit 2
+          fi
           mkdir -p "$RUNNER_TEMP/staging-package"
           bash control/scripts/package-staging-app.sh \
             --app-root app \
             --app-id "$APP_ID" \
-            --commit "$GITHUB_SHA" \
+            --commit "$SOURCE_COMMIT" \
             --archive "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz" \
             --metadata "$RUNNER_TEMP/staging-package/metadata.env"
+          source "$RUNNER_TEMP/staging-package/metadata.env"
+          if [[ -n "$CANDIDATE_ID" && "$SHA256" != "$CANDIDATE_BUILD_SHA256" ]]; then
+            echo 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.' >&2
+            exit 2
+          fi
 
       - name: SSH-Vertrauen einrichten
         env:
@@ -87,6 +146,8 @@ jobs:
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/staging-package/metadata.env"
+          SOURCE_COMMIT="$(git -C app rev-parse HEAD)"
+          DEPLOYMENT_ID="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
 
           target="$STAGING_USER@$STAGING_HOST"
 
@@ -103,9 +164,15 @@ jobs:
             "teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" \
             < "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"
 
-          ssh "${ssh_options[@]}" \
-            "$target" \
-            "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${GITHUB_SHA} ${SHA256}"
+          if [[ -n "$CANDIDATE_ID" ]]; then
+            ssh "${ssh_options[@]}" \
+              "$target" \
+              "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${CANDIDATE_BUILD_ID}"
+          else
+            ssh "${ssh_options[@]}" \
+              "$target" \
+              "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}"
+          fi
 
       - name: Öffentliche Assets prüfen
         run: |
@@ -117,6 +184,23 @@ jobs:
           curl -fsS -o /dev/null -D "$js_headers" "$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET"
           grep -Eiq '^content-type:[[:space:]]*text/css([;[:space:]]|$)' "$css_headers"
           grep -Eiq '^content-type:[[:space:]]*(application|text)/(javascript|x-javascript)([;[:space:]]|$)' "$js_headers"
+
+      - name: Candidate-Deployment nach HTTPS-Smoke verifizieren
+        if: ${{ inputs.candidate-id != '' }}
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/staging-package/metadata.env"
+          SOURCE_COMMIT="$(git -C app rev-parse HEAD)"
+          DEPLOYMENT_ID="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
+          target="$STAGING_USER@$STAGING_HOST"
+          ssh \
+            -i "$RUNNER_TEMP/staging-ssh/key" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
+            "$target" \
+            "teamcloud-staging verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_BUILD_ID}"
 
       - name: Temporäre Serverdateien entfernen
         if: always()
