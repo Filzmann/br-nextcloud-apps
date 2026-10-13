@@ -8,6 +8,7 @@ server_wrapper="$workspace/scripts/teamcloud-staging-install"
 ssh_gate="$workspace/scripts/teamcloud-staging"
 deployment_verifier="$workspace/scripts/verify-staging-deployment-marker.php"
 workflow="$workspace/.github/workflows/deploy-staging.yml"
+candidate_workflow="$workspace/.github/workflows/candidate-staging.yml"
 runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
 
@@ -245,9 +246,10 @@ if "$installer" \
 fi
 
 assert_file "$workflow"
+assert_file "$candidate_workflow"
 assert_file "$runbook"
 assert_contains "$runbook" 'Einmaliger Rebranding-Reinstall beim nächsten Staging-Lauf'
-assert_contains "$runbook" 'Automatische Deployments vor dem Push anhalten'
+assert_contains "$runbook" 'Candidate-Deployments während des Clean Installs anhalten'
 assert_contains "$runbook" 'Installationsreihenfolge des Clean Installs'
 assert_contains "$runbook" '1. `localbase`'
 assert_contains "$runbook" '2. `flz_data_protection`'
@@ -278,6 +280,17 @@ assert_contains "$workflow" '${CANDIDATE_ID} ${DEPLOYMENT_ID}'
 assert_contains "$workflow" '- name: Temporäre Serverdateien entfernen'
 assert_contains "$workflow" 'if: always()'
 assert_contains "$workflow" 'teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
+assert_contains "$candidate_workflow" 'workflow_call:'
+assert_contains "$candidate_workflow" 'id-token: write'
+assert_contains "$candidate_workflow" 'source_ref="refs/heads/candidate/$work_order_id"'
+assert_contains "$candidate_workflow" '"repository_id": os.environ["SOURCE_REPOSITORY_ID"]'
+assert_contains "$candidate_workflow" '/api/candidate-intake'
+assert_contains "$candidate_workflow" 'ACTIONS_ID_TOKEN_REQUEST_URL'
+assert_contains "$candidate_workflow" 'candidate-id: ${{ needs.issue-candidate.outputs.candidate-id }}'
+assert_contains "$candidate_workflow" 'candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}'
+if grep -Fq 'STAGING_EVIDENCE_TOKEN' "$candidate_workflow"; then
+    fail 'Candidate-Ausstellung verwendet einen statischen Evidence-Schreibtoken statt GitHub OIDC.'
+fi
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
 asset_line="$(grep -nF -- '- name: Öffentliche Assets prüfen' "$workflow" | cut -d: -f1)"
@@ -347,11 +360,19 @@ for app_id in "${deployment_apps[@]}"; do
     assert_contains "$workflow" "$app_id"
     assert_contains "$ssh_gate" "$app_id"
     assert_contains "$server_wrapper" "$app_id"
-    caller="$workspace/$app_id/.github/workflows/tests.yml"
-    assert_contains "$caller" 'deploy-staging:'
-    assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main'
+    tests_workflow="$workspace/$app_id/.github/workflows/tests.yml"
+    caller="$workspace/$app_id/.github/workflows/candidate.yml"
+    assert_contains "$tests_workflow" "'candidate/WO-*'"
+    if grep -Fq 'deploy-staging:' "$tests_workflow"; then
+        fail "$app_id deployt weiterhin unmittelbar aus dem Testworkflow."
+    fi
+    assert_contains "$caller" 'workflow_run:'
+    assert_contains "$caller" "github.event.workflow_run.conclusion == 'success'"
+    assert_contains "$caller" "startsWith(github.event.workflow_run.head_branch, 'candidate/WO-')"
+    assert_contains "$caller" 'id-token: write'
+    assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/candidate-staging.yml@main'
     assert_contains "$caller" "app-id: $app_id"
-    assert_contains "$caller" 'secrets: inherit'
+    assert_contains "$caller" 'source-commit: ${{ github.event.workflow_run.head_sha }}'
 done
 
 echo 'Staging-Deployment-Contract: OK'

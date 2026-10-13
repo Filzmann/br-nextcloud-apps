@@ -48,7 +48,11 @@ for app in "${apps[@]}"; do
     fi
 
     require_text "$workflow" 'push:' 'Push-Trigger'
-    require_text "$workflow" 'branches: [main]' 'Push-Begrenzung auf main'
+    if [[ "$app" == flz_data_protection ]]; then
+        require_text "$workflow" "branches: [flz-full-rebrand, 'candidate/WO-*']" 'Push-Begrenzung auf Default- und Candidate-Branches'
+    else
+        require_text "$workflow" "branches: [main, 'candidate/WO-*']" 'Push-Begrenzung auf main und Candidate-Branches'
+    fi
     require_text "$workflow" 'pull_request:' 'Pull-Request-Trigger'
     require_text "$workflow" 'contents: read' 'Read-only-Berechtigung'
     require_text "$workflow" 'actions/checkout@v7' 'Checkout v7'
