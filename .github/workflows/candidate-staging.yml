@@ -1,0 +1,181 @@
+name: Candidate aus GitHub-Prüflauf auf Staging bereitstellen
+
+on:
+  workflow_call:
+    inputs:
+      app-id:
+        description: Registrierte Nextcloud-App-ID
+        required: true
+        type: string
+      source-repository:
+        description: GitHub-Repository des geprüften Commits
+        required: true
+        type: string
+      source-branch:
+        description: Candidate-Branch candidate/WO-...
+        required: true
+        type: string
+      source-commit:
+        description: Exakter Head-Commit des erfolgreichen Testlaufs
+        required: true
+        type: string
+      test-run-id:
+        description: GitHub-ID des erfolgreichen Tests-Workflows
+        required: true
+        type: string
+      test-run-attempt:
+        description: Versuch des erfolgreichen Tests-Workflows
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  issue-candidate:
+    name: Candidate ausstellen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      candidate-id: ${{ steps.intake.outputs.candidate-id }}
+      source-commit: ${{ steps.intake.outputs.source-commit }}
+      build-id: ${{ steps.intake.outputs.build-id }}
+      build-sha256: ${{ steps.intake.outputs.build-sha256 }}
+    env:
+      APP_ID: ${{ inputs.app-id }}
+      SOURCE_REPOSITORY: ${{ inputs.source-repository }}
+      SOURCE_REPOSITORY_ID: ${{ github.repository_id }}
+      SOURCE_BRANCH: ${{ inputs.source-branch }}
+      SOURCE_COMMIT: ${{ inputs.source-commit }}
+      TEST_RUN_ID: ${{ inputs.test-run-id }}
+      TEST_RUN_ATTEMPT: ${{ inputs.test-run-attempt }}
+      CANDIDATE_INTAKE_URL: https://teamcloud.simonbeyer.de/api/candidate-intake
+    steps:
+      - name: GitHub- und Work-Order-Bindung validieren
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_REPOSITORY" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'Source-Repository unterscheidet sich vom GitHub-Ausführungskontext.' >&2
+            exit 2
+          }
+          [[ "$SOURCE_REPOSITORY_ID" =~ ^[1-9][0-9]{0,19}$ ]] || exit 2
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || exit 2
+          [[ "$SOURCE_BRANCH" =~ ^candidate/([A-Za-z0-9][A-Za-z0-9._-]{2,127})$ ]] || {
+            echo 'Candidate-Branch muss exakt candidate/<Work-Order-ID> heißen.' >&2
+            exit 2
+          }
+          [[ "$TEST_RUN_ID" =~ ^[1-9][0-9]{0,19}$ && "$TEST_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,19}$ ]] || exit 2
+          case "$SOURCE_REPOSITORY:$APP_ID" in
+            Filzmann/nextcloud-brtop:brtop|Filzmann/nextcloud-brstunden:brstunden|Filzmann/nextcloud-localbase:localbase|Filzmann/nextcloud-orgsuite:orgsuite|Filzmann/nextcloud-flzplaner:flzplaner|Filzmann/nextcloud-flzcalendar:flzcalendar|Filzmann/nextcloud-flzurlaub:flzurlaub|Filzmann/nextcloud-flzroom:flzroom|Filzmann/nextcloud-flzrecruitment:flzrecruitment|Filzmann/nextcloud-flzbqplanung:flzbqplanung|Filzmann/nextcloud-flz-data-protection:flz_data_protection|Filzmann/nextcloud-flz-permission-matrix:flz_permission_matrix) ;;
+            *) echo 'Repository und App-ID sind nicht gemeinsam registriert.' >&2; exit 2 ;;
+          esac
+
+      - name: App-Commit auschecken
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.source-repository }}
+          ref: ${{ inputs.source-commit }}
+          path: app
+
+      - name: Zentrale Deploymentwerkzeuge auschecken
+        uses: actions/checkout@v7
+        with:
+          repository: Filzmann/br-nextcloud-apps
+          ref: main
+          path: control
+
+      - name: Reproduzierbares Candidate-Archiv bauen
+        run: |
+          set -euo pipefail
+          actual_commit="$(git -C app rev-parse HEAD)"
+          [[ "$actual_commit" == "$SOURCE_COMMIT" ]] || exit 2
+          mkdir -p "$RUNNER_TEMP/candidate-package"
+          bash control/scripts/package-staging-app.sh \
+            --app-root app \
+            --app-id "$APP_ID" \
+            --commit "$SOURCE_COMMIT" \
+            --archive "$RUNNER_TEMP/candidate-package/$APP_ID.tar.gz" \
+            --metadata "$RUNNER_TEMP/candidate-package/metadata.env"
+
+      - name: GitHub-OIDC gebundenen Candidate ausstellen
+        id: intake
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/candidate-package/metadata.env"
+          work_order_id="${SOURCE_BRANCH#candidate/}"
+          source_ref="refs/heads/candidate/$work_order_id"
+          build_id="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
+          request_file="$RUNNER_TEMP/candidate-request.json"
+          audience_file="$RUNNER_TEMP/candidate-audience"
+          WORK_ORDER_ID="$work_order_id" SOURCE_REF="$source_ref" BUILD_ID="$build_id" BUILD_SHA256="$SHA256" \
+            python3 - "$request_file" "$audience_file" <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import sys
+
+          request = {
+              "repository": os.environ["SOURCE_REPOSITORY"],
+              "repository_id": os.environ["SOURCE_REPOSITORY_ID"],
+              "app_id": os.environ["APP_ID"],
+              "work_order_id": os.environ["WORK_ORDER_ID"],
+              "source_ref": os.environ["SOURCE_REF"],
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "build_id": os.environ["BUILD_ID"],
+              "build_sha256": os.environ["BUILD_SHA256"],
+              "test_run_id": os.environ["TEST_RUN_ID"],
+              "test_run_attempt": os.environ["TEST_RUN_ATTEMPT"],
+              "candidate_run_id": os.environ["GITHUB_RUN_ID"],
+              "candidate_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+          }
+          canonical = json.dumps(request, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+          Path(sys.argv[1]).write_text(canonical, encoding="utf-8")
+          Path(sys.argv[2]).write_text("urn:filzmann-ai:candidate:v1:" + hashlib.sha256(canonical.encode()).hexdigest(), encoding="ascii")
+          PY
+          audience="$(<"$audience_file")"
+          encoded_audience="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$audience")"
+          token_response="$(curl --fail --silent --show-error \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${encoded_audience}")"
+          oidc_token="$(jq -er '.value | select(type == "string" and length > 0)' <<<"$token_response")"
+          response_file="$RUNNER_TEMP/candidate-response.json"
+          http_status="$(curl --silent --show-error \
+            --output "$response_file" --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $oidc_token" \
+            --data-binary "@$request_file" \
+            "$CANDIDATE_INTAKE_URL")"
+          unset oidc_token token_response
+          [[ "$http_status" == 201 ]] || {
+            jq -r '.error // "Candidate-Ausstellung fehlgeschlagen."' "$response_file" >&2
+            exit 2
+          }
+          candidate_id="$(jq -er '.candidate_id' "$response_file")"
+          response_commit="$(jq -er '.source_commit' "$response_file")"
+          response_build_id="$(jq -er '.build_id' "$response_file")"
+          response_build_sha256="$(jq -er '.build_sha256' "$response_file")"
+          [[ "$response_commit" == "$SOURCE_COMMIT" && "$response_build_id" == "$build_id" && "$response_build_sha256" == "$SHA256" ]] || exit 2
+          {
+            echo "candidate-id=$candidate_id"
+            echo "source-commit=$response_commit"
+            echo "build-id=$response_build_id"
+            echo "build-sha256=$response_build_sha256"
+          } >> "$GITHUB_OUTPUT"
+
+  deploy-candidate:
+    name: Ausgestellten Candidate auf Staging deployen
+    needs: issue-candidate
+    uses: Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main
+    with:
+      app-id: ${{ inputs.app-id }}
+      source-repository: ${{ inputs.source-repository }}
+      source-ref: ${{ inputs.source-commit }}
+      candidate-id: ${{ needs.issue-candidate.outputs.candidate-id }}
+      candidate-source-commit: ${{ needs.issue-candidate.outputs.source-commit }}
+      candidate-build-id: ${{ needs.issue-candidate.outputs.build-id }}
+      candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}
+    secrets: inherit

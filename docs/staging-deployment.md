@@ -1,21 +1,36 @@
-# Automatisches Staging-Deployment
+# Candidate-gebundenes Staging-Deployment
 
-Erfolgreiche Testläufe nach einem Push auf `main` können weiterhin einen
-nicht abnahmefähigen Integrationsstand auf `https://teamcloud.simonbeyer.de`
-installieren. Pull Requests und fehlgeschlagene Tests deployen nicht. Eine
-solche Installation erzeugt keine manuelle Freigabe-Evidence.
+Ein Push auf `main` installiert keinen ungeprüften Integrationsstand. Für eine
+zuvor zentral ausgestellte Work Order wird stattdessen ein Branch
+`candidate/<Work-Order-ID>` gepusht. Die App-Tests laufen auf diesem Branch.
+Nur ihr erfolgreicher `workflow_run` aus dem auf dem Default-Branch
+versionierten Caller `.github/workflows/candidate.yml` darf den zentralen
+Workflow `.github/workflows/candidate-staging.yml` aufrufen. Pull Requests,
+fehlgeschlagene Tests und andere Branchnamen stellen keinen Candidate aus und
+deployen nicht.
 
-Ein ausgestellter Candidate wird vor der Git-Integration über den manuellen
-Workflow `deploy-staging-candidate.yml` bereitgestellt. Der Workflow checkt
-den exakt gebundenen Commit aus, baut das Archiv erneut, vergleicht dessen
-SHA-256 mit dem Candidate und übergibt Candidate-, Build- und Deployment-ID an
-das vorhandene SSH-Gate. Der Installer hält je App genau den aktuell aktiven
-Candidate-Stand zunächst als `pending-https-verification` fest. Erst nachdem
-der Workflow die öffentlichen CSS- und JavaScript-Assets über HTTPS mit dem
-richtigen Content-Type geprüft hat, bindet ein eigener Gate-Aufruf denselben
-Candidate, Commit, Build und dasselbe Deployment atomar als `verified`. Jedes
-spätere Deployment ohne Candidate-Bindung macht diesen aktiven Marker
-ungültig, damit keine Abnahme für überschriebenen Code entstehen kann.
+Der zentrale Workflow baut aus dem exakten geprüften Commit ein
+reproduzierbares Archiv. Anschließend fordert er ein kurzlebiges
+GitHub-OIDC-Token an, dessen Audience den vollständigen Intake-Request bindet.
+Der Acceptance-Service prüft Signatur und Zeitfenster sowie Repository-Name,
+unveränderliche Repository-ID, Caller-Workflow, zentralen wiederverwendbaren
+Workflow und beide Run-IDs. Er synchronisiert zuerst den Evidence-Store,
+verlangt die vorab ausgestellte passende Work Order und liest die app-lokale
+Markdown-Abnahmevorlage mit `git show` aus dem exakten Commit. Der
+Candidate wird erst nach zentral bestätigtem Check- und Candidate-Evidence-
+Push an den Deployment-Workflow übergeben. App-Repositories benötigen dafür
+kein Evidence-Schreibsecret.
+
+Der Deployment-Workflow checkt denselben Commit aus, baut das Archiv erneut,
+vergleicht dessen SHA-256 mit dem Candidate und übergibt Candidate-, Build-
+und Deployment-ID an das vorhandene SSH-Gate. Der Installer hält je App genau
+den aktuell aktiven Candidate-Stand zunächst als
+`pending-https-verification` fest. Erst nachdem der Workflow die öffentlichen
+CSS- und JavaScript-Assets über HTTPS mit dem richtigen Content-Type geprüft
+hat, bindet ein eigener Gate-Aufruf denselben Candidate, Commit, Build und
+dasselbe Deployment atomar als `verified`. Eine neue Branch-Version erzeugt
+einen neuen Candidate; ein späteres Deployment ersetzt den aktiven Marker und
+entzieht dem älteren Stand die Abnahmefähigkeit.
 
 Beim ersten authentifizierten Abruf synchronisiert der Acceptance-Service
 seinen privaten Evidence-Checkout, übernimmt ausschließlich einen vollständig
@@ -50,6 +65,11 @@ Deployment-ID, Commit, Build und Digest mit ihrem aktuell `verified` Marker
 entzieht dem älteren Candidate sofort die Abnahmefähigkeit. Der Reverse Proxy
 entfernt eingehende Identitäts- und Rollenheader und setzt sie erst nach
 erfolgreicher Webauthentifizierung zusammen mit dem internen Proxy-Token neu.
+Der einzelne Schreibendpunkt `/api/candidate-intake` liegt außerhalb dieser
+Browser-Basic-Auth. Er akzeptiert weder Reviewer-Header noch Proxy-Token als
+Berechtigung, sondern ausschließlich das für den Request ausgestellte und
+vollständig geprüfte GitHub-OIDC-Bearer-Token. Der Proxy begrenzt dort
+Requestgröße und Rate separat.
 
 ```text
 automatische Prüfungen → READY → Candidate → Staging-Deployment
@@ -57,11 +77,12 @@ automatische Prüfungen → READY → Candidate → Staging-Deployment
 → getrennte Git-Integration
 ```
 
-Der wiederverwendbare Workflow liegt im Parent-Repository unter
-`.github/workflows/deploy-staging.yml`. Die zwölf App-Repositories rufen ihn
-nach ihren eigenen PHP-, JavaScript- und gegebenenfalls Consumer-Contract-
-Tests auf. Paketierung, Prüfsummenprüfung, Installation und Rollbacklogik
-bleiben dadurch zentral gepflegt.
+Die wiederverwendbaren Workflows liegen im Parent-Repository unter
+`.github/workflows/candidate-staging.yml` und
+`.github/workflows/deploy-staging.yml`. Die zwölf App-Repositories starten den
+ersten nur über ihren erfolgreichen Candidate-`workflow_run`. Paketierung,
+OIDC-Intake, Prüfsummenprüfung, Installation und Rollbacklogik bleiben dadurch
+zentral gepflegt.
 
 ## Sicherheits- und Betriebsvertrag
 
@@ -80,15 +101,14 @@ keinen freigegebenen Upgradepfad von den alten App-IDs. Der Lauf wird als
 separat freizugebender, vollständiger Clean Install vorgemerkt; die in diesem
 Änderungsauftrag vorgenommenen Repositoryänderungen führen ihn nicht aus.
 
-### Automatische Deployments vor dem Push anhalten
+### Candidate-Deployments während des Clean Installs anhalten
 
-Vor dem ersten Push der Rebranding-Commits auf `main` erhält das GitHub-
+Vor dem ersten Candidate-Push der Rebranding-Stände erhält das GitHub-
 Environment `staging` vorübergehend eine verpflichtende manuelle Freigabe.
 Alternativ werden seine beiden Deployment-Secrets kontrolliert entzogen. Kein
-durch einen App-Push wartender Deployment-Job wird freigegeben, bevor der
-frische Staging-Baseline-Stand vorbereitet und der Clean Install ausdrücklich
-beauftragt wurde. Dadurch installiert ein normaler Push keine neue FLZ-App-ID
-neben einen noch aktiven Altstand.
+wartender Candidate-Deployment-Job wird freigegeben, bevor der frische
+Staging-Baseline-Stand vorbereitet und der Clean Install ausdrücklich
+beauftragt wurde. Ein normaler Push auf `main` löst kein Deployment aus.
 
 Zuvor werden die externen GitHub-Repositories auf ihre bereits in Metadaten
 und CI verwendeten kanonischen Slugs umbenannt: `nextcloud-adcalendar` nach
@@ -362,9 +382,12 @@ ausgegeben oder auf dem Stagingserver gespeichert.
 ## Aktivierung und erster Lauf
 
 Der Parent-Workflow und seine Skripte müssen zuerst auf `main` verfügbar sein.
-Danach werden die Caller-Änderungen in den App-Repositories auf `main`
-übernommen. So verweist kein App-Workflow zwischenzeitlich auf einen noch
-nicht vorhandenen wiederverwendbaren Workflow.
+Danach werden die Caller-Änderungen auf dem tatsächlichen Default-Branch jedes
+App-Repositories übernommen. Der Acceptance-Service bindet denselben
+Caller-Ref und die unveränderliche GitHub-Repository-ID in seiner versionierten
+Allowlist. So verweist kein App-Workflow zwischenzeitlich auf einen noch nicht
+vorhandenen wiederverwendbaren Workflow und ein anderer Branch erhält keine
+OIDC-Berechtigung.
 
 Der erste kontrollierte Lauf erfolgt mit genau einer App. Er muss folgende
 Nachweise liefern:
