@@ -87,6 +87,11 @@ if [[ "$populated" -eq 5 ]]; then
     fi
 fi
 
+if [[ "$deployment_target" == 'br-staging' && ( "$app_id" == 'brstunden' || "$app_id" == 'brtop' ) && "$populated" -ne 5 ]]; then
+    echo 'BR-App-Deployments benötigen eine vollständige, auf br-staging gebundene Candidate-Bindung.' >&2
+    exit 2
+fi
+
 if [[ "$mode" == 'runtime-mirror' ]]; then
     if [[ "$populated" -ne 5 || "$candidate_staging_target" != 'teamcloud' ]]; then
         echo 'BR-Runtime-Mirror benötigen einen vollständig gebundenen Teamcloud-Candidate.' >&2
