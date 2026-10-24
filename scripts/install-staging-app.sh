@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> [--state-dir <Pfad>] [--candidate-id <ID> --deployment-id <ID> --build-id <ID> --active-reader-user <User>]' >&2
+    echo 'Aufruf: install-staging-app.sh --nextcloud-root <Pfad> --php-bin <Pfad> [--php-memory-limit <Wert>] --archive <Pfad> --sha256 <Hash> --app-id <ID> --commit <SHA> --staging-target <Ziel-ID> [--state-dir <Pfad>] [--candidate-id <ID> --deployment-id <ID> --build-id <ID> --active-reader-user <User>]' >&2
 }
 
 nextcloud_root=''
@@ -12,6 +12,7 @@ archive=''
 expected_hash=''
 app_id=''
 commit=''
+staging_target=''
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/br-nextcloud-staging"
 candidate_id=''
 deployment_id=''
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
         --sha256) expected_hash="${2:-}"; shift 2 ;;
         --app-id) app_id="${2:-}"; shift 2 ;;
         --commit) commit="${2:-}"; shift 2 ;;
+        --staging-target) staging_target="${2:-}"; shift 2 ;;
         --state-dir) state_dir="${2:-}"; shift 2 ;;
         --candidate-id) candidate_id="${2:-}"; shift 2 ;;
         --deployment-id) deployment_id="${2:-}"; shift 2 ;;
@@ -36,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z "$nextcloud_root" || -z "$php_bin" || -z "$archive" || -z "$expected_hash" || -z "$app_id" || -z "$commit" || -z "$state_dir" ]]; then
+if [[ -z "$nextcloud_root" || -z "$php_bin" || -z "$archive" || -z "$expected_hash" || -z "$app_id" || -z "$commit" || -z "$staging_target" || -z "$state_dir" ]]; then
     usage
     exit 2
 fi
@@ -54,6 +56,10 @@ if [[ -n "$active_reader_user" ]] && ! getent passwd "$active_reader_user" >/dev
 fi
 if [[ ! "$app_id" =~ ^[a-z][a-z0-9_]*$ ]]; then
     echo "Ungültige App-ID: $app_id" >&2
+    exit 2
+fi
+if [[ ! "$staging_target" =~ ^[a-z][a-z0-9-]{1,31}$ ]]; then
+    echo "Ungültige Staging-Ziel-ID: $staging_target" >&2
     exit 2
 fi
 if [[ ! "$expected_hash" =~ ^[0-9a-f]{64}$ || ! "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]]; then
@@ -211,24 +217,25 @@ printf '%s' "$enabled_json" | "${php_command[@]}" -r '
 ' "$app_id" || { echo "$app_id ist nach dem Deployment nicht aktiviert." >&2; exit 5; }
 
 record_tmp="$state_dir/deployed/$app_id.tsv.tmp.$$"
-printf '%s\t%s\t%s\t%s\n' "$app_id" "$version" "$commit" "$actual_hash" > "$record_tmp"
+printf '%s\t%s\t%s\t%s\t%s\n' "$app_id" "$version" "$commit" "$actual_hash" "$staging_target" > "$record_tmp"
 mv "$record_tmp" "$state_dir/deployed/$app_id.tsv"
 if [[ -n "$candidate_id" ]]; then
     active_tmp="$active_record.tmp.$$"
     deployed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     "${php_command[@]}" -r '
         $value = [
-            "schema" => "filzmann.active-staging-deployment/v1",
+            "schema" => "filzmann.active-staging-deployment/v2",
             "candidate_id" => $argv[1],
             "deployment_id" => $argv[2],
             "source_commit" => $argv[3],
             "build" => ["id" => $argv[4], "sha256" => $argv[5]],
             "app_id" => $argv[6],
-            "deployed_at" => $argv[7],
+            "staging_target" => $argv[7],
+            "deployed_at" => $argv[8],
             "status" => "pending-https-verification",
         ];
         echo json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), "\n";
-    ' "$candidate_id" "$deployment_id" "$commit" "$build_id" "$actual_hash" "$app_id" "$deployed_at" > "$active_tmp"
+    ' "$candidate_id" "$deployment_id" "$commit" "$build_id" "$actual_hash" "$app_id" "$staging_target" "$deployed_at" > "$active_tmp"
     chmod 600 "$active_tmp"
     setfacl -m "u:$active_reader_user:r--" "$active_tmp"
     mv "$active_tmp" "$active_record"

@@ -7,8 +7,10 @@ installer="$workspace/scripts/install-staging-app.sh"
 server_wrapper="$workspace/scripts/teamcloud-staging-install"
 ssh_gate="$workspace/scripts/teamcloud-staging"
 deployment_verifier="$workspace/scripts/verify-staging-deployment-marker.php"
+input_validator="$workspace/scripts/validate-staging-deployment-inputs"
 workflow="$workspace/.github/workflows/deploy-staging.yml"
 candidate_workflow="$workspace/.github/workflows/candidate-staging.yml"
+privacy_tests_workflow="$workspace/flz_data_protection/.github/workflows/tests.yml"
 runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
 
@@ -56,6 +58,123 @@ mkdir -p "$stage/output"
 archive="$stage/output/demoapp.tar.gz"
 metadata="$stage/output/metadata.env"
 commit='0123456789abcdef0123456789abcdef01234567'
+candidate_id='CAND-2026-mirror'
+build_id='github-77-1-localbase'
+build_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+different_commit='fedcba9876543210fedcba9876543210fedcba98'
+
+assert_file "$input_validator"
+mirror_mode="$("$input_validator" \
+    --app-id localbase \
+    --deployment-target br-staging \
+    --candidate-staging-target teamcloud \
+    --source-ref "$commit" \
+    --candidate-id "$candidate_id" \
+    --candidate-source-commit "$commit" \
+    --candidate-build-id "$build_id" \
+    --candidate-build-sha256 "$build_hash" \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 "$build_hash")"
+[[ "$mirror_mode" == 'runtime-mirror' ]] \
+    || fail 'Ein vollständig an den Teamcloud-Candidate gebundener Runtime-Mirror wurde nicht erkannt.'
+
+if "$input_validator" \
+    --app-id localbase \
+    --deployment-target br-staging \
+    --candidate-staging-target br-staging \
+    --source-ref "$commit" \
+    --candidate-id "$candidate_id" \
+    --candidate-source-commit "$commit" \
+    --candidate-build-id "$build_id" \
+    --candidate-build-sha256 "$build_hash" \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 "$build_hash" >/dev/null 2>&1; then
+    fail 'Ein Runtime-Mirror mit falschem autoritativem Ziel wurde akzeptiert.'
+fi
+
+if "$input_validator" \
+    --app-id orgsuite \
+    --deployment-target br-staging \
+    --candidate-staging-target teamcloud \
+    --source-ref "$commit" \
+    --candidate-id "$candidate_id" \
+    --candidate-source-commit "$commit" \
+    --candidate-build-id "$build_id" \
+    --candidate-build-sha256 "$build_hash" \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' >/dev/null 2>&1; then
+    fail 'Ein Runtime-Mirror mit abweichendem Archivdigest wurde akzeptiert.'
+fi
+
+if "$input_validator" \
+    --app-id localbase \
+    --deployment-target br-staging \
+    --candidate-staging-target teamcloud \
+    --source-ref refs/heads/main \
+    --candidate-id "$candidate_id" \
+    --candidate-source-commit "$commit" \
+    --candidate-build-id "$build_id" \
+    --candidate-build-sha256 "$build_hash" \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 "$build_hash" >/dev/null 2>&1; then
+    fail 'Ein Runtime-Mirror aus einem veränderlichen Git-Ref wurde akzeptiert.'
+fi
+
+legacy_mode="$("$input_validator" \
+    --app-id flz_data_protection \
+    --deployment-target teamcloud \
+    --candidate-staging-target '' \
+    --source-ref "$commit" \
+    --candidate-id '' \
+    --candidate-source-commit '' \
+    --candidate-build-id '' \
+    --candidate-build-sha256 '' \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 "$build_hash")"
+[[ "$legacy_mode" == 'legacy-deployment' ]] \
+    || fail 'Ein vollständig an Commit und erzeugten Digest gebundenes Legacy-Deployment wurde nicht erkannt.'
+
+if "$input_validator" \
+    --app-id flz_data_protection \
+    --deployment-target teamcloud \
+    --candidate-staging-target '' \
+    --source-ref "$commit" \
+    --candidate-id '' \
+    --candidate-source-commit '' \
+    --candidate-build-id '' \
+    --candidate-build-sha256 '' \
+    --actual-source-commit "$different_commit" \
+    --actual-build-sha256 "$build_hash" >/dev/null 2>&1; then
+    fail 'Ein Legacy-Deployment mit vom gepinnten Ref abweichendem Checkout wurde akzeptiert.'
+fi
+
+if "$input_validator" \
+    --app-id flz_data_protection \
+    --deployment-target teamcloud \
+    --candidate-staging-target '' \
+    --source-ref refs/heads/main \
+    --candidate-id '' \
+    --candidate-source-commit '' \
+    --candidate-build-id '' \
+    --candidate-build-sha256 '' \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 "$build_hash" >/dev/null 2>&1; then
+    fail 'Ein Legacy-Deployment aus einem veränderlichen Git-Ref wurde akzeptiert.'
+fi
+
+if "$input_validator" \
+    --app-id flz_data_protection \
+    --deployment-target teamcloud \
+    --candidate-staging-target '' \
+    --source-ref "$commit" \
+    --candidate-id '' \
+    --candidate-source-commit '' \
+    --candidate-build-id '' \
+    --candidate-build-sha256 '' \
+    --actual-source-commit "$commit" \
+    --actual-build-sha256 invalid >/dev/null 2>&1; then
+    fail 'Ein Legacy-Deployment mit ungültigem erzeugtem Archivdigest wurde akzeptiert.'
+fi
 
 "$package_script" \
     --app-root "$app" \
@@ -144,6 +263,7 @@ FAKE_OCC_STATUS_COUNT="$stage/occ-status-count" \
     --sha256 "$hash" \
     --app-id demoapp \
     --commit "$commit" \
+    --staging-target teamcloud \
     --state-dir "$state" \
     --candidate-id CAND-2026-0001 \
     --deployment-id github-42-1-demoapp \
@@ -157,6 +277,8 @@ assert_contains "$stage/occ-success.log" 'app:enable demoapp'
 assert_contains "$stage/occ-success.log" 'upgrade'
 assert_contains "$state/active/demoapp.json" '"candidate_id": "CAND-2026-0001"'
 assert_contains "$state/active/demoapp.json" '"deployment_id": "github-42-1-demoapp"'
+assert_contains "$state/active/demoapp.json" '"schema": "filzmann.active-staging-deployment/v2"'
+assert_contains "$state/active/demoapp.json" '"staging_target": "teamcloud"'
 assert_contains "$state/active/demoapp.json" '"deployed_at":'
 assert_contains "$state/active/demoapp.json" '"status": "pending-https-verification"'
 getfacl -cp "$state/active" | grep -Fqx 'user:nobody:r-x' \
@@ -173,6 +295,7 @@ getfacl -cp "$state/active/demoapp.json" | grep -Fqx 'user:nobody:r--' \
     --source-commit "$commit" \
     --build-id build-17 \
     --build-sha256 "$hash" \
+    --staging-target teamcloud \
     --verified-at 2026-10-11T08:25:00Z \
     --active-reader-user nobody
 assert_contains "$state/active/demoapp.json" '"status": "verified"'
@@ -188,6 +311,7 @@ if "$(command -v php)" "$deployment_verifier" \
     --source-commit "$commit" \
     --build-id build-17 \
     --build-sha256 "$hash" \
+    --staging-target teamcloud \
     --verified-at 2026-10-11T08:26:00Z \
     --active-reader-user nobody >/dev/null 2>&1; then
     fail 'Ein widersprüchlicher HTTPS-Verifikationsbeleg wurde akzeptiert.'
@@ -200,6 +324,7 @@ if "$installer" \
     --sha256 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' \
     --app-id demoapp \
     --commit "$commit" \
+    --staging-target teamcloud \
     --state-dir "$state" >/dev/null 2>&1; then
     fail 'Falsche Prüfsumme wurde akzeptiert.'
 fi
@@ -221,6 +346,7 @@ if FAKE_OCC_FAIL_SECOND_STATUS=1 \
     --sha256 "$hash" \
     --app-id demoapp \
     --commit "$commit" \
+    --staging-target teamcloud \
     --state-dir "$rollback_state" >/dev/null 2>&1; then
     fail 'Fehlschlagende App-Aktivierung wurde als Erfolg gemeldet.'
 fi
@@ -241,6 +367,7 @@ if "$installer" \
     --sha256 "$bad_hash" \
     --app-id demoapp \
     --commit "$commit" \
+    --staging-target teamcloud \
     --state-dir "$state" >/dev/null 2>&1; then
     fail 'Symlink im Archiv wurde akzeptiert.'
 fi
@@ -267,19 +394,27 @@ assert_contains "$workflow" 'workflow_call:'
 assert_contains "$workflow" 'candidate-id:'
 assert_contains "$workflow" 'candidate-source-commit:'
 assert_contains "$workflow" 'candidate-build-sha256:'
+assert_contains "$workflow" 'candidate-staging-target:'
+assert_contains "$workflow" 'staging-target:'
+assert_contains "$workflow" 'CANDIDATE_STAGING_TARGET: ${{ inputs.candidate-staging-target }}'
+assert_contains "$workflow" "environment: \${{ inputs.staging-target == 'teamcloud' && 'staging' || 'staging-br' }}"
+assert_contains "$workflow" 'concurrency:'
+assert_contains "$workflow" 'group: staging-${{ inputs.staging-target }}'
 assert_contains "$workflow" 'CANDIDATE_ID: ${{ inputs.candidate-id }}'
-assert_contains "$workflow" 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.'
-assert_contains "$workflow" 'environment: staging'
+assert_contains "$privacy_tests_workflow" 'staging-target: teamcloud'
+assert_contains "$privacy_tests_workflow" 'source-ref: ${{ github.sha }}'
+assert_contains "$input_validator" 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.'
+assert_contains "$workflow" 'if [[ "$DEPLOYMENT_MODE" == authoritative-candidate ]]'
 assert_contains "$workflow" 'STAGING_SSH_PRIVATE_KEY'
 assert_contains "$workflow" 'STAGING_SSH_KNOWN_HOSTS'
 assert_contains "$workflow" '- name: Archiv über SSH-Gate installieren'
-assert_contains "$workflow" 'teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
+assert_contains "$workflow" '${STAGING_GATE_COMMAND} upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
 assert_contains "$workflow" '< "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"'
-assert_contains "$workflow" 'teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}'
+assert_contains "$workflow" '${STAGING_GATE_COMMAND} install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}'
 assert_contains "$workflow" '${CANDIDATE_ID} ${DEPLOYMENT_ID}'
 assert_contains "$workflow" '- name: Temporäre Serverdateien entfernen'
 assert_contains "$workflow" 'if: always()'
-assert_contains "$workflow" 'teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
+assert_contains "$workflow" '${STAGING_GATE_COMMAND} cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}'
 assert_contains "$candidate_workflow" 'workflow_call:'
 assert_contains "$candidate_workflow" 'id-token: write'
 assert_contains "$candidate_workflow" 'source_ref="refs/heads/candidate/$work_order_id"'
@@ -288,13 +423,20 @@ assert_contains "$candidate_workflow" '/api/candidate-intake'
 assert_contains "$candidate_workflow" 'ACTIONS_ID_TOKEN_REQUEST_URL'
 assert_contains "$candidate_workflow" 'candidate-id: ${{ needs.issue-candidate.outputs.candidate-id }}'
 assert_contains "$candidate_workflow" 'candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}'
+assert_contains "$candidate_workflow" 'staging-target: ${{ needs.issue-candidate.outputs.staging-target }}'
+assert_contains "$candidate_workflow" 'deploy-br-runtime-mirror:'
+assert_contains "$candidate_workflow" "inputs.app-id == 'localbase' || inputs.app-id == 'orgsuite'"
+assert_contains "$candidate_workflow" '      - deploy-candidate'
+assert_contains "$candidate_workflow" 'staging-target: br-staging'
+assert_contains "$candidate_workflow" 'candidate-staging-target: ${{ needs.issue-candidate.outputs.staging-target }}'
+assert_contains "$candidate_workflow" 'candidate-source-commit: ${{ needs.issue-candidate.outputs.source-commit }}'
 if grep -Fq 'STAGING_EVIDENCE_TOKEN' "$candidate_workflow"; then
     fail 'Candidate-Ausstellung verwendet einen statischen Evidence-Schreibtoken statt GitHub OIDC.'
 fi
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
 asset_line="$(grep -nF -- '- name: Öffentliche Assets prüfen' "$workflow" | cut -d: -f1)"
-verify_line="$(grep -nF -- 'teamcloud-staging verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID}' "$workflow" | cut -d: -f1)"
+verify_line="$(grep -nF -- '${STAGING_GATE_COMMAND} verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID}' "$workflow" | cut -d: -f1)"
 [[ -n "$asset_line" && -n "$verify_line" && "$verify_line" -gt "$asset_line" ]] \
     || fail 'Candidate wird nicht erst nach dem öffentlichen HTTPS-Smoke als verifiziert markiert.'
 if grep -Fq '$STAGING_BASE_URL/apps/$APP_ID/' "$workflow"; then
@@ -342,9 +484,7 @@ if "$server_wrapper" /tmp/demoapp.tar.gz demoapp "$commit" "$hash" >/dev/null 2>
 fi
 
 deployment_apps=(
-    brtop
     flzplaner
-    brstunden
     localbase
     flz_permission_matrix
     flzcalendar
@@ -353,11 +493,10 @@ deployment_apps=(
     flzroom
     flzrecruitment
     flzbqplanung
-    flz_data_protection
 )
 
 for app_id in "${deployment_apps[@]}"; do
-    assert_contains "$workflow" "$app_id"
+    assert_contains "$input_validator" "$app_id"
     assert_contains "$ssh_gate" "$app_id"
     assert_contains "$server_wrapper" "$app_id"
     tests_workflow="$workspace/$app_id/.github/workflows/tests.yml"
@@ -373,6 +512,24 @@ for app_id in "${deployment_apps[@]}"; do
     assert_contains "$caller" 'Filzmann/br-nextcloud-apps/.github/workflows/candidate-staging.yml@main'
     assert_contains "$caller" "app-id: $app_id"
     assert_contains "$caller" 'source-commit: ${{ github.event.workflow_run.head_sha }}'
+done
+
+assert_contains "$input_validator" 'flz_data_protection'
+assert_contains "$privacy_tests_workflow" 'deploy-staging:'
+assert_contains "$privacy_tests_workflow" 'Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main'
+
+for br_app_id in brtop brstunden; do
+    assert_contains "$input_validator" "$br_app_id"
+    if grep -Eq "(^|[|[:space:]])${br_app_id}([|)])" "$ssh_gate"; then
+        fail "$br_app_id ist weiterhin im autoritativen Teamcloud-SSH-Gate freigegeben."
+    fi
+    if grep -Eq "(^|[|[:space:]])${br_app_id}([|)])" "$server_wrapper"; then
+        fail "$br_app_id ist weiterhin im autoritativen Teamcloud-Installer freigegeben."
+    fi
+    tests_workflow="$workspace/$br_app_id/.github/workflows/tests.yml"
+    caller="$workspace/$br_app_id/.github/workflows/candidate.yml"
+    assert_contains "$tests_workflow" "'candidate/WO-*'"
+    assert_contains "$caller" "app-id: $br_app_id"
 done
 
 echo 'Staging-Deployment-Contract: OK'

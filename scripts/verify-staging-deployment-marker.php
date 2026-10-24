@@ -10,8 +10,9 @@ function fail(string $message): never {
 $allowed = [
     '--active-file', '--lock-file', '--app-id', '--candidate-id', '--deployment-id',
     '--source-commit', '--build-id', '--build-sha256', '--verified-at', '--active-reader-user',
+    '--staging-target',
 ];
-if ($argc !== 21) {
+if ($argc !== 23) {
     fail('Ungültiger Aufruf für die Staging-Deployment-Verifikation.');
 }
 $arguments = [];
@@ -32,6 +33,7 @@ if (!preg_match('/^[a-z][a-z0-9_]{1,63}$/D', $arguments['--app-id'])
     || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/D', $arguments['--deployment-id'])
     || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/D', $arguments['--build-id'])
     || !preg_match('/^[a-z_][a-z0-9_-]{0,31}$/D', $arguments['--active-reader-user'])
+    || !preg_match('/^[a-z][a-z0-9-]{1,31}$/D', $arguments['--staging-target'])
     || !preg_match('/^[0-9a-f]{40}([0-9a-f]{24})?$/D', $arguments['--source-commit'])
     || !preg_match('/^[0-9a-f]{64}$/D', $arguments['--build-sha256'])
     || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $arguments['--verified-at'])) {
@@ -71,13 +73,13 @@ $originalDigest = hash('sha256', $content === false ? '' : $content);
 $expected = [
     $arguments['--candidate-id'], $arguments['--deployment-id'], $arguments['--source-commit'],
     ['id' => $arguments['--build-id'], 'sha256' => $arguments['--build-sha256']],
-    $arguments['--app-id'], 'pending-https-verification',
+    $arguments['--app-id'], $arguments['--staging-target'], 'pending-https-verification',
 ];
 $actual = [
     $value['candidate_id'] ?? null, $value['deployment_id'] ?? null, $value['source_commit'] ?? null,
-    $value['build'] ?? null, $value['app_id'] ?? null, $value['status'] ?? null,
+    $value['build'] ?? null, $value['app_id'] ?? null, $value['staging_target'] ?? null, $value['status'] ?? null,
 ];
-if (($value['schema'] ?? null) !== 'filzmann.active-staging-deployment/v1' || $actual !== $expected) {
+if (($value['schema'] ?? null) !== 'filzmann.active-staging-deployment/v2' || $actual !== $expected) {
     fail('HTTPS-Verifikation stimmt nicht mit dem aktiven Candidate-Deployment überein.');
 }
 $value['status'] = 'verified';

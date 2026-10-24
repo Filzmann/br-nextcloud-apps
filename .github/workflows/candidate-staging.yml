@@ -44,6 +44,7 @@ jobs:
       source-commit: ${{ steps.intake.outputs.source-commit }}
       build-id: ${{ steps.intake.outputs.build-id }}
       build-sha256: ${{ steps.intake.outputs.build-sha256 }}
+      staging-target: ${{ steps.intake.outputs.staging-target }}
     env:
       APP_ID: ${{ inputs.app-id }}
       SOURCE_REPOSITORY: ${{ inputs.source-repository }}
@@ -158,12 +159,15 @@ jobs:
           response_commit="$(jq -er '.source_commit' "$response_file")"
           response_build_id="$(jq -er '.build_id' "$response_file")"
           response_build_sha256="$(jq -er '.build_sha256' "$response_file")"
+          response_staging_target="$(jq -er '.staging_target' "$response_file")"
           [[ "$response_commit" == "$SOURCE_COMMIT" && "$response_build_id" == "$build_id" && "$response_build_sha256" == "$SHA256" ]] || exit 2
+          [[ "$response_staging_target" == 'teamcloud' || "$response_staging_target" == 'br-staging' ]] || exit 2
           {
             echo "candidate-id=$candidate_id"
             echo "source-commit=$response_commit"
             echo "build-id=$response_build_id"
             echo "build-sha256=$response_build_sha256"
+            echo "staging-target=$response_staging_target"
           } >> "$GITHUB_OUTPUT"
 
   deploy-candidate:
@@ -178,4 +182,25 @@ jobs:
       candidate-source-commit: ${{ needs.issue-candidate.outputs.source-commit }}
       candidate-build-id: ${{ needs.issue-candidate.outputs.build-id }}
       candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}
+      staging-target: ${{ needs.issue-candidate.outputs.staging-target }}
+      candidate-staging-target: ${{ needs.issue-candidate.outputs.staging-target }}
+    secrets: inherit
+
+  deploy-br-runtime-mirror:
+    name: Teamcloud-Candidate als BR-Runtime-Mirror bereitstellen
+    if: ${{ inputs.app-id == 'localbase' || inputs.app-id == 'orgsuite' }}
+    needs:
+      - issue-candidate
+      - deploy-candidate
+    uses: Filzmann/br-nextcloud-apps/.github/workflows/deploy-staging.yml@main
+    with:
+      app-id: ${{ inputs.app-id }}
+      source-repository: ${{ inputs.source-repository }}
+      source-ref: ${{ needs.issue-candidate.outputs.source-commit }}
+      candidate-id: ${{ needs.issue-candidate.outputs.candidate-id }}
+      candidate-source-commit: ${{ needs.issue-candidate.outputs.source-commit }}
+      candidate-build-id: ${{ needs.issue-candidate.outputs.build-id }}
+      candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}
+      staging-target: br-staging
+      candidate-staging-target: ${{ needs.issue-candidate.outputs.staging-target }}
     secrets: inherit

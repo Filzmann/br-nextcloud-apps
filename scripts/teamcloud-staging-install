@@ -14,7 +14,7 @@ if [[ "${1:-}" == 'verify' ]]; then
     [[ $# -eq 7 ]] || { usage; exit 2; }
     app_id="$2"
     case "$app_id" in
-        brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
+        flzplaner|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
         *) echo "Nicht freigegebene App-ID: $app_id" >&2; exit 2 ;;
     esac
     [[ -x "$php_bin" && -f "$verifier" && ! -L "$verifier" ]] || { echo 'Deployment-Verifikationswerkzeug fehlt oder ist unsicher.' >&2; exit 2; }
@@ -27,6 +27,7 @@ if [[ "${1:-}" == 'verify' ]]; then
         --source-commit "$5" \
         --build-sha256 "$6" \
         --build-id "$7" \
+        --staging-target teamcloud \
         --verified-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --active-reader-user "$active_reader"
 fi
@@ -48,7 +49,7 @@ nextcloud_root='/var/www/vhosts/simonbeyer.de/teamcloud.simonbeyer.de'
 installer='/usr/local/libexec/teamcloud-staging/install-staging-app.sh'
 
 case "$app_id" in
-    brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
+    flzplaner|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
     *) echo "Nicht freigegebene App-ID: $app_id" >&2; exit 2 ;;
 esac
 if [[ ! "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ || ! "$expected_hash" =~ ^[0-9a-f]{64}$ ]]; then
@@ -94,6 +95,7 @@ exec "$installer" \
     --sha256 "$expected_hash" \
     --app-id "$app_id" \
     --commit "$commit" \
+    --staging-target teamcloud \
     --state-dir "$state_dir" \
     --candidate-id "$candidate_id" \
     --deployment-id "$deployment_id" \

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo 'Aufruf: validate-staging-deployment-inputs --app-id <ID> --deployment-target <Ziel> --candidate-staging-target <Ziel|leer> --source-ref <Commit|Ref> --candidate-id <ID|leer> --candidate-source-commit <SHA|leer> --candidate-build-id <ID|leer> --candidate-build-sha256 <SHA-256|leer> [--actual-source-commit <SHA> --actual-build-sha256 <SHA-256>]' >&2
+}
+
+app_id=''
+deployment_target=''
+candidate_staging_target=''
+source_ref=''
+candidate_id=''
+candidate_source_commit=''
+candidate_build_id=''
+candidate_build_sha256=''
+actual_source_commit=''
+actual_build_sha256=''
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --app-id) app_id="${2:-}"; shift 2 ;;
+        --deployment-target) deployment_target="${2:-}"; shift 2 ;;
+        --candidate-staging-target) candidate_staging_target="${2:-}"; shift 2 ;;
+        --source-ref) source_ref="${2:-}"; shift 2 ;;
+        --candidate-id) candidate_id="${2:-}"; shift 2 ;;
+        --candidate-source-commit) candidate_source_commit="${2:-}"; shift 2 ;;
+        --candidate-build-id) candidate_build_id="${2:-}"; shift 2 ;;
+        --candidate-build-sha256) candidate_build_sha256="${2:-}"; shift 2 ;;
+        --actual-source-commit) actual_source_commit="${2:-}"; shift 2 ;;
+        --actual-build-sha256) actual_build_sha256="${2:-}"; shift 2 ;;
+        *) usage; exit 2 ;;
+    esac
+done
+
+if [[ ! "$app_id" =~ ^[a-z][a-z0-9_]{1,63}$ ]]; then
+    echo 'Ungültige App-ID.' >&2
+    exit 2
+fi
+
+mode=''
+case "$deployment_target:$app_id" in
+    teamcloud:localbase|teamcloud:orgsuite|teamcloud:flzplaner|teamcloud:flz_permission_matrix|teamcloud:flzcalendar|teamcloud:flzurlaub|teamcloud:flzroom|teamcloud:flzrecruitment|teamcloud:flzbqplanung|teamcloud:flz_data_protection)
+        mode='authoritative'
+        ;;
+    br-staging:brstunden|br-staging:brtop)
+        mode='authoritative'
+        ;;
+    br-staging:localbase|br-staging:orgsuite)
+        mode='runtime-mirror'
+        ;;
+    *)
+        echo "App/Ziel-Kombination ist nicht freigegeben: $app_id -> $deployment_target" >&2
+        exit 2
+        ;;
+esac
+
+candidate_values=(
+    "$candidate_id"
+    "$candidate_source_commit"
+    "$candidate_build_id"
+    "$candidate_build_sha256"
+    "$candidate_staging_target"
+)
+populated=0
+for value in "${candidate_values[@]}"; do
+    [[ -n "$value" ]] && populated=$((populated + 1))
+done
+if [[ "$populated" -ne 0 && "$populated" -ne 5 ]]; then
+    echo 'Candidate-Parameter einschließlich autoritativem Ziel müssen vollständig oder vollständig leer sein.' >&2
+    exit 2
+fi
+
+if [[ ! "$source_ref" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]]; then
+    echo 'Deployments verlangen den vollständigen unveränderlichen Source-Commit als Ref.' >&2
+    exit 2
+fi
+
+if [[ "$populated" -eq 5 ]]; then
+    [[ "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+    [[ "$candidate_source_commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || exit 2
+    [[ "$candidate_build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+    [[ "$candidate_build_sha256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+    [[ "$candidate_staging_target" =~ ^[a-z][a-z0-9-]{1,31}$ ]] || exit 2
+    if [[ "$source_ref" != "$candidate_source_commit" ]]; then
+        echo 'Candidate- und Mirror-Deployments verlangen den im Candidate gebundenen Source-Commit als Ref.' >&2
+        exit 2
+    fi
+fi
+
+if [[ "$mode" == 'runtime-mirror' ]]; then
+    if [[ "$populated" -ne 5 || "$candidate_staging_target" != 'teamcloud' ]]; then
+        echo 'BR-Runtime-Mirror benötigen einen vollständig gebundenen Teamcloud-Candidate.' >&2
+        exit 2
+    fi
+elif [[ "$populated" -eq 5 && "$candidate_staging_target" != "$deployment_target" ]]; then
+    echo 'Ein autoritatives Deployment muss auf das im Candidate gebundene Ziel erfolgen.' >&2
+    exit 2
+fi
+
+if [[ -n "$actual_source_commit$actual_build_sha256" ]]; then
+    if [[ -z "$actual_source_commit" || -z "$actual_build_sha256" ]]; then
+        echo 'Die tatsächliche Build-Bindung ist unvollständig.' >&2
+        exit 2
+    fi
+    if [[ ! "$actual_source_commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ || ! "$actual_build_sha256" =~ ^[0-9a-f]{64}$ ]]; then
+        echo 'Die tatsächliche Build-Bindung enthält keinen gültigen Commit oder Archivdigest.' >&2
+        exit 2
+    fi
+    if [[ "$actual_source_commit" != "$source_ref" ]]; then
+        echo 'Ausgecheckter Quellstand stimmt nicht mit dem gepinnten Source-Ref überein.' >&2
+        exit 2
+    fi
+    if [[ "$populated" -eq 5 ]]; then
+        if [[ "$actual_source_commit" != "$candidate_source_commit" ]]; then
+            echo 'Candidate-Commit stimmt nicht mit dem ausgecheckten Quellstand überein.' >&2
+            exit 2
+        fi
+        if [[ "$actual_build_sha256" != "$candidate_build_sha256" ]]; then
+            echo 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.' >&2
+            exit 2
+        fi
+    fi
+fi
+
+if [[ "$mode" == 'runtime-mirror' ]]; then
+    printf '%s\n' 'runtime-mirror'
+elif [[ "$populated" -eq 5 ]]; then
+    printf '%s\n' 'authoritative-candidate'
+else
+    printf '%s\n' 'legacy-deployment'
+fi
