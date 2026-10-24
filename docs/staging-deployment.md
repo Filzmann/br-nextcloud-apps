@@ -1,5 +1,49 @@
 # Candidate-gebundenes Staging-Deployment
 
+## Autoritative Zieltrennung
+
+Jeder neue Work Order, Candidate, aktive Deployment-Marker und jede
+Acceptance-Evidence bindet genau eine Ziel-ID. `teamcloud` ist das
+autoritative Staging-Ziel für `localbase`, `orgsuite` und alle `flz_*`-
+beziehungsweise `flz...`-Apps. `br-staging` bezeichnet
+`https://staging.betriebsrat-ad.de` und ist das autoritative Ziel für
+`brstunden` und `brtop`. Eine Abnahme oder Integrationsfreigabe von einem
+anderen Ziel wird auch bei identischem Commit und Build-Digest verworfen.
+
+`localbase` und `orgsuite` dürfen für die Laufzeitabhängigkeiten der BR-Apps
+zusätzlich als exakt gepinnter Mirror nach `br-staging` installiert werden.
+Der Workflow verlangt dafür den vollständigen, autoritativ auf `teamcloud`
+ausgestellten Candidate mit dessen unveränderlichem Source-Commit,
+Build-ID und Archivdigest. Der Checkout-Ref muss exakt dieser vollständige
+Commit sein; Branches, Tags und andere veränderliche Refs werden verworfen.
+Nach dem reproduzierbaren Paketbau müssen tatsächlicher Commit und Digest
+exakt mit dem Teamcloud-Candidate übereinstimmen.
+Der zentrale Candidate-Workflow startet den BR-Mirror erst, nachdem dasselbe
+Candidate-Artefakt erfolgreich auf dem autoritativen Teamcloud-Ziel
+bereitgestellt wurde; manuell angegebene Branch- oder Tag-Refs sind kein
+zulässiger Mirror-Ersatz.
+
+Nur die lokale Workflow-Prüfung erhält diese Candidate-Bindung. Das
+BR-Server-Gate wird im Modus `runtime-mirror` ausdrücklich ohne
+Candidate-, Deployment- oder Build-ID aufgerufen. Dadurch entsteht dort
+kein aktiver Acceptance-Marker und keine BR-Candidate-/Abnahme-Evidence.
+Der einfache Deploymentdatensatz hält Commit und Digest für die
+Betriebsdiagnose fest; Candidate- und Abnahmequelle bleibt ausschließlich
+`teamcloud`.
+
+Der GitHub-Workflow verwendet für `teamcloud` weiterhin das Environment
+`staging`. Für `br-staging` wird das getrennte Environment `staging-br`
+verwendet. Dort müssen dieselben beiden Secrets
+`STAGING_SSH_PRIVATE_KEY` und `STAGING_SSH_KNOWN_HOSTS` sowie die validierten
+Variablen `STAGING_SSH_USER` und `STAGING_GATE_COMMAND` eingerichtet werden.
+Der BR-Server benötigt vor dem ersten Lauf ein eigenes Forced-Command-Gate,
+das den generischen Installer mit `--staging-target br-staging` aufruft. Bis
+dieses Gate und ein auf `--staging-target br-staging` begrenzter
+Acceptance-Service installiert und separat geprüft sind, ist der
+Quellvertrag vorbereitet, ein BR-Deployment aber nicht betriebsbereit
+freigegeben. Der vorhandene Teamcloud-Acceptance-Service wird entsprechend
+auf `--staging-target teamcloud` festgelegt und akzeptiert keine BR-Marker.
+
 Ein Push auf `main` installiert keinen ungeprüften Integrationsstand. Für eine
 zuvor zentral ausgestellte Work Order wird stattdessen ein Branch
 `candidate/<Work-Order-ID>` gepusht. Die App-Tests laufen auf diesem Branch.

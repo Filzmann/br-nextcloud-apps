@@ -15,6 +15,8 @@
     const filter = document.getElementById('filter');
     const outcome = document.getElementById('acceptance-outcome');
     const comments = document.getElementById('acceptance-comments');
+    const evidencePanel = document.getElementById('evidence-panel');
+    const evidenceContent = document.getElementById('evidence-content');
     let documents = [];
     let current = null;
     let dirty = false;
@@ -68,11 +70,130 @@
         });
     }
 
+    function appendFact(list, label, value) {
+        const term = document.createElement('dt');
+        const detail = document.createElement('dd');
+        term.textContent = label;
+        detail.textContent = value || '—';
+        list.append(term, detail);
+    }
+
+    function renderEvidence() {
+        if (!evidencePanel || !evidenceContent) {
+            return;
+        }
+        evidenceContent.replaceChildren();
+        if (current.evidence_error) {
+            const error = document.createElement('p');
+            error.className = 'evidence-error';
+            error.setAttribute('role', 'alert');
+            error.textContent = current.evidence_error;
+            evidenceContent.append(error);
+            evidencePanel.hidden = false;
+            return;
+        }
+        const items = current.candidate_evidence || [];
+        evidencePanel.hidden = items.length === 0;
+        items.forEach((item) => {
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            const facts = document.createElement('dl');
+            summary.textContent = `${item.candidate_id} · ${item.outcome || 'noch keine finale Evidence'}`;
+            appendFact(facts, 'Source-Commit', item.source_commit);
+            appendFact(facts, 'Build', `${item.build.id} · SHA-256 ${item.build.sha256}`);
+            appendFact(facts, 'Staging-Ziel', item.staging_target);
+            appendFact(facts, 'Staging-Deployment', item.deployment_id);
+            appendFact(facts, 'Protokoll', `${item.protocol.version} · SHA-256 ${item.protocol.sha256}`);
+            appendFact(facts, 'Candidate-Digest', item.candidate_sha256);
+            appendFact(facts, 'Deployment-Digest', item.deployment_sha256);
+            if (item.evidence_sha256) {
+                appendFact(facts, 'Finaler Evidence-Digest', item.evidence_sha256);
+            }
+            details.append(summary, facts);
+
+            const immutable = document.createElement('p');
+            immutable.className = 'immutable-note';
+            immutable.textContent = 'Unveränderliche, nur lesbare Evidence. Lokale Formularwerte wirken nicht auf diesen Stand.';
+            details.append(immutable);
+            if (item.comments) {
+                const comment = document.createElement('p');
+                comment.textContent = `Finaler Kommentar: ${item.comments}`;
+                details.append(comment);
+            }
+            if (item.rework) {
+                const heading = document.createElement('h3');
+                heading.textContent = 'Lokale FAIL-Nacharbeit';
+                details.append(heading);
+                const localOnly = document.createElement('p');
+                localOnly.className = 'immutable-note';
+                localOnly.textContent = 'Nur lokal für diese Ansicht: Weitere fachlich oder technisch betroffene Fälle können markiert werden. Die Auswahl wird weder gespeichert noch an den Harness gesendet.';
+                details.append(localOnly);
+                if (item.rework.warning) {
+                    const warning = document.createElement('p');
+                    warning.className = 'evidence-warning';
+                    warning.textContent = item.rework.warning;
+                    details.append(warning);
+                }
+                const tableWrapper = document.createElement('div');
+                tableWrapper.className = 'table-scroll';
+                const table = document.createElement('table');
+                const head = document.createElement('thead');
+                const headRow = document.createElement('tr');
+                ['Fall', 'Bisher', 'Befund', 'Nächster Candidate'].forEach((label) => {
+                    const cell = document.createElement('th');
+                    cell.scope = 'col';
+                    cell.textContent = label;
+                    headRow.append(cell);
+                });
+                head.append(headRow);
+                const body = document.createElement('tbody');
+                item.rework.cases.forEach((testCase) => {
+                    const row = document.createElement('tr');
+                    row.className = testCase.recheck_required ? 'recheck-required' : 'carried-result';
+                    const name = document.createElement('th');
+                    name.scope = 'row';
+                    name.textContent = `${testCase.id || '(ohne ID)'} · ${testCase.title}`;
+                    const previous = document.createElement('td');
+                    previous.textContent = testCase.previous_result || '—';
+                    const finding = document.createElement('td');
+                    finding.textContent = testCase.previous_reason || '—';
+                    const next = document.createElement('td');
+                    const nextText = document.createElement('span');
+                    nextText.textContent = `${testCase.status}: ${testCase.reason}`;
+                    const impactLabel = document.createElement('label');
+                    impactLabel.className = 'local-impact-label';
+                    const impact = document.createElement('input');
+                    impact.type = 'checkbox';
+                    impact.className = 'local-impact-toggle';
+                    impact.checked = testCase.recheck_required;
+                    impact.disabled = testCase.recheck_required;
+                    impactLabel.append(impact, document.createTextNode(' Korrektur betrifft diesen Fall'));
+                    if (!testCase.recheck_required) {
+                        impact.addEventListener('change', () => {
+                            row.className = impact.checked ? 'recheck-required' : 'carried-result';
+                            nextText.textContent = impact.checked
+                                ? 'erneut prüfen: lokal als fachlich oder technisch betroffen markiert.'
+                                : `${testCase.status}: ${testCase.reason}`;
+                        });
+                    }
+                    next.append(nextText, impactLabel);
+                    row.append(name, previous, finding, next);
+                    body.append(row);
+                });
+                table.append(head, body);
+                tableWrapper.append(table);
+                details.append(tableWrapper);
+            }
+            evidenceContent.append(details);
+        });
+    }
+
     function renderCurrent() {
         title.textContent = current.title;
         path.textContent = current.id;
         content.innerHTML = current.html;
         bindFields();
+        renderEvidence();
         if (acceptanceMode) {
             outcome.value = current.final ? current.final.outcome : '';
             comments.value = current.final ? current.final.comments : '';

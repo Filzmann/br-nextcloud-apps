@@ -27,6 +27,14 @@ on:
         description: Im Candidate gebundener reproduzierbarer Archivdigest
         required: true
         type: string
+      staging-target:
+        description: Physisches Deployment-Ziel teamcloud oder br-staging
+        required: true
+        type: string
+      candidate-staging-target:
+        description: Im Candidate gebundenes autoritatives Staging-Ziel
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -42,4 +50,6 @@ jobs:
       candidate-source-commit: ${{ inputs.source-commit }}
       candidate-build-id: ${{ inputs.build-id }}
       candidate-build-sha256: ${{ inputs.build-sha256 }}
+      staging-target: ${{ inputs.staging-target }}
+      candidate-staging-target: ${{ inputs.candidate-staging-target }}
     secrets: inherit

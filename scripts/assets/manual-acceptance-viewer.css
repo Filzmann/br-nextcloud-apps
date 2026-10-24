@@ -22,9 +22,9 @@ button:disabled { cursor: default; opacity: .55; }
 .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 10; padding: .7rem; background: var(--surface); }
 .skip-link:focus { top: 1rem; }
 .layout { display: grid; grid-template-columns: minmax(15rem, 22rem) 1fr; min-height: 100vh; }
-aside { padding: 1.25rem; border-right: 1px solid var(--border); background: var(--surface); overflow: auto; max-height: 100vh; position: sticky; top: 0; }
-aside h1 { margin-top: 0; font-size: 1.3rem; }
-aside label { display: block; margin-bottom: .35rem; }
+.layout > aside { padding: 1.25rem; border-right: 1px solid var(--border); background: var(--surface); overflow: auto; max-height: 100vh; position: sticky; top: 0; }
+.layout > aside h1 { margin-top: 0; font-size: 1.3rem; }
+.layout > aside label { display: block; margin-bottom: .35rem; }
 #filter { width: 100%; padding: .6rem; }
 nav section h2 { margin: 1.3rem 0 .4rem; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 nav button { display: block; width: 100%; text-align: left; border-color: transparent; margin: .15rem 0; }
@@ -39,6 +39,22 @@ main { min-width: 0; padding: 0 2rem 4rem; }
 #acceptance-decision { display: grid; grid-template-columns: max-content minmax(10rem, 1fr); gap: .6rem 1rem; align-items: center; max-width: 54rem; margin-top: 1rem; }
 #acceptance-decision input, #acceptance-decision select { width: 100%; padding: .55rem; color: var(--text); background: var(--surface); }
 #content { max-width: 100rem; padding: 1rem 0; line-height: 1.55; }
+.document-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, 32rem); gap: 2rem; align-items: start; }
+#evidence-panel { min-width: 0; margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--surface); }
+#evidence-panel[hidden] { display: none; }
+#evidence-panel h2 { margin-top: 0; }
+#evidence-panel details { padding: .7rem 0; border-top: 1px solid var(--border); }
+#evidence-panel summary { cursor: pointer; font-weight: 650; }
+#evidence-panel dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem .7rem; font-size: .88rem; }
+#evidence-panel dt { color: var(--muted); }
+#evidence-panel dd { margin: 0; overflow-wrap: anywhere; }
+#evidence-panel table { font-size: .85rem; }
+.immutable-note { padding: .55rem; border-left: .3rem solid var(--accent); background: var(--background); }
+.evidence-warning, .evidence-error { color: #a1242f; font-weight: 650; }
+.recheck-required > :last-child { font-weight: 650; }
+.carried-result { color: var(--muted); }
+.local-impact-label { display: block; margin-top: .45rem; color: var(--text); font-weight: 400; }
+.local-impact-toggle { width: 1.1rem; height: 1.1rem; vertical-align: -.15rem; accent-color: var(--accent); }
 #content h1 { font-size: 2rem; }
 #content h2 { margin-top: 2.2rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
 .list-item { display: grid; grid-template-columns: 1rem 1fr; gap: .3rem; margin: .35rem 0; }
@@ -52,16 +68,17 @@ pre { overflow: auto; padding: 1rem; border: 1px solid var(--border); border-rad
 
 @media (max-width: 54rem) {
     .layout { display: block; }
-    aside { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--border); }
+    .layout > aside { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--border); }
     main { padding: 0 1rem 3rem; }
     .toolbar { flex-wrap: wrap; }
     .toolbar > div { flex-basis: 100%; }
     #acceptance-decision { grid-template-columns: 1fr; }
+    .document-columns { display: block; }
 }
 
 @media print {
     :root { color-scheme: light; --background: #fff; --surface: #fff; --text: #000; --border: #888; }
-    aside, .toolbar button, #status, .skip-link { display: none !important; }
+    .layout > aside, .toolbar button, #status, .skip-link { display: none !important; }
     .layout { display: block; }
     main { padding: 0; }
     .toolbar { position: static; border: 0; padding: 0 0 1rem; }
@@ -70,6 +87,8 @@ pre { overflow: auto; padding: 1rem; border: 1px solid var(--border); border-rad
     table { width: 100%; }
     th, td { break-inside: avoid; }
     .form-text { border: 0; padding: 0; min-width: 0; }
+    .document-columns { display: block; }
+    #evidence-panel { break-before: page; border: 0; padding: 0; }
 }
 
 @media (prefers-color-scheme: dark) {

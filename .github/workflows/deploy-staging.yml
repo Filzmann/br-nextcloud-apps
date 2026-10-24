@@ -37,6 +37,15 @@ on:
         required: false
         type: string
         default: ''
+      candidate-staging-target:
+        description: Im Candidate gebundenes autoritatives Staging-Ziel
+        required: false
+        type: string
+        default: ''
+      staging-target:
+        description: Vertragliche Ziel-ID teamcloud oder br-staging
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -46,47 +55,70 @@ jobs:
     name: ${{ inputs.app-id }} auf Staging installieren
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: staging
+    environment: ${{ inputs.staging-target == 'teamcloud' && 'staging' || 'staging-br' }}
     concurrency:
-      group: teamcloud-staging
+      group: staging-${{ inputs.staging-target }}
       cancel-in-progress: false
     env:
       APP_ID: ${{ inputs.app-id }}
-      STAGING_HOST: teamcloud.simonbeyer.de
-      STAGING_USER: filzmann
-      STAGING_BASE_URL: https://teamcloud.simonbeyer.de
+      DEPLOYMENT_STAGING_TARGET: ${{ inputs.staging-target }}
+      CANDIDATE_STAGING_TARGET: ${{ inputs.candidate-staging-target }}
+      SOURCE_REF_INPUT: ${{ inputs.source-ref }}
       CANDIDATE_ID: ${{ inputs.candidate-id }}
       CANDIDATE_SOURCE_COMMIT: ${{ inputs.candidate-source-commit }}
       CANDIDATE_BUILD_ID: ${{ inputs.candidate-build-id }}
       CANDIDATE_BUILD_SHA256: ${{ inputs.candidate-build-sha256 }}
     steps:
+      - name: Zentrale Deploymentwerkzeuge auschecken
+        uses: actions/checkout@v7
+        with:
+          repository: Filzmann/br-nextcloud-apps
+          ref: main
+          path: control
+
       - name: Deploymentparameter validieren
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          BR_STAGING_SSH_USER: ${{ vars.STAGING_SSH_USER }}
+          BR_STAGING_GATE_COMMAND: ${{ vars.STAGING_GATE_COMMAND }}
         run: |
           set -euo pipefail
-          case "$APP_ID" in
-            brtop|flzplaner|brstunden|localbase|flz_permission_matrix|flzcalendar|flzurlaub|orgsuite|flzroom|flzrecruitment|flzbqplanung|flz_data_protection) ;;
-            *) echo "Nicht freigegebene App-ID: $APP_ID" >&2; exit 2 ;;
-          esac
-          candidate_values=("$CANDIDATE_ID" "$CANDIDATE_SOURCE_COMMIT" "$CANDIDATE_BUILD_ID" "$CANDIDATE_BUILD_SHA256")
-          populated=0
-          for value in "${candidate_values[@]}"; do [[ -n "$value" ]] && populated=$((populated + 1)); done
-          [[ "$populated" -eq 0 || "$populated" -eq 4 ]] || {
-            echo 'Candidate-Parameter müssen vollständig oder vollständig leer sein.' >&2
-            exit 2
-          }
-          if [[ "$populated" -eq 4 ]]; then
-            [[ "$CANDIDATE_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
-            [[ "$CANDIDATE_SOURCE_COMMIT" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || exit 2
-            [[ "$CANDIDATE_BUILD_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
-            [[ "$CANDIDATE_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
-          fi
+          bash control/scripts/validate-staging-deployment-inputs \
+            --app-id "$APP_ID" \
+            --deployment-target "$DEPLOYMENT_STAGING_TARGET" \
+            --candidate-staging-target "$CANDIDATE_STAGING_TARGET" \
+            --source-ref "$SOURCE_REF_INPUT" \
+            --candidate-id "$CANDIDATE_ID" \
+            --candidate-source-commit "$CANDIDATE_SOURCE_COMMIT" \
+            --candidate-build-id "$CANDIDATE_BUILD_ID" \
+            --candidate-build-sha256 "$CANDIDATE_BUILD_SHA256" >/dev/null
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || {
             echo 'Mindestens ein erforderliches Staging-Secret fehlt.' >&2
             exit 2
           }
+          case "$DEPLOYMENT_STAGING_TARGET" in
+            teamcloud)
+              echo 'STAGING_HOST=teamcloud.simonbeyer.de' >> "$GITHUB_ENV"
+              echo 'STAGING_USER=filzmann' >> "$GITHUB_ENV"
+              echo 'STAGING_BASE_URL=https://teamcloud.simonbeyer.de' >> "$GITHUB_ENV"
+              echo 'STAGING_GATE_COMMAND=teamcloud-staging' >> "$GITHUB_ENV"
+              ;;
+            br-staging)
+              [[ "$BR_STAGING_SSH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || {
+                echo 'GitHub-Environment staging-br benötigt eine gültige Variable STAGING_SSH_USER.' >&2
+                exit 2
+              }
+              [[ "$BR_STAGING_GATE_COMMAND" =~ ^[a-z][a-z0-9-]{1,31}$ ]] || {
+                echo 'GitHub-Environment staging-br benötigt eine gültige Variable STAGING_GATE_COMMAND.' >&2
+                exit 2
+              }
+              echo 'STAGING_HOST=staging.betriebsrat-ad.de' >> "$GITHUB_ENV"
+              echo "STAGING_USER=$BR_STAGING_SSH_USER" >> "$GITHUB_ENV"
+              echo 'STAGING_BASE_URL=https://staging.betriebsrat-ad.de' >> "$GITHUB_ENV"
+              echo "STAGING_GATE_COMMAND=$BR_STAGING_GATE_COMMAND" >> "$GITHUB_ENV"
+              ;;
+          esac
 
       - name: App-Commit auschecken
         uses: actions/checkout@v7
@@ -94,13 +126,6 @@ jobs:
           path: app
           repository: ${{ inputs.source-repository || github.repository }}
           ref: ${{ inputs.source-ref || github.sha }}
-
-      - name: Zentrale Deploymentwerkzeuge auschecken
-        uses: actions/checkout@v7
-        with:
-          repository: Filzmann/br-nextcloud-apps
-          ref: main
-          path: control
 
       - name: Gepinnte Security-Scanner
         run: |
@@ -114,10 +139,6 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_COMMIT="$(git -C app rev-parse HEAD)"
-          if [[ -n "$CANDIDATE_ID" && "$SOURCE_COMMIT" != "$CANDIDATE_SOURCE_COMMIT" ]]; then
-            echo 'Candidate-Commit stimmt nicht mit dem ausgecheckten Quellstand überein.' >&2
-            exit 2
-          fi
           mkdir -p "$RUNNER_TEMP/staging-package"
           bash control/scripts/package-staging-app.sh \
             --app-root app \
@@ -126,10 +147,18 @@ jobs:
             --archive "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz" \
             --metadata "$RUNNER_TEMP/staging-package/metadata.env"
           source "$RUNNER_TEMP/staging-package/metadata.env"
-          if [[ -n "$CANDIDATE_ID" && "$SHA256" != "$CANDIDATE_BUILD_SHA256" ]]; then
-            echo 'Candidate-Build stimmt nicht mit dem erzeugten Archiv überein.' >&2
-            exit 2
-          fi
+          DEPLOYMENT_MODE="$(bash control/scripts/validate-staging-deployment-inputs \
+            --app-id "$APP_ID" \
+            --deployment-target "$DEPLOYMENT_STAGING_TARGET" \
+            --candidate-staging-target "$CANDIDATE_STAGING_TARGET" \
+            --source-ref "$SOURCE_REF_INPUT" \
+            --candidate-id "$CANDIDATE_ID" \
+            --candidate-source-commit "$CANDIDATE_SOURCE_COMMIT" \
+            --candidate-build-id "$CANDIDATE_BUILD_ID" \
+            --candidate-build-sha256 "$CANDIDATE_BUILD_SHA256" \
+            --actual-source-commit "$SOURCE_COMMIT" \
+            --actual-build-sha256 "$SHA256")"
+          echo "DEPLOYMENT_MODE=$DEPLOYMENT_MODE" >> "$GITHUB_ENV"
 
       - name: SSH-Vertrauen einrichten
         env:
@@ -161,17 +190,17 @@ jobs:
 
           ssh "${ssh_options[@]}" \
             "$target" \
-            "teamcloud-staging upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" \
+            "${STAGING_GATE_COMMAND} upload ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" \
             < "$RUNNER_TEMP/staging-package/$APP_ID.tar.gz"
 
-          if [[ -n "$CANDIDATE_ID" ]]; then
+          if [[ "$DEPLOYMENT_MODE" == authoritative-candidate ]]; then
             ssh "${ssh_options[@]}" \
               "$target" \
-              "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${CANDIDATE_BUILD_ID}"
+              "${STAGING_GATE_COMMAND} install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${CANDIDATE_BUILD_ID}"
           else
             ssh "${ssh_options[@]}" \
               "$target" \
-              "teamcloud-staging install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}"
+              "${STAGING_GATE_COMMAND} install ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID} ${SOURCE_COMMIT} ${SHA256}"
           fi
 
       - name: Öffentliche Assets prüfen
@@ -189,6 +218,9 @@ jobs:
         if: ${{ inputs.candidate-id != '' }}
         run: |
           set -euo pipefail
+          if [[ "$DEPLOYMENT_MODE" != authoritative-candidate ]]; then
+            exit 0
+          fi
           source "$RUNNER_TEMP/staging-package/metadata.env"
           SOURCE_COMMIT="$(git -C app rev-parse HEAD)"
           DEPLOYMENT_ID="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${APP_ID}"
@@ -200,7 +232,7 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
             "$target" \
-            "teamcloud-staging verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_BUILD_ID}"
+            "${STAGING_GATE_COMMAND} verify ${APP_ID} ${CANDIDATE_ID} ${DEPLOYMENT_ID} ${SOURCE_COMMIT} ${SHA256} ${CANDIDATE_BUILD_ID}"
 
       - name: Temporäre Serverdateien entfernen
         if: always()
@@ -217,5 +249,5 @@ jobs:
               -o StrictHostKeyChecking=yes \
               -o "UserKnownHostsFile=$RUNNER_TEMP/staging-ssh/known_hosts" \
               "$target" \
-              "teamcloud-staging cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" || true
+              "${STAGING_GATE_COMMAND} cleanup ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${APP_ID}" || true
           fi
