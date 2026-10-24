@@ -86,6 +86,7 @@ bash tests/check-flz-product-installer.sh
 bash tests/check-flz-release-pruning.sh
 bash tests/check-reproducible-release-archive.sh
 bash tests/check-teamcloud-staging-gate.sh
+bash tests/check-br-staging-gate.sh
 bash tests/check-staging-deployment.sh
 
 if (( structure_tracking_warning )); then

@@ -36,13 +36,14 @@ Der GitHub-Workflow verwendet für `teamcloud` weiterhin das Environment
 verwendet. Dort müssen dieselben beiden Secrets
 `STAGING_SSH_PRIVATE_KEY` und `STAGING_SSH_KNOWN_HOSTS` sowie die validierten
 Variablen `STAGING_SSH_USER` und `STAGING_GATE_COMMAND` eingerichtet werden.
-Der BR-Server benötigt vor dem ersten Lauf ein eigenes Forced-Command-Gate,
-das den generischen Installer mit `--staging-target br-staging` aufruft. Bis
-dieses Gate und ein auf `--staging-target br-staging` begrenzter
-Acceptance-Service installiert und separat geprüft sind, ist der
-Quellvertrag vorbereitet, ein BR-Deployment aber nicht betriebsbereit
-freigegeben. Der vorhandene Teamcloud-Acceptance-Service wird entsprechend
-auf `--staging-target teamcloud` festgelegt und akzeptiert keine BR-Marker.
+Das eigene Forced-Command-Gate `br-staging` ruft den generischen Installer
+ausschließlich mit `--staging-target br-staging` auf. BRStunden und BRTop
+benötigen dabei immer die vollständige Candidate-Bindung und erzeugen einen
+zielgebundenen v2-Marker. LocalBase und OrgSuite passieren dasselbe Gate nur
+ohne Candidate-, Deployment- und Build-ID; Gate und Wrapper lehnen eine
+solche Bindung für Runtime-Mirror vor dem Installationsaufruf ab. Der
+vorhandene Teamcloud-Acceptance-Service bleibt auf `--staging-target
+teamcloud` begrenzt und akzeptiert keine BR-Marker.
 
 Ein Push auf `main` installiert keinen ungeprüften Integrationsstand. Für eine
 zuvor zentral ausgestellte Work Order wird stattdessen ein Branch
@@ -241,8 +242,13 @@ oder Entwicklungsannahmen werden nicht übernommen.
 - Ein root-eigener Wrapper erlaubt ausschließlich Archive aus dem fest
   vorgegebenen Incoming-Verzeichnis und delegiert ohne Passwort an den
   Plesk-Systembenutzer `simonbeyer_sys`. Der Installer serialisiert alle
-  App-Deployments serverseitig, prüft
-  SHA-256, App-ID, Nextcloud-Status und Aktivierung und führt anschließend
+  App-Deployments serverseitig. Vor dem Warten auf den Deployment-Lock kopiert
+  er das Upload-Archiv ohne Reflink in ein nur für den Installer zugängliches
+  temporäres Verzeichnis. Ausschließlich dieser private Snapshot wird per
+  SHA-256 gebunden, auf zulässige Tar-Einträge geprüft und entpackt. Cleanup,
+  Löschung oder erneuter Upload am öffentlichen Incoming-Pfad können dadurch
+  weder den installierten Code noch den Deploymentmarker nachträglich ändern.
+  Danach prüft der Installer App-ID, Nextcloud-Status und Aktivierung und führt
   `occ upgrade` aus.
 - Vorhandener App-Code wird vor dem Austausch außerhalb des Webroots unter
   dem Statusverzeichnis des Benutzers gesichert. Fehler vor Beginn eines
@@ -408,6 +414,177 @@ GitHub-Secret gespeichert:
 teamcloud.simonbeyer.de ssh-ed25519 <SERVER-HOST-KEY>
 ```
 
+## Einmalige Einrichtung von `br-staging`
+
+Das BR-Ziel verwendet eine vollständig getrennte Gate-, Incoming-, Status-
+und Acceptance-Grenze. Die ermittelten Laufzeitwerte sind:
+
+- SSH-/Gate-Benutzer: `simon`;
+- Plesk-/Nextcloud-Systembenutzer: `betriebsrat`;
+- Nextcloud-Root: `/var/www/vhosts/betriebsrat-ad.de/site1`;
+- CLI-PHP: `/opt/plesk/php/8.3/bin/php` mit `memory_limit=512M`;
+- Gate: `/usr/local/bin/br-staging`;
+- Incoming: `/var/tmp/br-staging-incoming`;
+- Status und Backups: `/var/lib/br-staging`;
+- nicht interaktiver Marker-Leser: `betriebsrat_acceptance`.
+
+Vor der Installation werden die Annahmen als Root auf dem BR-Server erneut
+fail-closed geprüft. Ein abweichender Pfad, Benutzer oder ein nicht gesundes
+Nextcloud wird nicht durch DDEV- oder Teamcloud-Werte ersetzt:
+
+```bash
+getent passwd simon
+getent passwd betriebsrat
+test -f /var/www/vhosts/betriebsrat-ad.de/site1/occ
+test -d /var/www/vhosts/betriebsrat-ad.de/site1/custom_apps
+test -x /opt/plesk/php/8.3/bin/php
+sudo -u betriebsrat /opt/plesk/php/8.3/bin/php -d memory_limit=512M \
+  /var/www/vhosts/betriebsrat-ad.de/site1/occ status --output=json
+command -v setfacl
+command -v getfacl
+```
+
+Der dedizierte Acceptance-Benutzer besitzt keine Login-Shell und keine
+Rechte am Nextcloud-Code. Falls er noch nicht existiert, wird er einmalig
+angelegt:
+
+```bash
+getent passwd betriebsrat_acceptance >/dev/null || \
+  adduser --system --group --no-create-home --home /var/lib/br-acceptance \
+    --shell /usr/sbin/nologin betriebsrat_acceptance
+```
+
+Die vier serverseitigen Artefakte werden aus demselben geprüften Parent-
+Commit in ein temporäres Bootstrap-Verzeichnis übertragen. Erst Root
+installiert sie in unveränderliche Zielpfade:
+
+```bash
+install -d -o root -g root -m 755 /usr/local/libexec/br-staging
+install -o root -g root -m 755 \
+  /tmp/br-staging-bootstrap/install-staging-app.sh \
+  /usr/local/libexec/br-staging/install-staging-app.sh
+install -o root -g root -m 755 \
+  /tmp/br-staging-bootstrap/verify-staging-deployment-marker.php \
+  /usr/local/libexec/br-staging/verify-staging-deployment-marker.php
+install -o root -g root -m 755 \
+  /tmp/br-staging-bootstrap/br-staging-install \
+  /usr/local/sbin/br-staging-install
+install -o root -g root -m 755 \
+  /tmp/br-staging-bootstrap/br-staging \
+  /usr/local/bin/br-staging
+
+SIMON_GROUP="$(id -gn simon)"
+install -d -o simon -g "$SIMON_GROUP" -m 700 \
+  /var/tmp/br-staging-incoming
+install -d -o betriebsrat -g psacln -m 750 \
+  /var/lib/br-staging
+
+setfacl -b -k /var/tmp/br-staging-incoming
+setfacl -m u:betriebsrat:--x,g::---,m::--x,o::--- \
+  /var/tmp/br-staging-incoming
+getfacl -n /var/tmp/br-staging-incoming
+```
+
+`/var/lib/br-staging` bleibt für `betriebsrat` schreibbar. Der generische
+Installer erteilt `betriebsrat_acceptance` nur Traverse auf dieses Verzeichnis,
+Lesen/Traverse auf `active` und Lesen auf die jeweils atomar erzeugte
+Markerdatei. Runtime-Mirror erzeugen keinen aktiven Marker. Backups,
+Deploymentdatensätze, Archive und Nextcloud-Code erhalten kein Leserecht für
+den Acceptance-Benutzer.
+
+Die ausschließliche Sudo-Delegation wird mit `visudo` angelegt:
+
+```bash
+visudo -f /etc/sudoers.d/br-staging
+```
+
+Der einzige Inhalt lautet:
+
+```text
+simon ALL=(betriebsrat) NOPASSWD: /usr/local/sbin/br-staging-install
+```
+
+Danach werden Modus, Syntax und der erlaubte Aufruf geprüft:
+
+```bash
+chmod 440 /etc/sudoers.d/br-staging
+visudo -cf /etc/sudoers.d/br-staging
+sudo -u simon sudo -n -u betriebsrat \
+  /usr/local/sbin/br-staging-install
+```
+
+Der letzte Befehl endet mit der Usage-Meldung und Exit 2. Weitere
+Sudo-Befehle, Root-`occ`, `chmod 777` oder Schreibrechte für `simon` am vHost
+sind nicht Bestandteil des Vertrags.
+
+Für GitHub wird auf einem vertrauenswürdigen Administrationssystem und nicht
+auf dem BR-Server ein eigenes Ed25519-Schlüsselpaar erzeugt:
+
+```bash
+ssh-keygen -t ed25519 -C br-staging-github -f br-staging-github -N ''
+```
+
+Auf dem BR-Server wird danach die tatsächliche Home-Directory von `simon`
+ermittelt und abgesichert:
+
+```bash
+SIMON_HOME_DIR="$(getent passwd simon | cut -d: -f6)"
+SIMON_GROUP="$(id -gn simon)"
+test -n "$SIMON_HOME_DIR"
+install -d -o simon -g "$SIMON_GROUP" -m 700 "$SIMON_HOME_DIR/.ssh"
+touch "$SIMON_HOME_DIR/.ssh/authorized_keys"
+chown simon:"$SIMON_GROUP" "$SIMON_HOME_DIR/.ssh/authorized_keys"
+chmod 600 "$SIMON_HOME_DIR/.ssh/authorized_keys"
+```
+
+In der so ermittelten `authorized_keys` wird anschließend die folgende
+einzelne Zeile für den neuen öffentlichen Schlüssel ergänzt:
+
+```text
+restrict,command="/usr/local/bin/br-staging" ssh-ed25519 <PUBLIC-KEY> br-staging-github
+```
+
+Vor dem ersten Deployment belegt ein synthetischer Upload die ACL-Grenze,
+ohne ein Archiv zu installieren:
+
+```bash
+printf 'synthetischer BR-ACL-Test\n' | \
+  sudo -u simon /usr/local/bin/br-staging upload 999999 1 brstunden
+
+probe=/var/tmp/br-staging-incoming/999999-1-brstunden/brstunden.tar.gz
+test "$(stat -c %U -- "$probe")" = simon
+getfacl -n "$probe"
+sudo -u betriebsrat test -r "$probe"
+! sudo -u betriebsrat test -w "$probe"
+sudo -u simon /usr/local/bin/br-staging cleanup 999999 1 brstunden
+```
+
+Der verifizierte Host-Key wird im BR-Environment exakt an den Zielhost
+gebunden:
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+```text
+staging.betriebsrat-ad.de ssh-ed25519 <SERVER-HOST-KEY>
+```
+
+## GitHub-Environment `staging-br`
+
+Das Parent-Repository erhält ein getrenntes Environment `staging-br` mit:
+
+- Secret `STAGING_SSH_PRIVATE_KEY`: privater Teil des dedizierten
+  BR-Deployment-Schlüssels;
+- Secret `STAGING_SSH_KNOWN_HOSTS`: ausschließlich die verifizierte
+  Host-Key-Zeile für `staging.betriebsrat-ad.de`;
+- Variable `STAGING_SSH_USER`: `simon`;
+- Variable `STAGING_GATE_COMMAND`: `br-staging`.
+
+Die Variable wird im Workflow als `BR_STAGING_GATE_COMMAND` eingelesen und
+nach strikter Namensvalidierung als Remote-Kommando verwendet. Der private
+Schlüssel wird weder committed noch auf dem Stagingserver gespeichert.
+
 ## GitHub-Environment `staging`
 
 Im Parent-Repository `Filzmann/br-nextcloud-apps` wird ein Environment
@@ -433,8 +610,11 @@ Allowlist. So verweist kein App-Workflow zwischenzeitlich auf einen noch nicht
 vorhandenen wiederverwendbaren Workflow und ein anderer Branch erhält keine
 OIDC-Berechtigung.
 
-Der erste kontrollierte Lauf erfolgt mit genau einer App. Er muss folgende
-Nachweise liefern:
+Der erste kontrollierte BR-Lauf spiegelt zunächst die bereits auf Teamcloud
+autoritativen LocalBase- und OrgSuite-Candidates ohne BR-Marker. Danach wird
+`brstunden` als erster autoritativer BR-Candidate installiert und abgenommen;
+`brtop` folgt erst nach diesem Nachweis. Der erste autoritative Lauf erfolgt
+mit genau einer BR-App und muss folgende Nachweise liefern:
 
 1. grüne App-Tests vor dem Deploy-Job;
 2. erfolgreiche SSH-Host-Key- und Key-Authentifizierung;
@@ -444,8 +624,8 @@ Nachweise liefern:
 5. einen danach atomar auf `verified` gesetzten, exakt an Candidate,
    Deployment, Commit, Build-ID und Build-Digest gebundenen aktiven Marker;
 6. angemeldeter manueller Sicht- und Funktionscheck der App;
-7. vorhandener Backup- und Commitnachweis unter
-   `<FILZMANN-HOME>/.local/state/br-nextcloud-staging`.
+7. vorhandener Deployment- und gegebenenfalls Backupnachweis unter
+   `/var/lib/br-staging`.
 
 Backups werden zunächst bewusst nicht automatisch gelöscht. Eine spätere
 Retention wird erst nach einem erfolgreich erprobten Rückbau als getrennte,
