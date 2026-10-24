@@ -13,8 +13,13 @@ candidate_workflow="$workspace/.github/workflows/candidate-staging.yml"
 privacy_tests_workflow="$workspace/flz_data_protection/.github/workflows/tests.yml"
 runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
+race_pid=''
 
 cleanup() {
+    if [[ -n "$race_pid" ]]; then
+        kill "$race_pid" 2>/dev/null || true
+        wait "$race_pid" 2>/dev/null || true
+    fi
     rm -rf "$stage"
 }
 trap cleanup EXIT
@@ -64,6 +69,17 @@ build_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 different_commit='fedcba9876543210fedcba9876543210fedcba98'
 
 assert_file "$input_validator"
+if "$input_validator" \
+    --app-id brstunden \
+    --deployment-target br-staging \
+    --candidate-staging-target '' \
+    --source-ref "$commit" \
+    --candidate-id '' \
+    --candidate-source-commit '' \
+    --candidate-build-id '' \
+    --candidate-build-sha256 '' >/dev/null 2>&1; then
+    fail 'Eine BR-App wurde ohne zielgebundene v2-Candidate-Bindung akzeptiert.'
+fi
 mirror_mode="$("$input_validator" \
     --app-id localbase \
     --deployment-target br-staging \
@@ -328,6 +344,9 @@ if "$installer" \
     --state-dir "$state" >/dev/null 2>&1; then
     fail 'Falsche Prüfsumme wurde akzeptiert.'
 fi
+if find "$state/tmp" -mindepth 1 -maxdepth 1 -name 'archive.*' -print -quit | grep -q .; then
+    fail 'Privater Archiv-Snapshot blieb nach abgelehnter Prüfsumme zurück.'
+fi
 
 rollback_nc="$stage/rollback-nextcloud"
 rollback_state="$stage/rollback-state"
@@ -354,6 +373,87 @@ assert_file "$rollback_nc/custom_apps/demoapp/old-code.txt"
 [[ ! -e "$rollback_nc/custom_apps/demoapp/new-code.txt" ]] || fail 'Neuer Code blieb nach Rollback aktiv.'
 [[ ! -e "$rollback_state/active/demoapp.json" ]] || fail 'Alter aktiver Candidate blieb während/nach fehlgeschlagenem Deployment gültig.'
 
+race_archive="$stage/output/demoapp-race.tar.gz"
+cp "$archive" "$race_archive"
+race_hash="$(sha256sum "$race_archive" | cut -d' ' -f1)"
+race_replacement_root="$stage/race-replacement"
+mkdir -p "$race_replacement_root/demoapp/appinfo"
+cp "$app/appinfo/info.xml" "$race_replacement_root/demoapp/appinfo/info.xml"
+printf 'replacement-code\n' > "$race_replacement_root/demoapp/replacement-code.txt"
+tar -C "$race_replacement_root" -czf "$stage/output/demoapp-race-replacement.tar.gz" demoapp
+replacement_hash="$(sha256sum "$stage/output/demoapp-race-replacement.tar.gz" | cut -d' ' -f1)"
+[[ "$replacement_hash" != "$race_hash" ]] || fail 'Race-Fixture besitzt unerwartet denselben Digest wie das freigegebene Archiv.'
+
+race_nc="$stage/race-nextcloud"
+race_state="$stage/race-state"
+mkdir -p "$race_nc/custom_apps/demoapp/appinfo" "$race_state" "$stage/race-bin"
+cp "$app/appinfo/info.xml" "$race_nc/custom_apps/demoapp/appinfo/info.xml"
+cp "$nextcloud/occ" "$race_nc/occ"
+printf 'old-code\n' > "$race_nc/custom_apps/demoapp/old-code.txt"
+mkfifo "$stage/race-lock-entered" "$stage/race-lock-release"
+printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'set -euo pipefail' \
+    'printf "entered\\n" > "$FAKE_FLOCK_ENTERED"' \
+    'IFS= read -r _ < "$FAKE_FLOCK_RELEASE"' \
+    > "$stage/race-bin/flock"
+chmod 755 "$stage/race-bin/flock"
+
+PATH="$stage/race-bin:$PATH" \
+FAKE_FLOCK_ENTERED="$stage/race-lock-entered" \
+FAKE_FLOCK_RELEASE="$stage/race-lock-release" \
+FAKE_OCC_STATE="$stage/race-occ-enabled" \
+FAKE_OCC_STATUS_COUNT="$stage/race-occ-status-count" \
+"$installer" \
+    --nextcloud-root "$race_nc" \
+    --php-bin "$(command -v php)" \
+    --archive "$race_archive" \
+    --sha256 "$race_hash" \
+    --app-id demoapp \
+    --commit "$commit" \
+    --staging-target teamcloud \
+    --state-dir "$race_state" \
+    --candidate-id CAND-2026-race \
+    --deployment-id github-42-2-demoapp \
+    --build-id build-race \
+    --active-reader-user nobody \
+    > "$stage/race-install.log" 2>&1 &
+race_pid=$!
+
+race_signal="$(timeout 10 head -n 1 "$stage/race-lock-entered")" \
+    || fail 'Installer erreichte die deterministische Deployment-Lock-Grenze nicht.'
+[[ "$race_signal" == entered ]] || fail 'Installer meldete eine ungültige Lock-Synchronisation.'
+mapfile -t race_snapshot_dirs < <(find "$race_state/tmp" -mindepth 1 -maxdepth 1 -type d -name 'archive.*' -print)
+[[ "${#race_snapshot_dirs[@]}" -eq 1 ]] || fail 'Installer hält am Lock nicht genau einen privaten Archiv-Snapshot.'
+race_snapshot_dir="${race_snapshot_dirs[0]}"
+race_snapshot="$race_snapshot_dir/demoapp.tar.gz"
+[[ "$(stat -c '%a' -- "$race_snapshot_dir")" == 700 ]] || fail 'Privates Snapshot-Verzeichnis hat nicht Modus 700.'
+[[ "$(stat -c '%a' -- "$race_snapshot")" == 600 ]] || fail 'Privater Archiv-Snapshot hat nicht Modus 600.'
+[[ "$(sha256sum "$race_snapshot" | cut -d' ' -f1)" == "$race_hash" ]] \
+    || fail 'Der private Snapshot ist vor Freigabe des Locks nicht an den erwarteten Digest gebunden.'
+mv "$stage/output/demoapp-race-replacement.tar.gz" "$race_archive"
+printf 'release\n' > "$stage/race-lock-release"
+if ! wait "$race_pid"; then
+    race_pid=''
+    sed -n '1,120p' "$stage/race-install.log" >&2
+    fail 'Installer scheiterte im synchronisierten Archiv-Austauschtest.'
+fi
+race_pid=''
+
+[[ "$(sha256sum "$race_archive" | cut -d' ' -f1)" == "$replacement_hash" ]] \
+    || fail 'Der Regressionstest hat den öffentlichen Archivpfad nicht wirksam ersetzt.'
+assert_file "$race_nc/custom_apps/demoapp/new-code.txt"
+[[ ! -e "$race_nc/custom_apps/demoapp/replacement-code.txt" ]] \
+    || fail 'Nach Archiv-Austausch wurde nicht der freigegebene Snapshot installiert.'
+assert_contains "$race_state/deployed/demoapp.tsv" "$race_hash"
+assert_contains "$race_state/active/demoapp.json" "\"sha256\": \"$race_hash\""
+if grep -Fq "$replacement_hash" "$race_state/deployed/demoapp.tsv" "$race_state/active/demoapp.json"; then
+    fail 'Deploymentnachweis oder Marker wurde an das ausgetauschte Archiv gebunden.'
+fi
+if find "$race_state/tmp" -mindepth 1 -maxdepth 1 -name 'archive.*' -print -quit | grep -q .; then
+    fail 'Privater Archiv-Snapshot blieb nach erfolgreicher Installation zurück.'
+fi
+
 bad="$stage/bad"
 mkdir -p "$bad/demoapp/appinfo"
 cp "$app/appinfo/info.xml" "$bad/demoapp/appinfo/info.xml"
@@ -378,6 +478,8 @@ assert_file "$runbook"
 assert_contains "$runbook" 'Einmaliger Rebranding-Reinstall beim nächsten Staging-Lauf'
 assert_contains "$runbook" 'Candidate-Deployments während des Clean Installs anhalten'
 assert_contains "$runbook" 'Installationsreihenfolge des Clean Installs'
+assert_contains "$runbook" 'Ausschließlich dieser private Snapshot wird per'
+assert_contains "$runbook" 'weder den installierten Code noch den Deploymentmarker nachträglich ändern'
 assert_contains "$runbook" '1. `localbase`'
 assert_contains "$runbook" '2. `flz_data_protection`'
 assert_contains "$runbook" '3. `flz_permission_matrix`'

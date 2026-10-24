@@ -86,13 +86,28 @@ for command in tar sha256sum find flock cp mv rm mkdir date getent setfacl; do
     command -v "$command" >/dev/null 2>&1 || { echo "Erforderlicher Befehl fehlt: $command" >&2; exit 2; }
 done
 
-actual_hash="$(sha256sum "$archive" | cut -d' ' -f1)"
+mkdir -p "$state_dir/tmp" "$state_dir/backups/$app_id" "$state_dir/deployed" "$state_dir/active"
+if [[ -n "$active_reader_user" ]]; then
+    setfacl -m "u:$active_reader_user:--x" "$state_dir"
+    setfacl -m "u:$active_reader_user:r-x" "$state_dir/active"
+fi
+
+archive_snapshot_dir="$(mktemp -d "$state_dir/tmp/archive.XXXXXX")"
+archive_snapshot="$archive_snapshot_dir/$app_id.tar.gz"
+cleanup_archive_snapshot() {
+    rm -rf -- "$archive_snapshot_dir"
+}
+trap cleanup_archive_snapshot EXIT
+cp --reflink=never -- "$archive" "$archive_snapshot"
+chmod 600 -- "$archive_snapshot"
+
+actual_hash="$(sha256sum "$archive_snapshot" | cut -d' ' -f1)"
 if [[ "$actual_hash" != "$expected_hash" ]]; then
     echo 'SHA-256-Prüfsumme des App-Archivs stimmt nicht.' >&2
     exit 3
 fi
 
-members="$(tar -tzf "$archive")"
+members="$(tar -tzf "$archive_snapshot")"
 while IFS= read -r member; do
     if [[ "$member" == /* || "$member" =~ (^|/)\.\.(/|$) ]]; then
         echo "Unsicherer Archivpfad: $member" >&2
@@ -104,16 +119,11 @@ if [[ "$roots" != "$app_id" ]]; then
     echo "Archiv besitzt nicht genau den Wurzelordner $app_id." >&2
     exit 3
 fi
-if tar -tvzf "$archive" | awk 'substr($1,1,1) != "d" && substr($1,1,1) != "-" { found=1 } END { exit found ? 0 : 1 }'; then
+if tar -tvzf "$archive_snapshot" | awk 'substr($1,1,1) != "d" && substr($1,1,1) != "-" { found=1 } END { exit found ? 0 : 1 }'; then
     echo 'Archiv enthält einen nicht unterstützten Eintrag wie einen Symlink.' >&2
     exit 3
 fi
 
-mkdir -p "$state_dir/tmp" "$state_dir/backups/$app_id" "$state_dir/deployed" "$state_dir/active"
-if [[ -n "$active_reader_user" ]]; then
-    setfacl -m "u:$active_reader_user:--x" "$state_dir"
-    setfacl -m "u:$active_reader_user:r-x" "$state_dir/active"
-fi
 exec 9>"$state_dir/deploy.lock"
 if ! flock -w 600 9; then
     echo 'Ein anderes Staging-Deployment hat die Wartezeit von zehn Minuten überschritten.' >&2
@@ -155,7 +165,7 @@ cleanup() {
     elif [[ "$finished" -ne 1 && "$database_upgrade_started" -eq 1 ]]; then
         echo 'Das Nextcloud-App-Upgrade wurde begonnen. Der Code wird wegen möglicher Datenbankänderungen nicht automatisch zurückgesetzt.' >&2
     fi
-    rm -rf "$candidate" "$extract_dir"
+    rm -rf "$candidate" "$extract_dir" "$archive_snapshot_dir"
     if [[ -d "$displaced" ]]; then
         rm -rf "$displaced"
     fi
@@ -163,7 +173,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-tar -C "$extract_dir" -xzf "$archive"
+tar -C "$extract_dir" -xzf "$archive_snapshot"
 if find "$extract_dir/$app_id" -type l -print -quit | grep -q .; then
     echo 'Entpackte App enthält einen Symlink.' >&2
     exit 3

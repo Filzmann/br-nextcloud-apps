@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo 'Aufruf: br-staging-install <Archiv> <App-ID> <Commit> <SHA-256> [<Candidate-ID> <Deployment-ID> <Build-ID>] | verify <App-ID> <Candidate-ID> <Deployment-ID> <Commit> <SHA-256> <Build-ID>' >&2
+}
+
+state_dir='/var/lib/br-staging'
+php_bin='/opt/plesk/php/8.3/bin/php'
+verifier='/usr/local/libexec/br-staging/verify-staging-deployment-marker.php'
+active_reader='betriebsrat_acceptance'
+
+app_mode() {
+    case "$1" in
+        brstunden|brtop) printf '%s\n' candidate ;;
+        localbase|orgsuite) printf '%s\n' runtime-mirror ;;
+        *) echo "Nicht freigegebene App-ID: $1" >&2; exit 2 ;;
+    esac
+}
+
+if [[ "${1:-}" == 'verify' ]]; then
+    [[ $# -eq 7 ]] || { usage; exit 2; }
+    app_id="$2"
+    [[ "$(app_mode "$app_id")" == candidate ]] \
+        || { echo 'Runtime-Mirror besitzen keinen BR-Candidate-Marker.' >&2; exit 2; }
+    [[ -x "$php_bin" && -f "$verifier" && ! -L "$verifier" ]] \
+        || { echo 'Deployment-Verifikationswerkzeug fehlt oder ist unsicher.' >&2; exit 2; }
+    exec "$php_bin" "$verifier" \
+        --active-file "$state_dir/active/$app_id.json" \
+        --lock-file "$state_dir/deploy.lock" \
+        --app-id "$app_id" \
+        --candidate-id "$3" \
+        --deployment-id "$4" \
+        --source-commit "$5" \
+        --build-sha256 "$6" \
+        --build-id "$7" \
+        --staging-target br-staging \
+        --verified-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --active-reader-user "$active_reader"
+fi
+
+if [[ $# -ne 4 && $# -ne 7 ]]; then
+    usage
+    exit 2
+fi
+
+archive="$1"
+app_id="$2"
+commit="$3"
+expected_hash="$4"
+candidate_id="${5:-}"
+deployment_id="${6:-}"
+build_id="${7:-}"
+incoming_root='/var/tmp/br-staging-incoming'
+nextcloud_root='/var/www/vhosts/betriebsrat-ad.de/site1'
+installer='/usr/local/libexec/br-staging/install-staging-app.sh'
+mode="$(app_mode "$app_id")"
+
+if [[ "$mode" == candidate ]]; then
+    [[ $# -eq 7 ]] \
+        || { echo 'BR-App-Deployments benötigen eine vollständige Candidate-Bindung.' >&2; exit 2; }
+else
+    [[ $# -eq 4 ]] \
+        || { echo 'Runtime-Mirror dürfen keine BR-Candidate- oder Evidence-Bindung erhalten.' >&2; exit 2; }
+fi
+if [[ ! "$commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ || ! "$expected_hash" =~ ^[0-9a-f]{64}$ ]]; then
+    echo 'Ungültige Commit-ID oder SHA-256-Prüfsumme.' >&2
+    exit 2
+fi
+if [[ "$mode" == candidate \
+    && !( "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+        && "$deployment_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ \
+        && "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ) ]]; then
+    echo 'Candidate-, Deployment- oder Build-ID ist ungültig oder unvollständig.' >&2
+    exit 2
+fi
+if [[ ! "$archive" =~ ^${incoming_root}/[0-9]+-[0-9]+-${app_id}/${app_id}\.tar\.gz$ ]]; then
+    echo 'Archiv liegt nicht im erlaubten app-spezifischen Incoming-Pfad.' >&2
+    exit 2
+fi
+if [[ ! -f "$archive" || -L "$archive" ]]; then
+    echo 'Archiv fehlt, ist kein reguläres File oder ist ein Symlink.' >&2
+    exit 2
+fi
+canonical_archive="$(realpath -e -- "$archive")"
+if [[ "$canonical_archive" != "$archive" ]]; then
+    echo 'Archivpfad ist nicht kanonisch.' >&2
+    exit 2
+fi
+if [[ "$(stat -c '%U' -- "$archive")" != 'simon' ]]; then
+    echo 'Archiv gehört nicht dem freigegebenen Upload-Benutzer.' >&2
+    exit 2
+fi
+archive_size="$(stat -c '%s' -- "$archive")"
+if [[ "$archive_size" -le 0 || "$archive_size" -gt 104857600 ]]; then
+    echo 'Archivgröße liegt außerhalb des erlaubten Bereichs.' >&2
+    exit 2
+fi
+if [[ ! -x "$installer" ]]; then
+    echo "Root-eigener Staging-Installer fehlt: $installer" >&2
+    exit 2
+fi
+
+exec "$installer" \
+    --nextcloud-root "$nextcloud_root" \
+    --php-bin "$php_bin" \
+    --php-memory-limit 512M \
+    --archive "$archive" \
+    --sha256 "$expected_hash" \
+    --app-id "$app_id" \
+    --commit "$commit" \
+    --staging-target br-staging \
+    --state-dir "$state_dir" \
+    --candidate-id "$candidate_id" \
+    --deployment-id "$deployment_id" \
+    --build-id "$build_id" \
+    --active-reader-user "$active_reader"
