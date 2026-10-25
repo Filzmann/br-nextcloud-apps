@@ -10,6 +10,7 @@ deployment_verifier="$workspace/scripts/verify-staging-deployment-marker.php"
 input_validator="$workspace/scripts/validate-staging-deployment-inputs"
 workflow="$workspace/.github/workflows/deploy-staging.yml"
 candidate_workflow="$workspace/.github/workflows/candidate-staging.yml"
+candidate_contract="$workspace/scripts/candidate-staging-contract"
 privacy_tests_workflow="$workspace/flz_data_protection/.github/workflows/tests.yml"
 runbook="$workspace/docs/staging-deployment.md"
 stage="$(mktemp -d)"
@@ -69,6 +70,80 @@ build_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 different_commit='fedcba9876543210fedcba9876543210fedcba98'
 
 assert_file "$input_validator"
+[[ -x "$candidate_contract" ]] \
+    || fail "Ausführbarer Candidate-Staging-Vertrag fehlt: $candidate_contract"
+
+candidate_env="$stage/candidate-github.env"
+: > "$candidate_env"
+"$candidate_contract" resolve \
+    --repository Filzmann/nextcloud-brstunden \
+    --app-id brstunden \
+    --github-env "$candidate_env"
+assert_contains "$candidate_env" 'CANDIDATE_INTAKE_URL=https://acceptance.staging.betriebsrat-ad.de/api/candidate-intake'
+assert_contains "$candidate_env" 'CANDIDATE_STAGING_TARGET=br-staging'
+
+: > "$candidate_env"
+"$candidate_contract" resolve \
+    --repository Filzmann/nextcloud-localbase \
+    --app-id localbase \
+    --github-env "$candidate_env"
+assert_contains "$candidate_env" 'CANDIDATE_INTAKE_URL=https://teamcloud.simonbeyer.de/api/candidate-intake'
+assert_contains "$candidate_env" 'CANDIDATE_STAGING_TARGET=teamcloud'
+
+for rejected_pair in \
+    'Filzmann/nextcloud-brstunden localbase' \
+    'Filzmann/nextcloud-localbase brstunden' \
+    'Filzmann/unknown brstunden'; do
+    read -r rejected_repository rejected_app_id <<< "$rejected_pair"
+    : > "$candidate_env"
+    if "$candidate_contract" resolve \
+        --repository "$rejected_repository" \
+        --app-id "$rejected_app_id" \
+        --github-env "$candidate_env" >/dev/null 2>&1; then
+        fail "Unbekanntes oder gekreuztes Candidate-Paar wurde akzeptiert: $rejected_pair"
+    fi
+    [[ ! -s "$candidate_env" ]] \
+        || fail "Abgelehntes Candidate-Paar hat Umgebungswerte veröffentlicht: $rejected_pair"
+done
+
+candidate_response="$stage/candidate-response.json"
+candidate_outputs="$stage/candidate-github.output"
+candidate_response_commit='0123456789abcdef0123456789abcdef01234567'
+candidate_response_build_id='github-77-1-brstunden'
+candidate_response_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+cat > "$candidate_response" <<JSON
+{"candidate_id":"CAND-brstunden-77-1","source_commit":"$candidate_response_commit","build_id":"$candidate_response_build_id","build_sha256":"$candidate_response_hash","staging_target":"br-staging"}
+JSON
+: > "$candidate_outputs"
+"$candidate_contract" publish-response \
+    --expected-staging-target br-staging \
+    --expected-source-commit "$candidate_response_commit" \
+    --expected-build-id "$candidate_response_build_id" \
+    --expected-build-sha256 "$candidate_response_hash" \
+    --response-file "$candidate_response" \
+    --github-output "$candidate_outputs"
+assert_contains "$candidate_outputs" 'candidate-id=CAND-brstunden-77-1'
+assert_contains "$candidate_outputs" "source-commit=$candidate_response_commit"
+assert_contains "$candidate_outputs" "build-id=$candidate_response_build_id"
+assert_contains "$candidate_outputs" "build-sha256=$candidate_response_hash"
+assert_contains "$candidate_outputs" 'staging-target=br-staging'
+
+cat > "$candidate_response" <<JSON
+{"candidate_id":"CAND-brstunden-77-1","source_commit":"$candidate_response_commit","build_id":"$candidate_response_build_id","build_sha256":"$candidate_response_hash","staging_target":"teamcloud"}
+JSON
+: > "$candidate_outputs"
+if "$candidate_contract" publish-response \
+    --expected-staging-target br-staging \
+    --expected-source-commit "$candidate_response_commit" \
+    --expected-build-id "$candidate_response_build_id" \
+    --expected-build-sha256 "$candidate_response_hash" \
+    --response-file "$candidate_response" \
+    --github-output "$candidate_outputs" >/dev/null 2>&1; then
+    fail 'Eine Candidate-Antwort vom falschen autoritativen Ziel wurde akzeptiert.'
+fi
+[[ ! -s "$candidate_outputs" ]] \
+    || fail 'Eine Candidate-Antwort vom falschen Ziel hat Deployment-Ausgaben veröffentlicht.'
+
 if "$input_validator" \
     --app-id brstunden \
     --deployment-target br-staging \
@@ -521,7 +596,13 @@ assert_contains "$candidate_workflow" 'workflow_call:'
 assert_contains "$candidate_workflow" 'id-token: write'
 assert_contains "$candidate_workflow" 'source_ref="refs/heads/candidate/$work_order_id"'
 assert_contains "$candidate_workflow" '"repository_id": os.environ["SOURCE_REPOSITORY_ID"]'
-assert_contains "$candidate_workflow" '/api/candidate-intake'
+assert_contains "$candidate_contract" '/api/candidate-intake'
+assert_contains "$candidate_contract" 'https://acceptance.staging.betriebsrat-ad.de/api/candidate-intake'
+assert_contains "$candidate_contract" 'https://teamcloud.simonbeyer.de/api/candidate-intake'
+assert_contains "$candidate_workflow" 'control/scripts/candidate-staging-contract resolve'
+assert_contains "$candidate_workflow" 'control/scripts/candidate-staging-contract publish-response'
+assert_contains "$candidate_workflow" '--github-env "$GITHUB_ENV"'
+assert_contains "$candidate_workflow" '--github-output "$GITHUB_OUTPUT"'
 assert_contains "$candidate_workflow" 'ACTIONS_ID_TOKEN_REQUEST_URL'
 assert_contains "$candidate_workflow" 'candidate-id: ${{ needs.issue-candidate.outputs.candidate-id }}'
 assert_contains "$candidate_workflow" 'candidate-build-sha256: ${{ needs.issue-candidate.outputs.build-sha256 }}'
@@ -535,6 +616,16 @@ assert_contains "$candidate_workflow" 'candidate-source-commit: ${{ needs.issue-
 if grep -Fq 'STAGING_EVIDENCE_TOKEN' "$candidate_workflow"; then
     fail 'Candidate-Ausstellung verwendet einen statischen Evidence-Schreibtoken statt GitHub OIDC.'
 fi
+if grep -Fq 'CANDIDATE_INTAKE_URL: https://teamcloud.simonbeyer.de/api/candidate-intake' "$candidate_workflow"; then
+    fail 'Candidate-Intake ist weiterhin global und unabhängig vom autoritativen Ziel auf Teamcloud festgelegt.'
+fi
+if grep -Fq '[[ "$response_staging_target" == '\''teamcloud'\'' || "$response_staging_target" == '\''br-staging'\'' ]]' "$candidate_workflow"; then
+    fail 'Candidate-Workflow akzeptiert weiterhin ein anderes registriertes Ziel als das vorab aufgelöste autoritative Ziel.'
+fi
+control_checkout_line="$(grep -nF -- '- name: Zentrale Deploymentwerkzeuge auschecken' "$candidate_workflow" | cut -d: -f1)"
+binding_validation_line="$(grep -nF -- '- name: GitHub- und Work-Order-Bindung validieren' "$candidate_workflow" | cut -d: -f1)"
+[[ -n "$control_checkout_line" && -n "$binding_validation_line" && "$control_checkout_line" -lt "$binding_validation_line" ]] \
+    || fail 'Der ausführbare Candidate-Vertrag wird nicht vor der Work-Order-Bindungsprüfung ausgecheckt.'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$CSS_ASSET'
 assert_contains "$workflow" '$STAGING_BASE_URL/custom_apps/$APP_ID/$JS_ASSET'
 asset_line="$(grep -nF -- '- name: Öffentliche Assets prüfen' "$workflow" | cut -d: -f1)"

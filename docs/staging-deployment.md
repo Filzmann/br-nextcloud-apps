@@ -23,6 +23,17 @@ Candidate-Artefakt erfolgreich auf dem autoritativen Teamcloud-Ziel
 bereitgestellt wurde; manuell angegebene Branch- oder Tag-Refs sind kein
 zulässiger Mirror-Ersatz.
 
+Der Candidate-Workflow löst Intake-Origin und autoritative Ziel-ID gemeinsam
+aus dem exakt registrierten Repository-/App-ID-Paar auf. `brstunden` und
+`brtop` verwenden
+`https://acceptance.staging.betriebsrat-ad.de/api/candidate-intake` mit
+`br-staging`; alle Teamcloud-Apps verwenden
+`https://teamcloud.simonbeyer.de/api/candidate-intake` mit `teamcloud`.
+Unbekannte oder gekreuzte Repository-/App-ID-Paare werden vor Checkout und
+Paketbau verworfen. Die vom jeweiligen Acceptance-Service zurückgegebene
+Ziel-ID muss exakt der vorab aufgelösten Ziel-ID entsprechen; auch ein anderes
+grundsätzlich registriertes Ziel darf kein Deployment auslösen.
+
 Nur die lokale Workflow-Prüfung erhält diese Candidate-Bindung. Das
 BR-Server-Gate wird im Modus `runtime-mirror` ausdrücklich ohne
 Candidate-, Deployment- oder Build-ID aufgerufen. Dadurch entsteht dort

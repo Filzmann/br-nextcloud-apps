@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat >&2 <<'EOF'
+Aufruf:
+  candidate-staging-contract resolve --repository <Owner/Repository> --app-id <App-ID> --github-env <Datei>
+  candidate-staging-contract publish-response --expected-staging-target <Ziel> --expected-source-commit <Commit> --expected-build-id <Build-ID> --expected-build-sha256 <SHA-256> --response-file <Datei> --github-output <Datei>
+EOF
+    exit 2
+}
+
+[[ $# -ge 1 ]] || usage
+operation="$1"
+shift
+
+case "$operation" in
+    resolve)
+        repository=''
+        app_id=''
+        github_env=''
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --repository) repository="${2:-}"; shift 2 ;;
+                --app-id) app_id="${2:-}"; shift 2 ;;
+                --github-env) github_env="${2:-}"; shift 2 ;;
+                *) usage ;;
+            esac
+        done
+        [[ -n "$repository" && -n "$app_id" && -n "$github_env" ]] || usage
+
+        case "$repository:$app_id" in
+            Filzmann/nextcloud-brtop:brtop|Filzmann/nextcloud-brstunden:brstunden)
+                candidate_intake_url='https://acceptance.staging.betriebsrat-ad.de/api/candidate-intake'
+                candidate_staging_target='br-staging'
+                ;;
+            Filzmann/nextcloud-localbase:localbase|Filzmann/nextcloud-orgsuite:orgsuite|Filzmann/nextcloud-flzplaner:flzplaner|Filzmann/nextcloud-flzcalendar:flzcalendar|Filzmann/nextcloud-flzurlaub:flzurlaub|Filzmann/nextcloud-flzroom:flzroom|Filzmann/nextcloud-flzrecruitment:flzrecruitment|Filzmann/nextcloud-flzbqplanung:flzbqplanung|Filzmann/nextcloud-flz-data-protection:flz_data_protection|Filzmann/nextcloud-flz-permission-matrix:flz_permission_matrix)
+                candidate_intake_url='https://teamcloud.simonbeyer.de/api/candidate-intake'
+                candidate_staging_target='teamcloud'
+                ;;
+            *)
+                echo 'Repository und App-ID sind nicht gemeinsam registriert.' >&2
+                exit 2
+                ;;
+        esac
+
+        {
+            echo "CANDIDATE_INTAKE_URL=$candidate_intake_url"
+            echo "CANDIDATE_STAGING_TARGET=$candidate_staging_target"
+        } >> "$github_env"
+        ;;
+
+    publish-response)
+        expected_staging_target=''
+        expected_source_commit=''
+        expected_build_id=''
+        expected_build_sha256=''
+        response_file=''
+        github_output=''
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --expected-staging-target) expected_staging_target="${2:-}"; shift 2 ;;
+                --expected-source-commit) expected_source_commit="${2:-}"; shift 2 ;;
+                --expected-build-id) expected_build_id="${2:-}"; shift 2 ;;
+                --expected-build-sha256) expected_build_sha256="${2:-}"; shift 2 ;;
+                --response-file) response_file="${2:-}"; shift 2 ;;
+                --github-output) github_output="${2:-}"; shift 2 ;;
+                *) usage ;;
+            esac
+        done
+        [[ -n "$expected_staging_target" && -n "$expected_source_commit" \
+            && -n "$expected_build_id" && -n "$expected_build_sha256" \
+            && -n "$response_file" && -n "$github_output" ]] || usage
+        [[ "$expected_staging_target" == teamcloud || "$expected_staging_target" == br-staging ]] || exit 2
+        [[ "$expected_source_commit" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || exit 2
+        [[ "$expected_build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+        [[ "$expected_build_sha256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+        [[ -f "$response_file" ]] || exit 2
+
+        candidate_id="$(jq -er '.candidate_id | select(type == "string")' "$response_file")"
+        response_commit="$(jq -er '.source_commit | select(type == "string")' "$response_file")"
+        response_build_id="$(jq -er '.build_id | select(type == "string")' "$response_file")"
+        response_build_sha256="$(jq -er '.build_sha256 | select(type == "string")' "$response_file")"
+        response_staging_target="$(jq -er '.staging_target | select(type == "string")' "$response_file")"
+
+        [[ "$candidate_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$ ]] || exit 2
+        [[ "$response_commit" == "$expected_source_commit" ]] || exit 2
+        [[ "$response_build_id" == "$expected_build_id" ]] || exit 2
+        [[ "$response_build_sha256" == "$expected_build_sha256" ]] || exit 2
+        [[ "$response_staging_target" == "$expected_staging_target" ]] || {
+            echo 'Acceptance-Service hat ein unerwartetes Staging-Ziel zurückgegeben.' >&2
+            exit 2
+        }
+
+        {
+            echo "candidate-id=$candidate_id"
+            echo "source-commit=$response_commit"
+            echo "build-id=$response_build_id"
+            echo "build-sha256=$response_build_sha256"
+            echo "staging-target=$response_staging_target"
+        } >> "$github_output"
+        ;;
+
+    *) usage ;;
+esac
