@@ -2,7 +2,7 @@
 
 - Status: angenommen
 - Entscheidung: 2026-08-25
-- Fortgeschrieben: 2026-09-17
+- Fortgeschrieben: 2026-10-29
 - Geltungsbereich: alle von Simon verantworteten Nextcloud-Apps
 
 ## Kontext
@@ -78,6 +78,47 @@ Apps ohne fachliche Daten oder ohne nativen Admin-Vollzugriff dokumentieren
 die begründete Nichtanwendbarkeit. Sie prüfen sie bei jeder späteren
 Scopeänderung erneut und bauen keinen wirkungslosen Schalter.
 
+### Ausdrücklich beschlossene App-Ausnahme: Filzmann Kalender
+
+Für `flzcalendar` ist am 29. Oktober 2026 eine eng begrenzte Ausnahme
+beschlossen worden. Ein bei jedem Zugriff aktuell bestätigtes natives
+Nextcloud-Administrationskonto erhält in dieser App ohne zusätzliche
+app-lokale temporäre Freigabe `calendar.entry.manage-all`. Die Ausnahme umfasst
+das Lesen und Verwalten aller Filzmann-Kalendereinträge sowie die Installation
+des ausschließlich synthetischen Kalender-Demo-Packs. Technische OAuth-,
+CalDAV- und Kalenderdefault-Konfiguration bleibt wie zuvor native
+Administration. Persönliche Konnektoren bleiben ausschließlich für das eigene
+angemeldete Konto verwaltbar.
+
+Die Ausnahme gilt nur für `flzcalendar`. Sie erteilt keine Rechte in einer
+anderen Fachapp, erweitert keine Organisationsrolle und ändert weder deren
+Freigabe-, Audit- noch Datenschutzvertrag. Folgende Schutzmaßnahmen bleiben
+verbindlich:
+
+- Der native Adminstatus wird bei jedem fachlichen Zugriff serverseitig über
+  Nextclouds Gruppenverwaltung erneut geprüft. Navigation und UI-Sichtbarkeit
+  erteilen keine Rechte.
+- Normale Kalenderkonten benötigen weiterhin eine kanonische Organigrammrolle.
+  Fremdbearbeitung durch Fachrollen entsteht ausschließlich über direkte
+  Hierarchiekanten oder ausdrücklich aktivierte Peer-Berechtigungen mit deren
+  Bereichsgrenzen.
+- Gemeinsame Meetingmutationen leiten kein eigenes Vollrecht ab, sondern
+  verlangen das Bearbeitungsrecht für jeden beteiligten Kalender.
+- Der app-eigene PermissionProvider weist die Ausnahme ausdrücklich als
+  `nextcloud-admin` aus; die Berechtigungsmatrix darf sie nicht als
+  gruppenbezogene Fachrolle darstellen.
+- Die frühere Kalender-Freigabesteuerung besitzt keine UI, Route oder
+  schreibende beziehungsweise autorisierende Laufzeitverwendung mehr. Bereits
+  vorhandene Historieneinträge bleiben unverändert, erteilen niemals Rechte
+  und werden ausschließlich subjectgebunden read-only über den
+  PersonalDataProvider projiziert. Ihre beschlossene Retention bleibt davon
+  unberührt.
+
+Eine Ausweitung dieser Ausnahme auf eine weitere App oder einen weiteren
+fachlichen Scope benötigt eine neue ausdrückliche Entscheidung und
+Fortschreibung dieses ADR. Die allgemeinen Regeln dieses ADR bleiben für alle
+anderen Apps unverändert.
+
 ## Daten-, Provider- und Testvertrag
 
 Freigabe- und Auditdatensätze sind personenbezogene Sicherheitsdaten. Der
@@ -145,6 +186,7 @@ unangetastet und erteilt ohne ausführenden Freigabecode keine Rechte.
 | Bestandteil | Eigentümer / Consumer | Evidenz | Kategorie | Grund und Zielstruktur | Risiko / Store-Auswirkung |
 | --- | --- | --- | --- | --- | --- |
 | Aktive Freigaben, Audit, Freigabesteuerung, Eintrittsmeldung und serverseitige Prüfung | jeweilige Fachapp | verifiziert durch ausdrückliche Produktentscheidung | C | app-eigene Daten und Fachrechte; keine zentrale Runtime oder Persistenz | app-lokale Autorisierungs-, UI-, Audit-, Provider- und Allow-/Deny-/Manipulationstests erforderlich; keine neue Store-Abhängigkeit |
+| Native Kalender-Adminausnahme und read-only erhaltene frühere Freigabehistorie | `flzcalendar` | verifiziert durch ausdrückliche Produktentscheidung vom 29. Oktober 2026 | C | eng begrenzte App-Ausnahme; aktueller nativer Adminstatus ist die einzige Vollzugriffsbedingung, frühere Freigaben bleiben ohne Autorisierungswirkung app-lokal | Server-Allow-/Deny-, Rollenverlust-, Fremdobjekt-, Meeting-Atomaritäts-, Provider- und Runtimeprüfungen erforderlich; keine Wirkung auf andere Apps |
 | Gemeinsame Invariante und Prüfvorgaben | Parent und alle eigenen Apps | verifiziert | kein Runtime-Code | dieser ADR ist die einzige app-übergreifende Regelquelle; lokale Projektionen bleiben synchron | Cross-App-Vertragstests müssen Abweichungen sichtbar machen |
 
 Die lokale Implementierung ist eine bewusste, nicht triviale Duplikation. Sie
