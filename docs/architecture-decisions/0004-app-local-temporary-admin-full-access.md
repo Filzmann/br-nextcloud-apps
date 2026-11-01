@@ -2,7 +2,7 @@
 
 - Status: angenommen
 - Entscheidung: 2026-08-25
-- Fortgeschrieben: 2026-10-29
+- Fortgeschrieben: 2026-11-01
 - Geltungsbereich: alle von Simon verantworteten Nextcloud-Apps
 
 ## Kontext
@@ -77,6 +77,72 @@ zentralen Freigaberuntime noch zu einem zentralen Speicher.
 Apps ohne fachliche Daten oder ohne nativen Admin-Vollzugriff dokumentieren
 die begründete Nichtanwendbarkeit. Sie prüfen sie bei jeder späteren
 Scopeänderung erneut und bauen keinen wirkungslosen Schalter.
+
+### Ausdrücklich beschlossene App-Ausnahme: FlzPlaner
+
+Für `flzplaner` ist am 29. Oktober 2026 eine eng begrenzte Ausnahme von der
+sonst ausschließlich der Gruppe `Datenschutzbeauftragte` zugewiesenen
+Freigabeverwaltung beschlossen worden. Zusätzlich darf eine aktuell zuständige
+Einsatzbegleitung den app-lokalen temporären Admin-Vollzugriff erteilen,
+widerrufen und die dazugehörige Historie einsehen.
+
+Eine zuständige Einsatzbegleitung liegt nur vor, wenn bei jeder einzelnen
+Lese-, Freigabe- und Widerrufsaktion serverseitig beide Bedingungen zugleich
+aktuell bestätigt werden:
+
+- Mitgliedschaft in der kanonischen, aus dem Organisationsvertrag bezogenen
+  EB-Rollengruppe; und
+- Mitgliedschaft in mindestens einer aktuell vom Planer als Assistenzteam
+  ermittelten Gruppe.
+
+Die beiden Mitgliedschaften werden getrennt aus den aktuellen
+Nextcloud-Gruppenzuordnungen ausgewertet. Eine frei benannte, abgeleitete oder
+nur dem Namensschema ähnliche Kombinationsgruppe erteilt kein Recht. Fehlt die
+EB-Rolle oder die aktuelle Teammitgliedschaft, ist die Teamgruppe unbekannt
+oder manipuliert, oder schlagen Organisations-, Gruppen- oder
+Quellenprüfungen fehl, bleibt die gesamte Freigabeverwaltung einschließlich
+Historienzugriff fail-closed gesperrt. UI-Sichtbarkeit ersetzt diese Prüfung
+nicht.
+
+Diese Ausnahme erteilt ausschließlich `plan.admin-grant.manage`. Sie gibt der
+Einsatzbegleitung selbst keinen fachlichen Admin-Vollzugriff, keine Rechte an
+fremden Planungsdaten, keine Retention- oder Hold-Verwaltung und keine Rechte
+in anderen Apps. Da die app-lokale Vollzugriffsfreigabe ein appweites und kein
+teambezogenes Zielobjekt ist, darf eine aktuell bestätigte zuständige
+Einsatzbegleitung sie für ein aktuell bestätigtes natives
+Administrationskonto appweit erteilen oder widerrufen; daraus entstehen keine
+weiteren teamübergreifenden Planerrechte.
+
+Verliert eine erteilende Einsatzbegleitung später ihre EB-Rolle oder ihre
+letzte aktuelle Teammitgliedschaft, verliert sie sofort den Zugriff auf
+Steuerung und Historie und kann nicht mehr erteilen oder widerrufen. Eine
+bereits wirksam erteilte Freigabe des Ziel-Admins wird dadurch nicht
+rückwirkend verändert: Sie endet weiterhin spätestens nach 24 Stunden, durch
+Verlust des nativen Adminstatus oder durch den Widerruf eines zu diesem
+Zeitpunkt berechtigten Mitglieds von `Datenschutzbeauftragte` beziehungsweise
+einer aktuell zuständigen Einsatzbegleitung. Erteilung und Widerruf halten
+jeweils die tatsächlich handelnde UID in der app-lokalen Auditquelle fest.
+
+Die Ausnahme gilt nur für `flzplaner` und darf weder auf andere Apps noch auf
+weitere Planerberechtigungen verallgemeinert werden. Zusätzlich zu den
+allgemeinen Nachweisen dieses ADR muss FlzPlaner automatisiert belegen:
+
+- Erteilen, Widerrufen und Historienzugriff funktionieren für ein
+  `Datenschutzbeauftragte`-Mitglied sowie für die aktuelle Schnittmenge aus
+  EB-Rolle und einer bekannten aktuellen Teamgruppe;
+- reine EB-Rolle, reine Teammitgliedschaft, unbekannte oder manipulierte
+  Teamgruppen, native Administration allein und gewöhnliche Konten bleiben
+  ohne Zugriff und ohne Mutation;
+- Fehler der Organisations-, Gruppen- oder Berechtigungsquelle sowie der
+  Verlust einer der beiden Mitgliedschaften wirken bei der nächsten Aktion
+  fail-closed;
+- abgewiesene Erteilungs- und Widerrufsversuche verändern weder aktive
+  Freigaben noch Historie, während erfolgreiche Aktionen die handelnde UID
+  korrekt auditieren; und
+- der PermissionProvider projiziert die Oder-Verknüpfung aus
+  `Datenschutzbeauftragte` und den zulässigen Team-und-EB-Schnittmengen, ohne
+  daraus eine neue Organisationsgruppe oder ein fachliches Vollrecht
+  abzuleiten.
 
 ### Ausdrücklich beschlossene App-Ausnahme: Filzmann Kalender
 
@@ -186,6 +252,7 @@ unangetastet und erteilt ohne ausführenden Freigabecode keine Rechte.
 | Bestandteil | Eigentümer / Consumer | Evidenz | Kategorie | Grund und Zielstruktur | Risiko / Store-Auswirkung |
 | --- | --- | --- | --- | --- | --- |
 | Aktive Freigaben, Audit, Freigabesteuerung, Eintrittsmeldung und serverseitige Prüfung | jeweilige Fachapp | verifiziert durch ausdrückliche Produktentscheidung | C | app-eigene Daten und Fachrechte; keine zentrale Runtime oder Persistenz | app-lokale Autorisierungs-, UI-, Audit-, Provider- und Allow-/Deny-/Manipulationstests erforderlich; keine neue Store-Abhängigkeit |
+| Planer-Ausnahme für die Freigabeverwaltung durch aktuelle Team-und-EB-Schnittmengen | `flzplaner` | verifiziert durch ausdrückliche Produktentscheidung vom 29. Oktober 2026 | C | eng begrenzte app-lokale Ausnahme nur für `plan.admin-grant.manage`; aktuelle Organisations- und Gruppenprüfung bleibt fail-closed | Allow-/Deny-, Rollenverlust-, Quellenfehler-, Mutationsfreiheits-, Audit- und PermissionProvider-Nachweise erforderlich; keine Wirkung auf andere Planerrechte oder Apps |
 | Native Kalender-Adminausnahme und read-only erhaltene frühere Freigabehistorie | `flzcalendar` | verifiziert durch ausdrückliche Produktentscheidung vom 29. Oktober 2026 | C | eng begrenzte App-Ausnahme; aktueller nativer Adminstatus ist die einzige Vollzugriffsbedingung, frühere Freigaben bleiben ohne Autorisierungswirkung app-lokal | Server-Allow-/Deny-, Rollenverlust-, Fremdobjekt-, Meeting-Atomaritäts-, Provider- und Runtimeprüfungen erforderlich; keine Wirkung auf andere Apps |
 | Gemeinsame Invariante und Prüfvorgaben | Parent und alle eigenen Apps | verifiziert | kein Runtime-Code | dieser ADR ist die einzige app-übergreifende Regelquelle; lokale Projektionen bleiben synchron | Cross-App-Vertragstests müssen Abweichungen sichtbar machen |
 
