@@ -180,10 +180,31 @@ verbindlich:
   PersonalDataProvider projiziert. Ihre beschlossene Retention bleibt davon
   unberührt.
 
-Eine Ausweitung dieser Ausnahme auf eine weitere App oder einen weiteren
-fachlichen Scope benötigt eine neue ausdrückliche Entscheidung und
-Fortschreibung dieses ADR. Die allgemeinen Regeln dieses ADR bleiben für alle
-anderen Apps unverändert.
+Eine Ausweitung dieser Kalenderausnahme auf eine weitere App oder einen
+weiteren fachlichen Scope benötigt eine neue ausdrückliche Entscheidung und
+Fortschreibung dieses ADR.
+
+### Ausdrücklich beschlossene technische Demo-Ausnahme: Filzmann Urlaubsplanung
+
+Für `flzurlaub` ist am 31. Oktober 2026 eine eng begrenzte technische Ausnahme
+beschlossen worden. Ein bei jedem Zugriff aktuell bestätigtes natives
+Nextcloud-Administrationskonto darf das ausschließlich synthetische,
+manuell bestätigte Urlaubs-Demo-Pack ohne zusätzliche app-lokale temporäre
+Freigabe installieren. Diese Ausnahme ist kein fachlicher Vollzugriff: Sie
+erteilt weder Lese-, Schreib- oder Genehmigungsrechte für reale Urlaubsdaten
+noch Rechte zur Verwaltung der Vollzugriffsfreigaben oder Retention.
+
+Der Demo-Pack-Vertrag bleibt dabei vollständig wirksam: Es werden nur die
+gemeinsamen synthetischen Suite-Demokonten verwendet; fremde oder
+LDAP-verwaltete Konten werden nicht übernommen, und read-only LDAP-Gruppen
+brechen den Preflight vor jeder Mutation ab. Der native Adminstatus wird beim
+Request serverseitig erneut geprüft, CSRF-Schutz bleibt aktiv und ein
+Rollenverlust verweigert weitere Installationen. Der app-eigene
+PermissionProvider weist die Ausnahme separat als `nextcloud-admin` aus.
+
+Die Ausnahme gilt ausschließlich für die synthetische Demo-Installation in
+`flzurlaub`. Der allgemeine app-lokale Freigabe-, Audit-, Provider- und
+Testvertrag dieses ADR bleibt für alle fachlichen Urlaubspfade unverändert.
 
 ## Daten-, Provider- und Testvertrag
 
@@ -254,6 +275,7 @@ unangetastet und erteilt ohne ausführenden Freigabecode keine Rechte.
 | Aktive Freigaben, Audit, Freigabesteuerung, Eintrittsmeldung und serverseitige Prüfung | jeweilige Fachapp | verifiziert durch ausdrückliche Produktentscheidung | C | app-eigene Daten und Fachrechte; keine zentrale Runtime oder Persistenz | app-lokale Autorisierungs-, UI-, Audit-, Provider- und Allow-/Deny-/Manipulationstests erforderlich; keine neue Store-Abhängigkeit |
 | Planer-Ausnahme für die Freigabeverwaltung durch aktuelle Team-und-EB-Schnittmengen | `flzplaner` | verifiziert durch ausdrückliche Produktentscheidung vom 29. Oktober 2026 | C | eng begrenzte app-lokale Ausnahme nur für `plan.admin-grant.manage`; aktuelle Organisations- und Gruppenprüfung bleibt fail-closed | Allow-/Deny-, Rollenverlust-, Quellenfehler-, Mutationsfreiheits-, Audit- und PermissionProvider-Nachweise erforderlich; keine Wirkung auf andere Planerrechte oder Apps |
 | Native Kalender-Adminausnahme und read-only erhaltene frühere Freigabehistorie | `flzcalendar` | verifiziert durch ausdrückliche Produktentscheidung vom 29. Oktober 2026 | C | eng begrenzte App-Ausnahme; aktueller nativer Adminstatus ist die einzige Vollzugriffsbedingung, frühere Freigaben bleiben ohne Autorisierungswirkung app-lokal | Server-Allow-/Deny-, Rollenverlust-, Fremdobjekt-, Meeting-Atomaritäts-, Provider- und Runtimeprüfungen erforderlich; keine Wirkung auf andere Apps |
+| Technische Urlaubs-Demo-Ausnahme | `flzurlaub` | verifiziert durch ausdrückliche Produktentscheidung vom 31. Oktober 2026 | C | aktueller nativer Adminstatus erlaubt ausschließlich die manuell bestätigte Installation des synthetischen Demo-Packs; fachlicher Vollzugriff bleibt freigabepflichtig | Server-Allow-/Deny-, Rollenverlust-, CSRF-, synthetische Identitäts-/LDAP-Preflight- und Providerprüfungen erforderlich; keine Wirkung auf reale Urlaubsdaten oder andere Apps |
 | Gemeinsame Invariante und Prüfvorgaben | Parent und alle eigenen Apps | verifiziert | kein Runtime-Code | dieser ADR ist die einzige app-übergreifende Regelquelle; lokale Projektionen bleiben synchron | Cross-App-Vertragstests müssen Abweichungen sichtbar machen |
 
 Die lokale Implementierung ist eine bewusste, nicht triviale Duplikation. Sie
