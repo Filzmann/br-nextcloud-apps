@@ -82,6 +82,7 @@ bash tests/check-flz-full-suite-ci-contract.sh
 bash tests/check-flz-product-catalog.sh
 bash tests/check-flz-full-suite-standalone-contract.sh
 bash tests/check-nextcloud-compatibility-runner.sh
+bash tests/check-v2-retention-runtime-runner.sh
 bash tests/check-flz-product-installer.sh
 bash tests/check-flz-release-pruning.sh
 bash tests/check-reproducible-release-archive.sh
