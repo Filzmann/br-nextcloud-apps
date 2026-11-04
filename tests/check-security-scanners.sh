@@ -214,10 +214,10 @@ php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
     if ($data["status"] !== "diagnostic") throw new RuntimeException("Testmodus ist nicht diagnostisch");
     if (($data["execution"]["mode"] ?? null) !== "diagnostic" || ($data["execution"]["test_doubles"] ?? null) !== true || ($data["execution"]["publishable"] ?? null) !== false) throw new RuntimeException("Testmodus kann als Release-Nachweis erscheinen");
-    if (count($data["scope"]["repositories"]) !== 13) throw new RuntimeException("Parent plus zwölf Apps wurden nicht vollständig gescannt");
+    if (count($data["scope"]["repositories"]) !== 14) throw new RuntimeException("Parent plus dreizehn Apps wurden nicht vollständig gescannt");
     foreach (["gitleaks", "semgrep", "osv-scanner"] as $scanner) {
         if (($data["scanners"][$scanner]["status"] ?? null) !== "passed") throw new RuntimeException("Scannerstatus fehlt: {$scanner}");
-        if (($data["scanners"][$scanner]["scanned_repositories"] ?? null) !== 13) throw new RuntimeException("Scanner-Scope ist unvollständig: {$scanner}");
+        if (($data["scanners"][$scanner]["scanned_repositories"] ?? null) !== 14) throw new RuntimeException("Scanner-Scope ist unvollständig: {$scanner}");
     }
     $thirdParty = $data["scope"]["third_party_components"] ?? [];
     if (count($thirdParty) !== 1 || ($thirdParty[0]["repository"] ?? null) !== "flzrecruitment" || ($thirdParty[0]["purl"] ?? null) !== "pkg:npm/pdfjs-dist@6.2.108") throw new RuntimeException("App-lokales Third-Party-Inventar fehlt im Scanner-Scope");
