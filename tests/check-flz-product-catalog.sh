@@ -10,8 +10,8 @@ reader="$workspace/scripts/read-flz-product-catalog.php"
 
 php "$reader" validate >/dev/null
 mapfile -t products < <(php "$reader" products)
-expected=(flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzbqplanung)
-[[ "${products[*]}" == "${expected[*]}" ]] || { echo 'FLZ-Produktliste oder Reihenfolge weicht ab.' >&2; exit 1; }
+expected_navigation=(flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzbqplanung flz_akut)
+[[ "${products[*]}" == "${expected_navigation[*]}" ]] || { echo 'FLZ-Navigationsproduktliste oder Reihenfolge weicht ab.' >&2; exit 1; }
 
 mapfile -t full_suite < <(php "$reader" full-suite)
 expected_full=(localbase orgsuite flzcalendar flzplaner flzurlaub flzroom flzrecruitment)
@@ -22,17 +22,23 @@ mapfile -t bundle_products < <(php "$reader" bundle-products)
 
 mapfile -t recruitment_bundle < <(php "$reader" product-bundle flzrecruitment)
 [[ "${recruitment_bundle[*]}" == 'localbase orgsuite flzrecruitment' ]] || { echo 'Recruitment-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
-if php "$reader" product-bundle flzbqplanung >/dev/null 2>&1; then
-    echo 'BQ-Planer besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle.' >&2
-    exit 1
-fi
+for excluded_product in flzbqplanung flz_akut; do
+    if php "$reader" product-bundle "$excluded_product" >/dev/null 2>&1; then
+        echo "$excluded_product besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle." >&2
+        exit 1
+    fi
+done
 
 for product in "${products[@]}"; do
     route="$(php "$reader" field "$product" route)"
     route_suffix="${route#"$product".}"
     route_name="${route_suffix/./#}"
-    if ! grep -Fq "'name' => '$route_name'" "$workspace/$product/appinfo/routes.php"; then
+    if ! rg -q -- "'name'[[:space:]]*=>[[:space:]]*'$route_name'" "$workspace/$product/appinfo/routes.php"; then
         echo "Katalogroute ist in $product nicht vorhanden: $route" >&2
+        exit 1
+    fi
+    if [[ "$(php "$reader" field "$product" menu)" != 'true' ]]; then
+        echo "Katalogisiertes FLZ-Produkt ist nicht fuer die Navigation freigegeben: $product" >&2
         exit 1
     fi
 done
@@ -49,7 +55,7 @@ for consumer in \
 done
 
 for document in flz-full-suite/README.md flz-full-suite/docs/ARCHITECTURE.md flz-full-suite/docs/INSTALLATION.md; do
-    for product in "${products[@]}"; do
+    for product in "${bundle_products[@]}"; do
         if ! grep -Fq "$product" "$workspace/$document"; then
             echo "Katalogisiertes Produkt fehlt in öffentlicher Dokumentation: $document -> $product" >&2
             exit 1
