@@ -14,20 +14,20 @@ expected_navigation=(flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzb
 [[ "${products[*]}" == "${expected_navigation[*]}" ]] || { echo 'FLZ-Navigationsproduktliste oder Reihenfolge weicht ab.' >&2; exit 1; }
 
 mapfile -t full_suite < <(php "$reader" full-suite)
-expected_full=(localbase orgsuite flzcalendar flzplaner flzurlaub flzroom flzrecruitment)
+expected_full=(localbase orgsuite flzcalendar flzplaner flzurlaub flzroom flzrecruitment flz_akut)
 [[ "${full_suite[*]}" == "${expected_full[*]}" ]] || { echo 'Vollständige Suite enthält nicht alle katalogisierten Apps.' >&2; exit 1; }
 
 mapfile -t bundle_products < <(php "$reader" bundle-products)
-[[ "${bundle_products[*]}" == 'flzcalendar flzplaner flzurlaub flzroom flzrecruitment' ]] || { echo 'Nicht freigegebene Produkte gelangen in Produktbundles.' >&2; exit 1; }
+[[ "${bundle_products[*]}" == 'flzcalendar flzplaner flzurlaub flzroom flzrecruitment flz_akut' ]] || { echo 'Freigegebene und ausgeschlossene Produktbundles weichen vom Katalogvertrag ab.' >&2; exit 1; }
 
 mapfile -t recruitment_bundle < <(php "$reader" product-bundle flzrecruitment)
 [[ "${recruitment_bundle[*]}" == 'localbase orgsuite flzrecruitment' ]] || { echo 'Recruitment-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
-for excluded_product in flzbqplanung flz_akut; do
-    if php "$reader" product-bundle "$excluded_product" >/dev/null 2>&1; then
-        echo "$excluded_product besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle." >&2
-        exit 1
-    fi
-done
+mapfile -t acute_bundle < <(php "$reader" product-bundle flz_akut)
+[[ "${acute_bundle[*]}" == 'localbase orgsuite flz_akut' ]] || { echo 'Akut-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
+if php "$reader" product-bundle flzbqplanung >/dev/null 2>&1; then
+    echo 'flzbqplanung besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle.' >&2
+    exit 1
+fi
 
 for product in "${products[@]}"; do
     route="$(php "$reader" field "$product" route)"

@@ -27,18 +27,19 @@ semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
 gemeinsamen FLZ-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
-Die sechs FLZ-Fachprodukte `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`,
-`flzrecruitment` und `flzbqplanung` bleiben einzeln installierbar. Der BQ-Planer
-ist als Entwicklungsprodukt im gemeinsamen Menü und Standalone-Vertrag
-registriert, bis zur dokumentierten Release-Reife jedoch aus Full-Suite- und
-Einzelprodukt-Bundles ausgeschlossen. Bei genau einem aktiven Fachprodukt bleibt
+Die sieben FLZ-Fachprodukte `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`,
+`flzrecruitment`, `flzbqplanung` und `flz_akut` bleiben einzeln installierbar.
+Die Akutschichtvermittlung gehört zum Full-Suite- und
+Einzelprodukt-Bundlevertrag. Der BQ-Planer ist im gemeinsamen Menü und
+Standalone-Vertrag registriert, bis zur dokumentierten Release-Reife jedoch
+aus den Bundles ausgeschlossen. Bei genau einem aktiven Fachprodukt bleibt
 OrgSuite deaktiviert und das Fachprodukt stellt Navigation und
 Organisationsadministration bereit. Ab zwei Fachprodukten aktiviert der
 geprüfte Installer OrgSuite. LocalBase und OrgSuite sind Infrastruktur, keine
 eigenständigen Fachprodukte.
 
-Noch nicht freigegebene künftige Filzmann Nextcloud Plugins-Module, insbesondere DPA-
-Fallsteuerung und Schichtvermittlung, stehen ausschließlich in der
+Noch nicht freigegebene künftige Filzmann Nextcloud Plugins-Module,
+insbesondere die DPA-Fallsteuerung, stehen ausschließlich in der
 [`systemweiten Zukunftsplanung`](zukunftsplan.md). Diese Vormerkung
 ändert weder den geltenden Produktkatalog noch Repositoryinventar,
 Laufzeitverträge oder app-lokale Roadmaps und erteilt keine

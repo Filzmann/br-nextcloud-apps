@@ -55,7 +55,6 @@ Daten, Rechte, Datenschutz, Runtimegrenze und Releaseweg zu entscheiden.
 
 | ID | Vorhaben | Nächste Entscheidung |
 | --- | --- | --- |
-| ZM-01 | Schichtvermittlung | Bedarf, Rollen, Zustände, Eskalation und kleinster optionaler Vertrag |
 | ZM-02 | DPA-Fallsteuerung | Fachowner, Rechtsgrundlage, Datenklassen, Audit- und Retentionvertrag |
 | ZM-03 | Personalbedarfsprognose | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
 | ZM-04 | Kapazitäts-/Fallbackplanung | Lokale Erweiterung, gebundelte Bibliothek oder Laufzeit-App gemäß ADR 0001 |

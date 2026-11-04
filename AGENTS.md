@@ -231,10 +231,12 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - OrgSuite besitzt die gemeinsamen FLZ-/BR-Einstiege; Fachapps duplizieren
   keine Suite-Linklisten.
-- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment` und
-  `flzbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
-  Infrastruktur. Der BQ-Planer ist bis zur dokumentierten Release-Reife zwar
-  navigierbar, aber aus Full-Suite- und Einzelprodukt-Bundles ausgeschlossen.
+- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment`,
+  `flzbqplanung` und `flz_akut` bleiben einzeln installierbar. LocalBase und
+  OrgSuite sind Infrastruktur. Die Akutschichtvermittlung gehört zum
+  Full-Suite- und Einzelprodukt-Bundlevertrag. Der BQ-Planer ist bis zur
+  dokumentierten Release-Reife zwar navigierbar, aber aus diesen Bundles
+  ausgeschlossen.
 - Bei genau einem aktiven FLZ-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
   Fachprodukten aktiviert der geprüfte Installer OrgSuite.
 - Fachapps greifen nicht direkt auf Tabellen, Controller oder

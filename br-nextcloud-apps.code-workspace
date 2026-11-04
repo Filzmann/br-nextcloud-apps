@@ -53,6 +53,10 @@
       "path": "flz_data_protection"
     },
     {
+      "name": "flz_akut",
+      "path": "flz_akut"
+    },
+    {
       "name": "filzmann-ai-harness",
       "path": "filzmann-ai-harness"
     },
