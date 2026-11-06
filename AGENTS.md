@@ -292,6 +292,14 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 
 ## Zustandsmodelle und Migrationen
 
+- Bestehende Datenmodelle werden nur „on touch“ an aktuelle Modellregeln
+  angepasst, also wenn dieselbe fachliche Änderung das Modell ohnehin berührt.
+  Die Anpassung erhält einen versionierten, idempotenten Upgradepfad und
+  passende Bestandsdaten-Tests; sie löst keinen pauschalen Altdaten-Audit aus.
+- Für binäre fachliche Bestätigungen wird ein positiv benanntes boolesches
+  Merkmal wie `isConfirmed` verwendet: `false` bedeutet Bedingung nicht
+  erfüllt, `true` bedeutet erfüllt. Fachstatus bleiben unabhängig; ist die
+  Modellierung nicht eindeutig, wird vor der Einführung nachgefragt.
 - Vor Kompatibilitäts- oder Migrationsarbeit gilt die kanonische
   Entwicklungsphasenregel in `docs/architecture.md`, Abschnitt
   „Entwicklungsphase und Kompatibilitätsbedarf“. Sie bestimmt zuerst, ob ein
