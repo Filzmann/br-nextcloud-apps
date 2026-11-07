@@ -1,6 +1,6 @@
 ---
 name: verify-nextcloud-future-compatibility
-description: Check that the development workspace uses the latest released Nextcloud, or prove the full support range and future ceiling while creating a release candidate. Use for periodic runtime currency checks and publishable RC compatibility gates; do not use for unrelated app development, production deployment, or publication itself.
+description: Check that the development workspace uses the latest released Nextcloud, maintain every registered deployable app for each newly released Nextcloud major, or prove the full support range and future ceiling for a release candidate. Use for periodic runtime currency checks, mandatory new-major maintenance, and publishable RC compatibility gates; do not use for unrelated app development, production deployment, or publication itself.
 ---
 
 # Verify Nextcloud future compatibility
@@ -8,8 +8,9 @@ description: Check that the development workspace uses the latest released Nextc
 Keep the development runtime current and, separately, establish the highest
 supportable future Nextcloud major from official upstream sources, static
 checks, and real runtime evidence. The lightweight currency result is not a
-release proof. Treat the complete matrix as a mandatory release-candidate
-gate, not as authorization to publish.
+compatibility proof. Treat the complete matrix as mandatory whenever a new
+stable Nextcloud major is officially released and again for every
+release-candidate gate. Neither mode authorizes publication.
 
 Read [evidence-contract.md](references/evidence-contract.md) completely before
 selecting upstream refs or recording a result.
@@ -33,8 +34,29 @@ Use this mode periodically outside a release-candidate run.
    task before claiming that development happens on the newest version.
 4. Record the upstream and local versions, commits or tags, retrieval time,
    commands, and smoke result. This mode does not produce a release compatibility verdict,
-   does not prove the declared support range, and must not change `min-version`
-   or `max-version`.
+   does not prove the declared support range, and must not change `min-version`.
+   A patch update inside an already proven major does not change `max-version`,
+   because that field contains only the integer major. If the latest stable
+   version is the first official release of a major for which no maintenance
+   gate against the pinned release tag has closed, switch to the mandatory
+   new-major maintenance gate below. An earlier green check against a moving
+   development branch does not close this release event.
+
+### Newly released major maintenance gate
+
+Run the full compatibility matrix as soon as a new stable Nextcloud major is
+officially released; do not wait for a release candidate. Scope the run to
+every deployable app registered in `config/workspace-repositories.tsv` and use
+one immutable app revision set. Test every declared major, the newly released
+major as an explicit required target, and every successive officially named,
+testable future major. A red or unverified registered app keeps the portfolio
+maintenance gate open and creates a blocking compatibility task; it is never
+permission to omit that app or raise metadata without proof.
+
+After the highest contiguous green major is proved and all required
+repository write approvals are present, update each app's integer
+`max-version` to that major and rerun the real updated source. This metadata
+follow-up is mandatory, not deferred until a later release candidate.
 
 ### Release-candidate compatibility gate
 
@@ -45,16 +67,16 @@ declared range must include it; the declared minimum need not equal it and may
 remain lower when that wider support is still proved. An unavailable or
 ambiguous openDesk source makes the RC unverified.
 
-The remaining sections describe this release-candidate mode unless they
-explicitly mention the routine currency check.
+The remaining sections describe both full compatibility gates unless they
+explicitly distinguish new-major maintenance from a release-candidate gate.
 
 ## Protect scope and state
 
 1. Read the Parent `AGENTS.md`, every in-scope repository's complete
    `AGENTS.md`, and its local `work-in-nextcloud-app` skill. Inspect
    `git status --short` in each repository.
-2. Identify the exact app commits intended for the release candidate. A dirty
-   or moving app revision is not release evidence.
+2. Identify the exact app commits intended for the full compatibility gate. A
+   dirty or moving app revision is not compatibility evidence.
 3. Before requesting authorization, record one concrete action matrix with a
    row per affected repository and separate columns for file changes,
    DDEV/`occ`, commits, push/release, and external-state writes. Bundle all
@@ -76,9 +98,11 @@ explicitly mention the routine currency check.
 
 1. Read each app's current `min-version` and `max-version`. The declared range
    is inclusive and cannot express gaps.
-2. Confirm that the declared range includes the current openDesk Nextcloud
-   major recorded for this candidate. Treat a missing or contradictory
-   openDesk version source as unverified rather than guessing a floor.
+2. For a release-candidate gate, confirm that the declared range includes the
+   current openDesk Nextcloud major recorded for this candidate. Treat a
+   missing or contradictory openDesk version source as unverified rather than
+   guessing a floor. This openDesk-specific step does not apply to the
+   new-major maintenance gate.
 3. Query the official `https://github.com/nextcloud/server` repository. Pin
    every tested ref to a commit and verify the major in `version.php` rather
    than inferring it from a branch name.
@@ -90,7 +114,7 @@ explicitly mention the routine currency check.
      major and the official developer manual already has dedicated release
      notes for it;
    - never invent or extrapolate a major that upstream has not named.
-5. Re-fetch refs immediately before the release-candidate verdict. Evidence
+5. Re-fetch refs immediately before the full-gate verdict. Evidence
    applies only to the recorded commits; a later moving-branch result needs a
    new run.
 6. Determine the highest contiguous green major. Stop extending the range at
@@ -120,11 +144,12 @@ app version/change-log treatment under Nextcloud's current official release
 process, exact files, tests, and rollback. Ask for an explicit decision before
 editing `min-version` or dropping tests.
 
-If any currently declared major fails, block the release candidate. Offer the
-separate choices to repair compatibility or approve a support drop; do not
-make the release green by narrowing the range. After an approved increase,
-test every major in the resulting range and preserve an obtainable prior app
-release for the dropped Nextcloud majors where distribution policy permits.
+If any currently declared major fails, block the full compatibility gate.
+Offer the separate choices to repair compatibility or approve a support drop;
+do not make the result green by narrowing the range. After an approved
+increase, test every major in the resulting range and preserve an obtainable
+prior app release for the dropped Nextcloud majors where distribution policy
+permits.
 
 ## Map the corresponding Nextcloud repositories
 
@@ -158,7 +183,7 @@ requirements.
    analysis against the matching OCP API level. Run `occ app:check-code` when
    present in the pinned server version.
 3. On a fresh isolated installation of the pinned server revision, install
-   required infrastructure, place the exact release-candidate app revision in
+   required infrastructure, place the exact full-gate app revision in
    the custom app path, enable it, and verify status, dependency injection,
    background-job/command/settings registration, and database setup.
    This is the primary Fresh-Install/Reinstall proof. Record the actual
@@ -197,10 +222,12 @@ Do not treat documentation review or static analysis alone as compatibility proo
   candidate may remain publishable only when the complete declared range and
   normal Delivery Gate are green and the evidence reports the limited ceiling.
 - If the failed major is already declared or is an explicit release target,
-  block the release candidate. Classify the cause as app code, removed or
-  private API, dependency/platform requirement, migration, upstream defect, or
-  environment limitation. Repair it test-first, wait for a pinned upstream
-  correction, or request a separate support-range decision as applicable.
+  block the applicable full gate. Every newly released major is an explicit
+  required target of the maintenance gate. Classify the cause as app code,
+  removed or private API, dependency/platform requirement, migration, upstream
+  defect, or environment limitation. Repair it test-first, wait for a pinned
+  upstream correction, or request a separate support-range decision as
+  applicable.
 - Never bridge a failed major with a later green result because `info.xml`
   cannot express a gap. Treat a failure on moving `master` as a recorded future
   risk, not automatically as a regression in the still-green declared range.
@@ -221,17 +248,26 @@ After all required repository write approvals are present:
 2. Set `dependencies/nextcloud@max-version` in each `appinfo/info.xml` to that
    app's highest contiguous green major, using only the integer major.
 3. Change no unrelated metadata. Validate the XML and inspect the diff.
-4. Do not silently lower an already declared maximum. Block the release
-   candidate and report the unsupported claim for an explicit decision.
+4. Do not silently lower an already declared maximum. Block the applicable
+   full gate and report the unsupported claim for an explicit decision.
 5. Find Parent, installer, CI, and delivery checks that hard-code the old
    maximum. Update them only within approved scope so they validate the proven
    range rather than reintroducing a fixed stale ceiling; otherwise block the
-   release candidate.
+   applicable full gate.
 6. Repeat the highest-major fresh-install and smoke checks from the real
-   updated source, then run every affected app test and the normal release
-   Delivery Gate.
+   updated source, then run every affected app test. For new-major maintenance,
+   run the normal complete Workspace verification. For a release candidate,
+   run the normal clean release Delivery Gate.
 
-## Gate publication and report
+## Close the gate and report
+
+Do not close a new-major maintenance gate when the newly released major is red
+or unverified for any registered deployable app, the matrix has a gap,
+evidence does not match the tested commits, metadata was not raised to the
+proved contiguous ceiling, an included app has a lower required-dependency
+ceiling, or the post-update app and Workspace verification is not green. Keep
+the failure visible as a blocking compatibility task until repaired and
+reproved.
 
 Do not publish the release candidate when any declared major or explicit
 release target is red or unverified, the matrix has a gap, evidence does not
@@ -240,7 +276,7 @@ has a lower suite ceiling, or the normal Delivery Gate is not green. A red
 exploratory major beyond the declared range limits the reported future ceiling
 but does not by itself invalidate an otherwise truthful release candidate.
 
-Report the evidence location, exact app and upstream commits, all mapped
+Report the gate type and trigger, evidence location, exact app and upstream commits, all mapped
 repositories, per-major results, highest proven app and suite majors,
 `info.xml` changes, tests and exit codes, skipped checks, residual risks, and
 rollback. State separately that publication, push, release, deployment, and

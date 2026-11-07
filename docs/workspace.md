@@ -32,6 +32,7 @@ br-nextcloud-apps/
 |       |-- docker-compose.flz_permission_matrix.yaml
 |       |-- docker-compose.flzcalendar.yaml
 |       |-- docker-compose.flzurlaub.yaml
+|       |-- docker-compose.flz_organization.yaml
 |       |-- docker-compose.orgsuite.yaml
 |       |-- docker-compose.flzroom.yaml
 |       |-- docker-compose.flzrecruitment.yaml
@@ -67,6 +68,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
 | Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
 | Filzmann Urlaubsplanung | `flzurlaub` | `flzurlaub/` | `https://nextcloud-dev.ddev.site/apps/flzurlaub/` |
+| Filzmann Organisation | `flz_organization` | `flz_organization/` | `https://nextcloud-dev.ddev.site/apps/flz_organization/` |
 | FLZ-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/flz` und `/br` |
 | Filzmann Raumplaner | `flzroom` | `flzroom/` | `https://nextcloud-dev.ddev.site/apps/flzroom/` |
 | Filzmann Recruitment | `flzrecruitment` | `flzrecruitment/` | `https://nextcloud-dev.ddev.site/apps/flzrecruitment/` |
@@ -156,13 +158,26 @@ Commit, dessen `version.php` sowie die tatsächliche Ausgabe von `occ status`.
 Nach einem freigegebenen Update belegen die vorhandenen schmalen DDEV- und
 Workspace-Smokes, dass auf dieser Version gearbeitet wird. Der Ablauf und die
 Nachweisgrenze stehen im Skill `verify-nextcloud-future-compatibility`; der
-Aktualitätscheck allein ändert keine App-Metadaten und ist kein Releaseurteil.
+Aktualitätscheck allein ist kein Releaseurteil. Ein neues Patch-Release
+innerhalb derselben Hauptversion ändert keine App-Metadaten, weil
+`max-version` in `info.xml` ausschließlich als ganzzahlige Hauptversion
+geführt wird.
 
-Die vollständige Matrix vom deklarierten Minimum bis zu den offiziell
-benannten testbaren Zukunftsversionen wird erst beim Erstellen eines
-veröffentlichungsfähigen Release-Candidates ausgeführt. Dabei muss jede App
-die für diesen Kandidaten aktuelle openDesk-Nextcloud-Hauptversion einschließen;
-die höchste lückenlos grüne Version bestimmt `max-version`.
+Sobald eine neue stabile Nextcloud-Hauptversion offiziell veröffentlicht ist,
+wird ohne Warten auf einen Release-Candidate die vollständige
+Zukunftskompatibilitätsmatrix für jede im Workspace-Inventar registrierte
+deploybare App ausgeführt. Sie reicht vom deklarierten Minimum über die neue
+Hauptversion bis zu den offiziell benannten testbaren Zukunftsversionen. Nach
+lückenlosem belastbarem Nachweis wird die höchste zusammenhängend grüne
+Hauptversion jeder App verpflichtend als `max-version` übernommen. Rote oder
+unvollständige Nachweise bleiben als blockierende Kompatibilitätsaufgabe
+sichtbar und dürfen nicht durch eine ungeprüfte Metadatenanhebung oder das
+Auslassen einer App verdeckt werden.
+
+Beim Erstellen eines veröffentlichungsfähigen Release-Candidates wird dieselbe
+vollständige Matrix erneut gegen die unveränderlichen Kandidatenstände
+ausgeführt. Dabei muss jede App zusätzlich die für diesen Kandidaten aktuelle
+openDesk-Nextcloud-Hauptversion einschließen.
 
 ## App-Installation und Migrationen
 
@@ -273,6 +288,19 @@ Konfiguration:
 
 ```text
 nextcloud-dev/.ddev/docker-compose.flzurlaub.yaml
+```
+
+Filzmann Organisation:
+
+```text
+${WORKSPACE_ROOT}/flz_organization
+-> /var/www/html/html/custom_apps/flz_organization
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_organization.yaml
 ```
 
 OrgSuite:

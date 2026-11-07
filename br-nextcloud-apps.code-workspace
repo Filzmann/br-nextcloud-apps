@@ -33,6 +33,10 @@
       "path": "flzurlaub"
     },
     {
+      "name": "flz_organization",
+      "path": "flz_organization"
+    },
+    {
       "name": "orgsuite",
       "path": "orgsuite"
     },

@@ -352,16 +352,28 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 - Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
   je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
   richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
-- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den Entwicklungsstand; er ersetzt keine Release-Kompatibilitätsmatrix und erweitert keine Freigabe für DDEV-, Docker-, Nextcloud- oder `occ`-Änderungen.
-- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates mit dem Skill
-  `verify-nextcloud-future-compatibility` ausgeführt. Sie prüft den gesamten
-  deklarierten Bereich und jede offiziell benannte, testbare künftige
-  Hauptversion gegen gepinnte offizielle Nextcloud-Git-Quellen. Die höchste
-  lückenlos nachgewiesene künftige Hauptversion je App wird als `max-version`
-  in deren `info.xml` aufgenommen. Rote, lückenhafte, veraltete oder nur
-  statisch geprüfte Nachweise blockieren die Veröffentlichung. Außerhalb eines
-  Release-Candidate-Laufs entsteht aus dem Aktualitätscheck keine neue
-  `max-version`-Aussage.
+- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten
+  stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den
+  Entwicklungsstand und erweitert keine Freigabe für DDEV-, Docker-,
+  Nextcloud- oder `occ`-Änderungen. Da `max-version` ausschließlich die
+  Nextcloud-Hauptversion als Ganzzahl abbildet, löst ein neues Patch-Release
+  innerhalb einer bereits nachgewiesenen Hauptversion keine künstliche
+  Metadatenänderung aus.
+- Jede neu offiziell veröffentlichte stabile Nextcloud-Hauptversion löst ohne
+  Warten auf einen Release-Candidate einen verbindlichen portfolioweiten
+  Zukunftskompatibilitätslauf mit dem Skill
+  `verify-nextcloud-future-compatibility` aus. Er umfasst jede im
+  Workspace-Inventar registrierte deploybare App, den vollständigen
+  deklarierten Supportbereich und die neue Hauptversion; zusätzlich werden die
+  offiziell benannten testbaren Zukunftsversionen geprüft. Nach lückenlosem
+  belastbarem Nachweis wird die höchste zusammenhängend grüne Hauptversion je
+  App verpflichtend als ganzzahlige `max-version` in deren `info.xml`
+  übernommen. Ein roter oder unvollständiger Nachweis erzeugt stattdessen eine
+  sichtbare blockierende Kompatibilitätsaufgabe; er darf weder durch eine
+  ungeprüfte Metadatenanhebung noch durch Auslassen einer App kaschiert werden.
+- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates erneut ausgeführt. Rote,
+  lückenhafte, veraltete oder nur statisch geprüfte Nachweise blockieren die
+  Veröffentlichung.
 - `min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten. Die autoritative openDesk-Quelle und die aufgelöste Hauptversion werden im RC-Nachweis festgehalten; ein niedrigeres weiterhin belegtes Minimum darf erhalten bleiben.
 - `min-version` wird niemals automatisch angehoben. Ein belegtes Supportende,
   eine nicht mehr sicher reproduzierbare Plattform oder eine notwendige
