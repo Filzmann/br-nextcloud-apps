@@ -18,6 +18,12 @@ required_parent_files=(
     .codex/agents/complex_worker.toml
     .codex/agents/critical_reviewer.toml
     .codex/agents/reviewer.toml
+    .vibe/config.toml
+    .vibe/agents/routine_worker.toml
+    .vibe/agents/standard_worker.toml
+    .vibe/agents/complex_worker.toml
+    .vibe/agents/critical_reviewer.toml
+    .vibe/agents/reviewer.toml
     .agents/skills/create-nextcloud-app/SKILL.md
     .agents/skills/classify-shared-code/SKILL.md
     "$canonical_skill"
@@ -702,6 +708,87 @@ for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE
         fail(f'{reviewer_path.relative_to(workspace)}: Freigabegrenze fehlt: {required_phrase}')
 configured_models.append((reviewer_model, reviewer_path))
 
+# Mistral Vibe: projektlokale Subagenten-Steuerung als zweite Laufzeit des Dual-Runtime-Routings
+vibe_config_path = workspace / '.vibe' / 'config.toml'
+with vibe_config_path.open('rb') as handle:
+    vibe_config = tomllib.load(handle)
+if vibe_config.get('enable_subagents') is not True:
+    fail('.vibe/config.toml muss enable_subagents=true setzen')
+if vibe_config.get('max_concurrent_subagents') != 3:
+    fail('.vibe/config.toml muss max_concurrent_subagents=3 setzen (gleiche Parallelitätsgrenze wie bei Codex)')
+for forbidden_key in ('active_model', 'default_agent', 'models', 'providers'):
+    if forbidden_key in vibe_config:
+        fail(f'.vibe/config.toml darf {forbidden_key} nicht setzen; Modellnamen gehören ausschließlich in .vibe/agents/')
+
+vibe_agents_dir = workspace / '.vibe' / 'agents'
+mistral_model_pattern = re.compile(r'(mistral|ministral|devstral|magistral|codestral|pixtral|voxtral|timestral)-[a-z0-9.-]+')
+vibe_execution_routing = {
+    'ROUTINE': ('routine_worker', False),
+    'STANDARD': ('standard_worker', False),
+    'COMPLEX': ('complex_worker', False),
+    'CRITICAL_REVIEW': ('critical_reviewer', True),
+}
+vibe_models = []
+for execution_class, (name, read_only) in vibe_execution_routing.items():
+    role_path = vibe_agents_dir / f'{name}.toml'
+    with role_path.open('rb') as handle:
+        role = tomllib.load(handle)
+    if role.get('agent_type') != 'subagent':
+        fail(f'{role_path.relative_to(workspace)}: agent_type muss subagent sein')
+    require_string(role.get('display_name'), f'{role_path.relative_to(workspace)}: display_name')
+    description = require_string(role.get('description'), f'{role_path.relative_to(workspace)}: description')
+    if execution_class not in description:
+        fail(f'{role_path.relative_to(workspace)}: description muss die Ausführungsklasse {execution_class} abbilden')
+    model = require_string(role.get('active_model'), f'{role_path.relative_to(workspace)}: active_model')
+    if not mistral_model_pattern.fullmatch(model):
+        fail(f'{role_path.relative_to(workspace)}: ungültiger Mistral-Modellbezeichner')
+    configured_models.append((model, role_path))
+    vibe_models.append(model)
+    instructions = require_string(role.get('instructions'), f'{role_path.relative_to(workspace)}: instructions')
+    for required_phrase in ('Read the applicable AGENTS.md', 'Do not spawn subagents'):
+        if required_phrase not in instructions:
+            fail(f'{role_path.relative_to(workspace)}: Rollenverbot fehlt: {required_phrase}')
+    if execution_class != 'CRITICAL_REVIEW':
+        for required_phrase in ('ESCALATION_REQUIRED', 'Security', 'permissions', 'privacy', 'migration', 'shared contract'):
+            if required_phrase not in instructions:
+                fail(f'{role_path.relative_to(workspace)}: Eskalationsvertrag fehlt: {required_phrase}')
+    elif 'Do not edit files' not in instructions:
+        fail(f'{role_path.relative_to(workspace)}: Critical Review muss Änderungen verbieten')
+    disabled_tools = {str(tool) for tool in (role.get('disabled_tools') or [])}
+    tools_config = role.get('tools') if isinstance(role.get('tools'), dict) else {}
+    bash_block = tools_config.get('bash') if isinstance(tools_config.get('bash'), dict) else {}
+    if read_only:
+        if not {'edit', 'write_file'}.issubset(disabled_tools):
+            fail(f'{role_path.relative_to(workspace)}: read-only Rolle muss edit und write_file deaktivieren')
+        if bash_block.get('permission') != 'ask':
+            fail(f'{role_path.relative_to(workspace)}: read-only Rolle muss bash auf permission=ask begrenzen')
+    elif disabled_tools:
+        fail(f'{role_path.relative_to(workspace)}: Schreibrolle darf keine Tools deaktivieren (erbt die Session-Sandbox)')
+
+vibe_reviewer_path = vibe_agents_dir / 'reviewer.toml'
+with vibe_reviewer_path.open('rb') as handle:
+    vibe_reviewer_role = tomllib.load(handle)
+if vibe_reviewer_role.get('agent_type') != 'subagent':
+    fail('.vibe/agents/reviewer.toml: agent_type muss subagent sein')
+if 'approval-review support role only' not in require_string(vibe_reviewer_role.get('description'), '.vibe/agents/reviewer.toml: description'):
+    fail('Vibe-reviewer muss auf die Freigabeprüfungs-Rolle begrenzt sein')
+vibe_reviewer_model = require_string(vibe_reviewer_role.get('active_model'), '.vibe/agents/reviewer.toml: active_model')
+if not mistral_model_pattern.fullmatch(vibe_reviewer_model):
+    fail('.vibe/agents/reviewer.toml: ungültiger Mistral-Modellbezeichner')
+configured_models.append((vibe_reviewer_model, vibe_reviewer_path))
+vibe_models.append(vibe_reviewer_model)
+vibe_reviewer_instructions = require_string(vibe_reviewer_role.get('instructions'), '.vibe/agents/reviewer.toml: instructions')
+for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE', 'Do not edit files', 'spawn subagents'):
+    if required_phrase not in vibe_reviewer_instructions:
+        fail(f'.vibe/agents/reviewer.toml: Freigabegrenze fehlt: {required_phrase}')
+vibe_reviewer_disabled = {str(tool) for tool in (vibe_reviewer_role.get('disabled_tools') or [])}
+if not {'edit', 'write_file'}.issubset(vibe_reviewer_disabled):
+    fail('.vibe/agents/reviewer.toml: read-only Rolle muss edit und write_file deaktivieren')
+if len(set(vibe_models)) < 3:
+    fail('Vibe-Rollen brauchen mindestens drei verschiedene Mistral-Modelle unterschiedlicher Stärke')
+if vibe_models[0] == vibe_models[2]:
+    fail('ROUTINE- und COMPLEX-Vibe-Rolle müssen unterschiedliche Modelle nutzen')
+
 for required_phrase in (
     '## KI-Ausführungsrouting',
     '`ROUTINE`',
@@ -713,6 +800,9 @@ for required_phrase in (
     'ESCALATION_REQUIRED',
     'nicht selbst ausführen',
     'bereits gültig klassifiziert',
+    'Mistral Vibe',
+    '`.vibe/config.toml`',
+    '`.vibe/agents/`',
 ):
     if required_phrase not in parent_text:
         fail(f'Root-AGENTS.md: Routingvertrag fehlt: {required_phrase}')

@@ -32,9 +32,13 @@ keine fachliche Schreibfreigabe.
 ## KI-Ausführungsrouting
 
 Für delegierbare Arbeit gilt die kleinste ausreichende Ausführungsklasse. Die
-einzige zentrale technische Routing-Policy liegt in `.codex/config.toml` und
-den dort referenzierten Dateien unter `.codex/agents/`; konkrete Modellnamen
-und Reasoning-Stufen stehen ausschließlich dort. Tasks speichern, sofern sie
+zentrale technische Routing-Policy liegt pro Laufzeit im Parent: unter Codex
+in `.codex/config.toml` und den dort referenzierten Dateien unter
+`.codex/agents/`, unter Mistral Vibe in `.vibe/config.toml` und den Dateien
+unter `.vibe/agents/`; konkrete Modellnamen und Reasoning-Stufen stehen
+ausschließlich dort. Die Vibe-Rollen bilden dieselben Ausführungsklassen als
+Custom Subagents mit abgestuften Mistral-Modellen (ROUTINE am schwächsten,
+COMPLEX und die Review-Rollen am stärksten). Tasks speichern, sofern sie
 dauerhaft erfasst werden, nur `execution_class: ROUTINE|STANDARD|COMPLEX|CRITICAL_REVIEW`.
 
 - `ROUTINE` gilt für eng begrenzte, mechanische und deterministische Arbeit
@@ -69,7 +73,10 @@ ohne Parent-Fallback mit `ROUTING_FAILED`; gemeldet werden Task,
 eines gestarteten Custom Agents technisch; das Selbstübernahmeverbot des
 Coordinators ist in der aktuellen Codex-Version eine Instruktionsgrenze und
 keine plattformseitige Ausführungssperre. Es darf nicht als stärkere
-technische Garantie dargestellt werden.
+technische Garantie dargestellt werden. Unter Mistral Vibe startet der
+Coordinator die Rolle als Custom Subagent (`agent_type = "subagent"`) mit
+ihrer `active_model` aus `.vibe/agents/`; auch dort gilt ohne Parent-Fallback
+`ROUTING_FAILED`, wenn die Rolle oder ihr Modell nicht gestartet werden kann.
 
 Erkennt ein Worker eine höhere Grenze, stoppt er vor weiteren abhängigen
 Änderungen mit `ESCALATION_REQUIRED`, Ausgangs- und Zielklasse, Grund und
@@ -81,9 +88,10 @@ Konfigurationsdatei, daraus aufgelöstes Modell, Reasoning-Stufe und
 Eskalationsstatus berichtet; Prompts, Secrets und unnötige personenbezogene
 Daten werden nicht protokolliert.
 
-Die separate Rolle `reviewer` bleibt ausschließlich für Codex-
+Die separate Rolle `reviewer` bleibt ausschließlich für
 Freigabeprüfungen erhalten und führt keine klassifizierten Tasks aus. Sie ist
-kein automatischer `CRITICAL_REVIEW`-Schritt.
+kein automatischer `CRITICAL_REVIEW`-Schritt. Unter Mistral Vibe ist sie als
+read-only Subagent in `.vibe/agents/reviewer.toml` abgebildet.
 
 ## Harte Repositorygrenzen
 

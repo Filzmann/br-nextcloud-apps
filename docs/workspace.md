@@ -18,6 +18,9 @@ br-nextcloud-apps/
 |-- .codex/
 |   |-- config.toml
 |   `-- agents/
+|-- .vibe/
+|   |-- config.toml
+|   `-- agents/
 |-- 00_ki_projektkonfiguration_br_nextcloud_apps.md
 |-- br-nextcloud-apps.code-workspace
 |-- docs/
@@ -421,7 +424,10 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Einzige aktive systemweite Aufgabenquelle: `docs/zukunftsplan.md`
 - Wiederkehrende Workflows: `.agents/skills/`
 - Vollständige technische Repository-Liste: `config/workspace-repositories.tsv`
-- Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml`
+- Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml` und
+  `.codex/agents/` (Codex) sowie `.vibe/config.toml` und `.vibe/agents/`
+  (Mistral Vibe); konkrete Modellnamen stehen ausschließlich in den
+  jeweiligen `agents/`-Verzeichnissen
 - Strukturprüfung aller Repository-Roots und lokalen Skill-Ketten: `scripts/check-workspace-structure`
 - Schneller Parent-Check: `scripts/check-fast`
 - Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`

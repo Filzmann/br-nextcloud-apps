@@ -1,0 +1,5 @@
+# Projektlokale Mistral-Vibe-Steuerung für den Parent-Workspace.
+# Konkrete Modellnamen und Reasoning-Stufen stehen ausschließlich in
+# .vibe/agents/*.toml; diese Datei darf keine Modelle konfigurieren.
+enable_subagents = true
+max_concurrent_subagents = 3
