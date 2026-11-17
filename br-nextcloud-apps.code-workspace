@@ -21,6 +21,10 @@
       "path": "localbase"
     },
     {
+      "name": "flz_shared",
+      "path": "flz_shared"
+    },
+    {
       "name": "flz_permission_matrix",
       "path": "flz_permission_matrix"
     },

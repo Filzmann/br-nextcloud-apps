@@ -19,6 +19,30 @@ cleanup() {
 }
 trap cleanup EXIT
 
+assert_real_probe()
+{
+    php -r '
+        $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+        foreach (["gitleaks", "semgrep", "osv-scanner"] as $scanner)
+        {
+            $status = $data["scanners"][$scanner]["status"] ?? "missing";
+            if (!in_array($status, ["passed", "failed"], true))
+            {
+                throw new RuntimeException("Reale Suppressionsprobe nicht vollständig ausgeführt: {$scanner} ({$status}).");
+            }
+        }
+        if (($data["errors"] ?? []) !== [] || ($data["warnings"] ?? []) !== [])
+        {
+            throw new RuntimeException("Reale Suppressionsprobe enthält Analysefehler oder Warnungen.");
+        }
+        foreach (["gitleaks", "semgrep", "osv-scanner"] as $scanner)
+        {
+            if (($data["scanners"][$scanner]["findings"] ?? 0) < 1) throw new RuntimeException("Realer Suppressionsprobe-Fund fehlt: {$scanner}");
+        }
+        if (($data["execution"]["mode"] ?? null) !== "production" || ($data["execution"]["test_doubles"] ?? null) !== false || ($data["execution"]["publishable"] ?? null) !== true) throw new RuntimeException("Realer Scannerlauf ist falsch gekennzeichnet");
+    ' "$1"
+}
+
 for required in "$runner" "$installer" "$evaluator" "$inventory_inspector" "$tools_manifest" "$analysis_exceptions" "$semgrep_rules" \
     "$gitleaks_config" "$gitleaks_ignore" "$osv_config"; do
     [[ -f "$required" ]] || {
@@ -212,17 +236,26 @@ done
 run_scanners "$temporary/passed.json"
 php -r '
     $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+    $expectedRepositoryCount = 1;
+    foreach (file($argv[2], FILE_IGNORE_NEW_LINES) as $line)
+    {
+        $row = str_getcsv($line, "\t", "\"", "");
+        if (($row[1] ?? "") === "app")
+        {
+            $expectedRepositoryCount++;
+        }
+    }
     if ($data["status"] !== "diagnostic") throw new RuntimeException("Testmodus ist nicht diagnostisch");
     if (($data["execution"]["mode"] ?? null) !== "diagnostic" || ($data["execution"]["test_doubles"] ?? null) !== true || ($data["execution"]["publishable"] ?? null) !== false) throw new RuntimeException("Testmodus kann als Release-Nachweis erscheinen");
-    if (count($data["scope"]["repositories"]) !== 14) throw new RuntimeException("Parent plus dreizehn Apps wurden nicht vollständig gescannt");
+    if (count($data["scope"]["repositories"]) !== $expectedRepositoryCount) throw new RuntimeException("Parent und registrierte Apps wurden nicht vollständig gescannt");
     foreach (["gitleaks", "semgrep", "osv-scanner"] as $scanner) {
         if (($data["scanners"][$scanner]["status"] ?? null) !== "passed") throw new RuntimeException("Scannerstatus fehlt: {$scanner}");
-        if (($data["scanners"][$scanner]["scanned_repositories"] ?? null) !== 14) throw new RuntimeException("Scanner-Scope ist unvollständig: {$scanner}");
+        if (($data["scanners"][$scanner]["scanned_repositories"] ?? null) !== $expectedRepositoryCount) throw new RuntimeException("Scanner-Scope ist unvollständig: {$scanner}");
     }
     $thirdParty = $data["scope"]["third_party_components"] ?? [];
     if (count($thirdParty) !== 1 || ($thirdParty[0]["repository"] ?? null) !== "flzrecruitment" || ($thirdParty[0]["purl"] ?? null) !== "pkg:npm/pdfjs-dist@6.2.108") throw new RuntimeException("App-lokales Third-Party-Inventar fehlt im Scanner-Scope");
     if (($data["scanners"]["osv-scanner"]["scanned_inventories"] ?? null) !== 1) throw new RuntimeException("PURL-Inventar wurde nicht per OSV geprüft");
-' "$temporary/passed.json"
+' "$temporary/passed.json" "$workspace/config/workspace-repositories.tsv"
 
 create_inventory_repository() {
     local repository="$1"
@@ -514,6 +547,36 @@ if MOCK_SEMGREP_ERROR=1 run_scanners "$temporary/error.json" >"$temporary/error.
     exit 1
 fi
 grep -Fq 'Semgrep konnte nicht vollständig ausgeführt werden.' "$temporary/error.out"
+grep -Fq 'Semgrep: ScannerExecutionError.' "$temporary/error.out"
+
+php -r '
+    $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+    foreach (["gitleaks", "osv-scanner"] as $scanner)
+    {
+        $data["scanners"][$scanner]["findings"] = 1;
+    }
+    file_put_contents($argv[2], json_encode($data, JSON_THROW_ON_ERROR));
+' "$temporary/error.json" "$temporary/probe-execution-error.json"
+if assert_real_probe "$temporary/probe-execution-error.json" >"$temporary/probe-execution-error.out" 2>&1; then
+    echo 'Eine reale Suppressionsprobe mit Scannerfehler wurde akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'Reale Suppressionsprobe nicht vollständig ausgeführt: semgrep (error).' "$temporary/probe-execution-error.out"
+if grep -Fq 'Suppressionsprobe-Fund fehlt' "$temporary/probe-execution-error.out"; then
+    echo 'Ein Scannerfehler wird als fehlender Suppressionsprobe-Fund gemeldet.' >&2
+    exit 1
+fi
+php -r '
+    $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+    $data["scanners"]["semgrep"]["status"] = "passed";
+    $data["errors"] = [];
+    file_put_contents($argv[2], json_encode($data, JSON_THROW_ON_ERROR));
+' "$temporary/probe-execution-error.json" "$temporary/probe-missing-finding.json"
+if assert_real_probe "$temporary/probe-missing-finding.json" >"$temporary/probe-missing-finding.out" 2>&1; then
+    echo 'Eine reale Suppressionsprobe ohne erwarteten Fund wurde akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'Realer Suppressionsprobe-Fund fehlt: semgrep' "$temporary/probe-missing-finding.out"
 
 mkdir -p "$temporary/real-probe"
 git -C "$temporary/real-probe" init -q
@@ -538,13 +601,10 @@ if GITLEAKS_CONFIG="$temporary/real-probe/.gitleaks.toml" \
     echo 'Repository-lokale Suppressionen haben reale Scannerfunde verborgen.' >&2
     exit 1
 fi
-php -r '
-    $data = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
-    foreach (["gitleaks", "semgrep", "osv-scanner"] as $scanner) {
-        if (($data["scanners"][$scanner]["findings"] ?? 0) < 1) throw new RuntimeException("Realer Suppressionsprobe-Fund fehlt: {$scanner}");
-    }
-    if (($data["execution"]["mode"] ?? null) !== "production" || ($data["execution"]["test_doubles"] ?? null) !== false || ($data["execution"]["publishable"] ?? null) !== true) throw new RuntimeException("Realer Scannerlauf ist falsch gekennzeichnet");
-' "$temporary/real-probe.json"
+if ! assert_real_probe "$temporary/real-probe.json"; then
+    cat "$temporary/real-probe.out" >&2
+    exit 1
+fi
 
 mkdir -p "$temporary/builder-test-mode"
 if SECURITY_SCANNER_TEST_MODE=1 DIST_ROOT="$temporary/builder-test-mode" RELEASE_LABEL='test-mode-rejected' \

@@ -64,6 +64,7 @@ fi
 
 echo '== Parent-Contract-Tests =='
 python3 tests/test_manual_acceptance_viewer.py
+python3 tests/test_vibe_acp.py
 bash tests/check-acceptance-harness-contract.sh
 bash tests/check-worktree-markdown-inventory.sh
 bash tests/check-document-references.sh
@@ -78,6 +79,7 @@ bash tests/check-security-scanners.sh
 bash tests/check-flz-brand-contract.sh
 bash tests/check-flz-full-suite-coverage-baseline.sh
 bash tests/check-flz-full-suite-js-coverage-baseline.sh
+bash scripts/check-js-runtime-coverage
 bash tests/check-flz-full-suite-ci-contract.sh
 bash tests/check-flz-product-catalog.sh
 bash tests/check-flz-full-suite-standalone-contract.sh

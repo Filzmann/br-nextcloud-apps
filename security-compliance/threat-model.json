@@ -130,6 +130,17 @@
       ]
     },
     {
+      "id": "flz_organization",
+      "assets": ["canonical organization definition and authorization settings", "calendar context and holiday cache", "public organization, calendar, absence, conflict and capability contracts"],
+      "actors": ["Nextcloud admin", "consumer app", "external holiday provider", "background refresh job"],
+      "entry_points": ["admin configuration routes", "public PHP contracts and events", "background job", "OpenHolidays HTTP adapter"],
+      "trust_boundaries": ["admin input to canonical shared configuration", "provider validity to consumer authorization input", "external holiday API to validated bounded cache"],
+      "privileges": ["configure organization and calendar context", "read bounded public snapshots", "evaluate shared authorization inputs"],
+      "threats": [
+        {"id": "flz-organization-invalid-state-or-admin-write", "description": "An unauthorized configuration request or missing, malformed or stale provider state could alter the canonical organization source or be interpreted as authorizing or conflict-free data.", "controls": ["AUTHZ-01", "WEB-01", "CONTRACT-01", "JOBS-01"], "verification_refs": ["flz_organization/tests/Service/OrganizationRuntimeTest.php", "flz_organization/tests/Service/CalendarRuntimeTest.php", "flz_organization/tests/Contract/PublicApiV1ContractTest.php"], "residual_risk": "The dependency-light tests prove fail-closed provider state and input validation; real Nextcloud admin-route authorization, CSRF wiring and external-provider behavior require the separate runtime acceptance path."}
+      ]
+    },
+    {
       "id": "orgsuite",
       "assets": ["suite navigation", "external link configuration", "LocalBase administration adapter"],
       "actors": ["authenticated user", "Nextcloud admin", "target application"],

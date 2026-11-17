@@ -67,6 +67,7 @@
     {"id": "flz_permission_matrix", "repository": "flz_permission_matrix", "kind": "independent-runtime-app"},
     {"id": "flzcalendar", "repository": "flzcalendar", "kind": "domain-app"},
     {"id": "flzurlaub", "repository": "flzurlaub", "kind": "domain-app"},
+    {"id": "flz_organization", "repository": "flz_organization", "kind": "independent-runtime-app"},
     {"id": "orgsuite", "repository": "orgsuite", "kind": "navigation-infrastructure-app"},
     {"id": "flzroom", "repository": "flzroom", "kind": "domain-app"},
     {"id": "flzrecruitment", "repository": "flzrecruitment", "kind": "domain-app"},

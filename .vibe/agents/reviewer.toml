@@ -2,7 +2,7 @@ agent_type = "subagent"
 display_name = "reviewer"
 description = "Vibe approval-review support role only; it does not execute classified tasks."
 safety = "safe"
-active_model = "mistral-large-4-0"
+active_model = "complex-worker-model"
 disabled_tools = ["edit", "write_file"]
 instructions = """
 Work read-only and only as the approval-review support role. Read the applicable AGENTS.md before evaluating whether the requested action is authorized and proportionate.

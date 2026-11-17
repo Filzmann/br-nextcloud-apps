@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+repository=''
+base='HEAD'
+base_explicit=0
+
+while (( $# )); do
+    case "$1" in
+        --repo|--base)
+            (( $# >= 2 )) || { echo "Wert fehlt: $1" >&2; exit 1; }
+            if [[ "$1" == '--repo' ]]; then
+                repository="$2"
+            else
+                base="$2"
+                base_explicit=1
+            fi
+            shift 2
+            ;;
+        *) echo "Unbekanntes Argument: $1" >&2; exit 1 ;;
+    esac
+done
+
+if [[ -z "$repository" && "$base_explicit" == 0 && -n "${JS_RUNTIME_COVERAGE_REPO:-}${JS_RUNTIME_COVERAGE_BASE:-}" ]]; then
+    if [[ -z "${JS_RUNTIME_COVERAGE_REPO:-}" || -z "${JS_RUNTIME_COVERAGE_BASE:-}" ]]; then
+        echo 'CI-Übergabe benötigt JS_RUNTIME_COVERAGE_REPO und JS_RUNTIME_COVERAGE_BASE gemeinsam.' >&2
+        exit 1
+    fi
+    repository="$JS_RUNTIME_COVERAGE_REPO"
+    base="$JS_RUNTIME_COVERAGE_BASE"
+    base_explicit=1
+fi
+
+if [[ "${CI:-}" == true || "${CI:-}" == 1 || "${GITHUB_ACTIONS:-}" == true ]]; then
+    if [[ -z "$repository" || "$base_explicit" == 0 ]]; then
+        echo 'CI benötigt --repo und eine explizite --base aus dem zu prüfenden Änderungskontext.' >&2
+        exit 1
+    fi
+fi
+
+if [[ -z "$repository" ]]; then
+    [[ "$base" == HEAD ]] || { echo '--base benötigt --repo.' >&2; exit 1; }
+    while IFS=$'\t' read -r path kind app_id required_skills; do
+        [[ "$kind" == app ]] || continue
+        bash "$0" --repo "$workspace/$path"
+    done < "$workspace/config/workspace-repositories.tsv"
+    exit 0
+fi
+
+cd "$repository"
+base_commit="$(git rev-parse --verify --end-of-options "${base}^{commit}")"
+report_dir="$(mktemp -d)"
+trap 'rm -rf "$report_dir"' EXIT
+git diff --cached --name-only --diff-filter=ACMR -z HEAD -- js > "$report_dir/staged"
+while IFS= read -r -d '' path; do
+    [[ "$path" == js/*.js ]] || continue
+    if ! git diff --quiet -- "$path"; then
+        echo "Index und Worktree weichen für gestagtes JS ab: $path. Erst einen einheitlichen Prüfkandidaten herstellen." >&2
+        exit 1
+    fi
+done < "$report_dir/staged"
+git diff --name-only --diff-filter=ACMR -z "$base_commit" -- js > "$report_dir/changed"
+git ls-files --others --exclude-standard -z -- js >> "$report_dir/changed"
+changed=()
+while IFS= read -r -d '' path; do
+    [[ "$path" == js/*.js && -f "$path" ]] || continue
+    changed+=("$path")
+done < <(sort -zu "$report_dir/changed")
+
+if (( ${#changed[@]} == 0 )); then
+    echo "JS-Laufzeitnachweis: keine geänderten JS-Dateien in $(basename "$PWD")."
+    exit 0
+fi
+
+tool="$workspace/localbase/tests/coverage/node_modules/.bin/c8"
+if [[ ! -x "$tool" ]]; then
+    echo 'JS-Laufzeitnachweis benötigt npm ci --prefix localbase/tests/coverage.' >&2
+    exit 1
+fi
+
+includes=()
+for path in "${changed[@]}"; do includes+=("--include=$path"); done
+echo "== $(basename "$PWD"): Laufzeitnachweis für ${#changed[@]} geänderte JS-Datei(en) =="
+"$tool" --all "${includes[@]}" --reporter=json-summary --report-dir="$report_dir" node tests/run-js.mjs
+
+node - "$report_dir/coverage-summary.json" "${changed[@]}" <<'JS'
+const fs = require('node:fs');
+const path = require('node:path');
+const report = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+let failed = false;
+for (const file of process.argv.slice(3))
+{
+    const filename = path.resolve(file);
+    const lines = report[filename]?.lines;
+    if (!lines || (lines.total > 0 && lines.covered === 0))
+    {
+        console.error(`Kein JS-Laufzeitnachweis: ${file}. Der Test muss ausführbares Verhalten dieser Datei messbar prüfen; Quelltextprüfungen und App-Gesamtquoten reichen dafür nicht.`);
+        failed = true;
+    }
+}
+if (failed) process.exit(1);
+console.log('JS-Laufzeitnachweis: OK (Ausführung belegt; Assertions und Red–Green separat prüfen).');
+JS

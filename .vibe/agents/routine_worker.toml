@@ -2,7 +2,7 @@ agent_type = "subagent"
 display_name = "ROUTINE worker"
 description = "ROUTINE execution for narrow, deterministic work without architecture or risk decisions."
 safety = "neutral"
-active_model = "mistral-small-latest"
+active_model = "routine-worker-model"
 instructions = """
 Work only on the explicitly assigned ROUTINE task and repository. Read the applicable AGENTS.md and required skills before changing files, preserve unrelated work, and use the repository's established tests.
 

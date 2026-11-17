@@ -101,6 +101,25 @@ def fail(message: str) -> None:
     raise SystemExit(f'Codex-Struktur ungültig: {message}')
 
 
+def declares_standalone_repository_control(agents_text: str) -> bool:
+    normalized = re.sub(r'\s+', ' ', agents_text)
+    return re.search(
+        r'\bvollständige(?:, ohne Parent-Checkout arbeitsfähige)? Repository-Steuerung\b',
+        normalized,
+    ) is not None
+
+
+if not declares_standalone_repository_control(
+    'Die Skills bilden die vollständige,\n'
+    'ohne Parent-Checkout arbeitsfähige Repository-Steuerung.',
+):
+    fail('Interner Standalone-Vertrag akzeptiert den kanonischen Zeilenumbruch nicht')
+if declares_standalone_repository_control(
+    'Die App verweist für ihre Repository-Steuerung auf den Parent-Checkout.',
+):
+    fail('Interner Standalone-Vertrag akzeptiert eine Parent-Laufzeitabhängigkeit')
+
+
 def parse_manifest() -> list[dict[str, str]]:
     lines = manifest.read_text(encoding='utf-8').splitlines()
     if not lines or lines[0] != 'path\tkind\tapp_id\trequired_skills':
@@ -116,7 +135,7 @@ def parse_manifest() -> list[dict[str, str]]:
             fail(f'Repository-Pfad ist doppelt: {path}')
         if path != '.' and (Path(path).is_absolute() or len(Path(path).parts) != 1):
             fail(f'Repository muss direkt unter dem Parent liegen: {path}')
-        if kind not in {'parent', 'app', 'product-docs', 'tool', 'evidence'}:
+        if kind not in {'parent', 'app', 'library', 'product-docs', 'tool', 'evidence'}:
             fail(f'Unbekannter Repository-Typ für {path}: {kind}')
         required_skills = required_skills_value.split(',')
         if kind == 'app' and (app_id == '-' or required_skills_value == '-'):
@@ -302,7 +321,7 @@ for row in rows:
             canonical = workspace / '.agents' / 'skills' / required / 'SKILL.md'
             if local_skill.read_bytes() != canonical.read_bytes():
                 fail(f'Lokale Skill-Kopie weicht von der kanonischen Fassung ab: {row["path"]}/{required}')
-        if 'vollständige Repository-Steuerung' not in agents_text:
+        if not declares_standalone_repository_control(agents_text):
             fail(f'Direkte Standalone-Steuerung ist nicht erklärt: {row["path"]}/AGENTS.md')
         if '## Dokumentenverantwortung' not in agents_text:
             fail(f'Dokumentenverantwortung fehlt: {row["path"]}/AGENTS.md')
@@ -618,6 +637,12 @@ def require_string(value: object, label: str) -> str:
     return value
 
 
+def require_current_codex_generation(model: str, label: str) -> None:
+    match = re.fullmatch(r'gpt-(\d+)(?:[.-].+)', model)
+    if match is None or int(match.group(1)) < 6:
+        fail(f'{label}: Codex-Modell muss mindestens der aktuellen GPT-6-Generation entsprechen')
+
+
 config_path = workspace / '.codex/config.toml'
 with config_path.open('rb') as handle:
     config = tomllib.load(handle)
@@ -669,6 +694,7 @@ for execution_class, (name, sandbox_mode, reasoning_effort) in execution_routing
     model = require_string(role.get('model'), f'{role_path}: model')
     if not re.fullmatch(r'gpt-[a-z0-9.-]+', model):
         fail(f'{role_path.relative_to(workspace)}: ungültiger Modellbezeichner')
+    require_current_codex_generation(model, str(role_path.relative_to(workspace)))
     configured_models.append((model, role_path))
     if role.get('model_reasoning_effort') != reasoning_effort:
         fail(f'{role_path.relative_to(workspace)}: reasoning muss {reasoning_effort} sein')
@@ -702,6 +728,7 @@ if reviewer_role.get('name') != 'reviewer' or reviewer_role.get('sandbox_mode') 
 reviewer_model = require_string(reviewer_role.get('model'), f'{reviewer_path}: model')
 if not re.fullmatch(r'gpt-[a-z0-9.-]+', reviewer_model) or reviewer_role.get('model_reasoning_effort') != 'high':
     fail('reviewer braucht ein explizites Modell und high reasoning')
+require_current_codex_generation(reviewer_model, str(reviewer_path.relative_to(workspace)))
 reviewer_instructions = require_string(reviewer_role.get('developer_instructions'), f'{reviewer_path}: developer_instructions')
 for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE', 'Do not edit files', 'spawn subagents'):
     if required_phrase not in reviewer_instructions:
@@ -716,9 +743,24 @@ if vibe_config.get('enable_subagents') is not True:
     fail('.vibe/config.toml muss enable_subagents=true setzen')
 if vibe_config.get('max_concurrent_subagents') != 3:
     fail('.vibe/config.toml muss max_concurrent_subagents=3 setzen (gleiche Parallelitätsgrenze wie bei Codex)')
-for forbidden_key in ('active_model', 'default_agent', 'models', 'providers'):
+for forbidden_key in ('active_model', 'default_agent', 'providers'):
     if forbidden_key in vibe_config:
-        fail(f'.vibe/config.toml darf {forbidden_key} nicht setzen; Modellnamen gehören ausschließlich in .vibe/agents/')
+        fail(f'.vibe/config.toml darf {forbidden_key} nicht setzen')
+
+vibe_model_presets = vibe_config.get('models')
+if not isinstance(vibe_model_presets, list) or len(vibe_model_presets) != 3:
+    fail('.vibe/config.toml muss genau drei zentrale Mistral-Modellpresets definieren')
+vibe_model_aliases: dict[str, str] = {}
+for model_preset in vibe_model_presets:
+    if not isinstance(model_preset, dict):
+        fail('.vibe/config.toml: Jeder [[models]]-Eintrag muss eine Tabelle sein')
+    alias = require_string(model_preset.get('alias'), '.vibe/config.toml: models.alias')
+    model_name = require_string(model_preset.get('name'), f'.vibe/config.toml: models[{alias}].name')
+    if alias in vibe_model_aliases:
+        fail(f'.vibe/config.toml: Modellalias ist doppelt: {alias}')
+    if model_preset.get('provider') != 'mistral':
+        fail(f'.vibe/config.toml: Modellalias {alias} muss den Mistral-Provider verwenden')
+    vibe_model_aliases[alias] = model_name
 
 vibe_agents_dir = workspace / '.vibe' / 'agents'
 mistral_model_pattern = re.compile(r'(mistral|ministral|devstral|magistral|codestral|pixtral|voxtral|timestral)-[a-z0-9.-]+')
@@ -739,10 +781,13 @@ for execution_class, (name, read_only) in vibe_execution_routing.items():
     description = require_string(role.get('description'), f'{role_path.relative_to(workspace)}: description')
     if execution_class not in description:
         fail(f'{role_path.relative_to(workspace)}: description muss die Ausführungsklasse {execution_class} abbilden')
-    model = require_string(role.get('active_model'), f'{role_path.relative_to(workspace)}: active_model')
+    model_alias = require_string(role.get('active_model'), f'{role_path.relative_to(workspace)}: active_model')
+    if model_alias not in vibe_model_aliases:
+        fail(f'{role_path.relative_to(workspace)}: active_model muss einen Alias aus .vibe/config.toml verwenden')
+    model = vibe_model_aliases[model_alias]
     if not mistral_model_pattern.fullmatch(model):
         fail(f'{role_path.relative_to(workspace)}: ungültiger Mistral-Modellbezeichner')
-    configured_models.append((model, role_path))
+    configured_models.append((model, vibe_config_path))
     vibe_models.append(model)
     instructions = require_string(role.get('instructions'), f'{role_path.relative_to(workspace)}: instructions')
     for required_phrase in ('Read the applicable AGENTS.md', 'Do not spawn subagents'):
@@ -772,10 +817,13 @@ if vibe_reviewer_role.get('agent_type') != 'subagent':
     fail('.vibe/agents/reviewer.toml: agent_type muss subagent sein')
 if 'approval-review support role only' not in require_string(vibe_reviewer_role.get('description'), '.vibe/agents/reviewer.toml: description'):
     fail('Vibe-reviewer muss auf die Freigabeprüfungs-Rolle begrenzt sein')
-vibe_reviewer_model = require_string(vibe_reviewer_role.get('active_model'), '.vibe/agents/reviewer.toml: active_model')
+vibe_reviewer_model_alias = require_string(vibe_reviewer_role.get('active_model'), '.vibe/agents/reviewer.toml: active_model')
+if vibe_reviewer_model_alias not in vibe_model_aliases:
+    fail('.vibe/agents/reviewer.toml: active_model muss einen Alias aus .vibe/config.toml verwenden')
+vibe_reviewer_model = vibe_model_aliases[vibe_reviewer_model_alias]
 if not mistral_model_pattern.fullmatch(vibe_reviewer_model):
     fail('.vibe/agents/reviewer.toml: ungültiger Mistral-Modellbezeichner')
-configured_models.append((vibe_reviewer_model, vibe_reviewer_path))
+configured_models.append((vibe_reviewer_model, vibe_config_path))
 vibe_models.append(vibe_reviewer_model)
 vibe_reviewer_instructions = require_string(vibe_reviewer_role.get('instructions'), '.vibe/agents/reviewer.toml: instructions')
 for required_phrase in ('Read the applicable AGENTS.md', 'Do not execute ROUTINE', 'Do not edit files', 'spawn subagents'):
@@ -859,6 +907,8 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
         for required_skill in "${skills[@]}"; do
             control_files+=(".agents/skills/$required_skill/SKILL.md")
         done
+    elif [[ "$kind" == 'library' ]]; then
+        control_files+=(README.md CHANGELOG.md LICENSE .gitignore)
     elif [[ "$kind" == 'product-docs' ]]; then
         control_files+=("docs/DELIVERY-GATE.md")
     elif [[ "$kind" == 'tool' || "$kind" == 'evidence' ]]; then

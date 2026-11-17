@@ -93,6 +93,14 @@ Freigabeprüfungen erhalten und führt keine klassifizierten Tasks aus. Sie ist
 kein automatischer `CRITICAL_REVIEW`-Schritt. Unter Mistral Vibe ist sie als
 read-only Subagent in `.vibe/agents/reviewer.toml` abgebildet.
 
+Für ausdrücklich beauftragte Codex-Delegation an Mistral Vibe steht der
+beaufsichtigte ACP-Einstieg `scripts/vibe-acp` gemäß `docs/vibe-acp.md` bereit.
+Der Coordinator prüft und beantwortet konkrete einmalige Werkzeugfreigaben
+und Rückfragen innerhalb des Nutzerauftrags; erforderliche menschliche
+Entscheidungen bleiben beim Nutzer. Klassen-, Repository- und Stop-Gates
+gelten unverändert. Der ACP-Transport erzwingt die Wahl der Workerrolle
+nicht; tatsächliche Rolle, Modell und Ergebnis bleiben zu prüfen.
+
 ## Harte Repositorygrenzen
 
 - Im Parent werden nur Meta-Dokumentation, DDEV-/Workspace-Konfiguration,
@@ -129,6 +137,33 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - Controller bleiben dünn; Fachlogik, Datenzugriff, Darstellung,
   Dokumenterzeugung und Dateiablage bleiben getrennt.
+- Quellcode bleibt menschenlesbar und strukturiert. Funktionen werden nicht
+  künstlich in einzelne Zeilen gequetscht; sinnvolle Umbrüche gliedern
+  Parameter, Ausdrücke und Datenstrukturen. Bei neuem oder ohnehin
+  bearbeitetem Code steht die öffnende geschweifte Klammer in einer eigenen
+  Zeile, und mehrzeilige Arrays werden eingerückt und mit einem Eintrag pro
+  Zeile formatiert, zum Beispiel:
+
+  ```php
+  function foo($par1, $par2)
+  {
+      $bar = array
+      (
+          'key' => 'value',
+          'otherKey' => 'otherValue',
+      );
+  }
+  ```
+
+  Diese Regel wird nach dem Prinzip „on touch“ angewendet; bestehender Code
+  wird nicht allein zur Formatbereinigung massenhaft umgeschrieben.
+- Kommentare gehören zum menschenlesbaren Code: Sie sind sauber, präzise,
+  zweckbezogen und knapp. Sie erklären Absicht, fachlichen Kontext oder
+  nicht offensichtliche Randbedingungen, statt den unmittelbar sichtbaren
+  Code lediglich zu wiederholen. Bei bearbeitetem Code werden betroffene
+  Kommentare aktualisiert oder entfernt, wenn sie veraltet oder irreführend
+  sind; diese Regel wird ebenfalls ausschließlich nach dem Prinzip „on touch“
+  angewendet und führt nicht zu einer massenhaften Kommentarbearbeitung.
 - Für jede relevante fachliche oder technische Information wird die bereits
   kanonische Quelle identifiziert und wiederverwendet. Abgeleitete
   Darstellungen werden daraus erzeugt oder dagegen geprüft; Rollen,
@@ -278,6 +313,19 @@ Ein sofort grüner Test ist kein TDD-Nachweis; er darf nur als ausdrücklich
 begründeter Charakterisierungstest dienen. Der vollständige Ablauf steht ausschließlich im Skill
 `test-driven-change`, einschließlich Red–Green–Refactor, Ausnahmen für
 Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
+
+Bei der Abnahme einer Verhaltensänderung prüft der Coordinator den konkreten
+Red–Green-Nachweis und ob der Test den betroffenen Produktivcode ausführt und
+das beobachtbare Ergebnis sinnvoll behauptet. Ein grüner Quelltext-, Struktur-
+oder Architekturcheck reicht als Verhaltensnachweis nicht aus. Fehlender
+Nachweis bleibt eine offene, blockierende Testlücke; eine begründete Abweichung
+wird ausdrücklich ausgewiesen und darf nicht als TDD bezeichnet werden.
+Für neue und geänderte Dateien unter `js/` ergänzt
+`scripts/check-js-runtime-coverage` den Parent-Schnellcheck um eine frische
+Laufzeitmessung je betroffener Datei. Eine Datei mit ausführbaren Zeilen ohne
+jede Ausführung blockiert auch dann, wenn die App-Gesamtbaseline grün ist.
+Diese technische Mindestprüfung beweist weder sinnvolle Assertions noch die
+zeitliche Red–Green-Reihenfolge und ersetzt deren Prüfung nicht.
 
 - Cross-App-Verträge erhalten Provider- und Consumer-Contract-Tests.
 - Berührt eine Änderung eine fachliche oder sicherheitsrelevante Schutz- oder

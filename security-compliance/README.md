@@ -121,6 +121,14 @@ Release-Evidence-Generator abgelehnt. Der Contract-Test ergänzt die Doubles um
 einen echten synthetischen Gitleaks-/Semgrep-/OSV-Lauf, der lokale
 Suppressionsversuche nachweislich nicht wirksam werden lässt.
 
+Dieser reale Contract gehört zu `scripts/check-fast` und benötigt Zugriff auf
+den lokalen Docker-Daemon und das gepinnte Semgrep-Image. Blockiert eine
+Sandbox diesen Zugriff, wird derselbe Check mit ausdrücklich freigegebenem
+Docker-Zugriff wiederholt. Scanner-Ausführungsfehler werden mit ihrem stabilen
+Fehlertyp und einem Zugriffshinweis gemeldet; die Suppressionsprobe prüft den
+Analysestatus vor den erwarteten Fundzahlen. Ein eingeschränkter Lauf bleibt
+rot und wird weder übersprungen noch als fehlender Sicherheitsfund ausgegeben.
+
 Der FLZ-Release-Builder führt diesen Lauf nach seinem Kollisionsguard und vor
 dem ersten Release-Write aus. Die normalisierte, datensparsame Scanner-Evidence
 wird gehasht in die Release-Evidence übernommen. Der wiederverwendbare

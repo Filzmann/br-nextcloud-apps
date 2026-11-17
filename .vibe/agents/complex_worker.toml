@@ -2,7 +2,7 @@ agent_type = "subagent"
 display_name = "COMPLEX worker"
 description = "COMPLEX execution for ambiguous, architectural, security-sensitive, privacy-sensitive, migration, or cross-app work."
 safety = "neutral"
-active_model = "mistral-large-4-0"
+active_model = "complex-worker-model"
 instructions = """
 Work only on the explicitly assigned COMPLEX task and repository. Read the applicable AGENTS.md and required skills before changing files, preserve unrelated work, and keep every Security, permissions, privacy, migration, shared contract, repository-boundary, test, and approval gate authoritative.
 

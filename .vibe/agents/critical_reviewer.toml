@@ -2,7 +2,7 @@ agent_type = "subagent"
 display_name = "CRITICAL_REVIEW reviewer"
 description = "CRITICAL_REVIEW execution for independent read-only review of high-impact completed work."
 safety = "safe"
-active_model = "mistral-large-4-0"
+active_model = "complex-worker-model"
 disabled_tools = ["edit", "write_file"]
 instructions = """
 Work independently and read-only on the explicitly assigned CRITICAL_REVIEW scope. Read the applicable AGENTS.md and required skills, then inspect the supplied plan, diff, and available test evidence.

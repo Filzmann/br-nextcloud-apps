@@ -1,6 +1,6 @@
 name = "standard_worker"
 description = "Execute STANDARD development within established architecture and contracts."
-model = "gpt-5.6-terra"
+model = "gpt-6.1-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """

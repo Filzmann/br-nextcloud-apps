@@ -81,4 +81,101 @@ summary="$temporary/summary.tsv"
 } > "$summary"
 bash "$checker" "$baseline" "$summary"
 
+runtime_checker="$workspace/scripts/check-js-runtime-coverage"
+fixture="$temporary/runtime-app"
+mkdir -p "$fixture/js" "$fixture/tests"
+git -C "$fixture" init -q
+printf "import { readFileSync } from 'node:fs';\nreadFileSync('js/behavior.js', 'utf8');\n" > "$fixture/tests/run-js.mjs"
+git -C "$fixture" add tests/run-js.mjs
+git -C "$fixture" -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm initial
+printf 'globalThis.syntheticBehavior = 42;\n' > "$fixture/js/behavior.js"
+
+if bash "$runtime_checker" --repo "$fixture" --base HEAD > "$temporary/source-only.out" 2>&1; then
+    echo 'Quelltextprüfung wurde als JS-Laufzeitnachweis akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'Kein JS-Laufzeitnachweis: js/behavior.js' "$temporary/source-only.out"
+
+cat > "$fixture/tests/run-js.mjs" <<'JS'
+import assert from 'node:assert/strict';
+await import('../js/behavior.js');
+assert.equal(globalThis.syntheticBehavior, 42);
+JS
+bash "$runtime_checker" --repo "$fixture" --base HEAD
+
+# Eine ausgeführte Datei darf eine zweite, vollständig ungetestete Datei nicht verdecken.
+printf 'globalThis.otherBehavior = 7;\n' > "$fixture/js/uncovered.js"
+if bash "$runtime_checker" --repo "$fixture" --base HEAD > "$temporary/uncovered-file.out" 2>&1; then
+    echo 'Ausgeführte Datei verdeckt eine neue ungetestete JS-Datei.' >&2
+    exit 1
+fi
+grep -Fq 'Kein JS-Laufzeitnachweis: js/uncovered.js' "$temporary/uncovered-file.out"
+
+git -C "$fixture" add js tests
+git -C "$fixture" -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm behavior
+bash "$runtime_checker" --repo "$fixture" --base HEAD
+if CI=true bash "$runtime_checker" --repo "$fixture" > "$temporary/ci-base.out" 2>&1; then
+    echo 'Sauberer CI-Checkout wurde ohne explizite Vergleichsbasis akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'CI benötigt --repo und eine explizite --base' "$temporary/ci-base.out"
+if bash "$runtime_checker" --repo "$fixture" --base HEAD^ > "$temporary/committed.out" 2>&1; then
+    echo 'Explizite Git-Basis übergeht bereits committete ungetestete JS-Datei.' >&2
+    exit 1
+fi
+grep -Fq 'Kein JS-Laufzeitnachweis: js/uncovered.js' "$temporary/committed.out"
+if CI=true JS_RUNTIME_COVERAGE_REPO="$fixture" JS_RUNTIME_COVERAGE_BASE=HEAD^ \
+    bash "$runtime_checker" > "$temporary/ci-committed.out" 2>&1; then
+    echo 'CI-Übergabe übergeht committetes ungetestetes JS.' >&2
+    exit 1
+fi
+grep -Fq 'Kein JS-Laufzeitnachweis: js/uncovered.js' "$temporary/ci-committed.out"
+
+printf "throw new Error('synthetic failing behavior test');\n" > "$fixture/tests/run-js.mjs"
+printf 'globalThis.otherBehavior = 8;\n' > "$fixture/js/uncovered.js"
+if bash "$runtime_checker" --repo "$fixture" --base HEAD > "$temporary/failing-test.out" 2>&1; then
+    echo 'Fehlgeschlagener Verhaltenstest wurde akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'synthetic failing behavior test' "$temporary/failing-test.out"
+
+printf 'globalThis.vmBehavior = 9;\n' > "$fixture/js/vm-behavior.js"
+cat > "$fixture/tests/run-js.mjs" <<'JS'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import vm from 'node:vm';
+await import('../js/uncovered.js');
+const context = vm.createContext({});
+vm.runInContext(readFileSync('js/vm-behavior.js', 'utf8'), context, { filename: resolve('js/vm-behavior.js') });
+assert.equal(context.vmBehavior, 9);
+JS
+bash "$runtime_checker" --repo "$fixture" --base HEAD
+CI=true JS_RUNTIME_COVERAGE_REPO="$fixture" JS_RUNTIME_COVERAGE_BASE=HEAD bash "$runtime_checker"
+
+printf 'globalThis.victimBehavior = 12;\n' > "$fixture/js/victim.js"
+cat >> "$fixture/tests/run-js.mjs" <<'JS'
+vm.runInContext('// unrelated placeholder', context, { filename: 'js/victim.js' });
+JS
+if bash "$runtime_checker" --repo "$fixture" --base HEAD > "$temporary/forged-vm.out" 2>&1; then
+    echo 'Fremder VM-Inhalt unter einem Produktivdateinamen wurde als Nachweis akzeptiert.' >&2
+    exit 1
+fi
+grep -Fq 'Kein JS-Laufzeitnachweis: js/victim.js' "$temporary/forged-vm.out"
+rm "$fixture/js/victim.js"
+
+printf 'globalThis.stagedBehavior = 11;\n' > "$fixture/js/staged.js"
+git -C "$fixture" add js/staged.js
+rm "$fixture/js/staged.js"
+if bash "$runtime_checker" --repo "$fixture" --base HEAD > "$temporary/staged-deleted.out" 2>&1; then
+    echo 'Gestagtes JS wurde durch ungestagte Löschung dem Laufzeitcheck entzogen.' >&2
+    exit 1
+fi
+grep -Fq 'Index und Worktree weichen für gestagtes JS ab: js/staged.js' "$temporary/staged-deleted.out"
+
+if ! grep -Fq 'bash scripts/check-js-runtime-coverage' "$workspace/scripts/check-fast"; then
+    echo 'JS-Laufzeitnachweis fehlt im Parent-Schnellcheck.' >&2
+    exit 1
+fi
+
 echo 'JavaScript-Coverage-Baseline-Test: OK'

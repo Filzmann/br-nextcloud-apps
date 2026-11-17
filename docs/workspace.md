@@ -426,14 +426,66 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Vollständige technische Repository-Liste: `config/workspace-repositories.tsv`
 - Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml` und
   `.codex/agents/` (Codex) sowie `.vibe/config.toml` und `.vibe/agents/`
-  (Mistral Vibe); konkrete Modellnamen stehen ausschließlich in den
-  jeweiligen `agents/`-Verzeichnissen
+  (Mistral Vibe); konkrete Codex-Modellnamen stehen in `.codex/agents/`,
+  Mistral-Modellnamen einmalig als Alias-Presets in `.vibe/config.toml`
 - Strukturprüfung aller Repository-Roots und lokalen Skill-Ketten: `scripts/check-workspace-structure`
 - Schneller Parent-Check: `scripts/check-fast`
+- Beaufsichtigte Mistral-Aufträge mit einzelnen Freigaben und Rückfragen:
+  [ACP-Steuerkanal](vibe-acp.md), Einstieg `scripts/vibe-acp`
 - Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`
 - Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
 - Echtes sauberes Filzmann-Full-Suite-Delivery-Gate: `scripts/check-flz-full-suite-delivery`
 - Automatisches RC-Deployment auf Teamcloud: `docs/staging-deployment.md`
+
+### Verhaltensnachweis für JavaScript-Änderungen
+
+`scripts/check-fast` führt für neue, ungetrackte sowie gestagte oder ungestagte
+JavaScript-Dateien unter `js/` jeder registrierten App eine frische c8-Messung
+über deren `node tests/run-js.mjs` aus. Der vorhandene, gelockte c8-Einstieg
+unter `localbase/tests/coverage` wird wiederverwendet. Ein vollständig
+unausgeführtes betroffenes Skript blockiert unabhängig von der App-Baseline;
+reine Quelltextprüfungen reichen nicht aus. Unberührte Bestandsdateien werden
+dadurch nicht künstlich als neue Arbeit behandelt. Vorhandene niedrige
+Coverage-Baselines bleiben sichtbare Schulden und keine TDD-Ausnahme.
+Bei Node-vm-Tests mit relativen oder synthetischen Skriptnamen kann c8 eine
+Ausführung nicht der Produktivdatei zuordnen. Diese Nachweislücke bleibt
+blockierend: Ein frei vergebener VM-Skriptname allein ist kein verlässlicher
+Ausführungsnachweis. Geeignete Tests laden den echten Quelltext und verwenden
+den tatsächlichen absoluten Dateipfad als `filename`. Der fehlende Nachweis
+behauptet keine Fehlfunktion der App.
+
+Für ein einzelnes Repository oder bereits committete Änderungen lautet der
+gleiche Prüfeinstieg:
+
+```bash
+bash scripts/check-js-runtime-coverage --repo flz_organization
+bash scripts/check-js-runtime-coverage --repo flz_organization --base <Vergleichscommit>
+```
+
+Ohne `--base` ist `HEAD` die Basis; der aktuelle Worktree einschließlich Index
+und ungetrackter Dateien wird geprüft. Gestagtes JavaScript muss im Index und
+Worktree übereinstimmen, damit die Messung den möglichen Commit beschreibt.
+Bei einem sauberen Checkout muss eine
+passende Basis ausdrücklich angegeben werden, etwa die Merge-Basis zum
+Zielbranch. Bei `CI=true`, `CI=1` oder `GITHUB_ACTIONS=true` blockiert der
+Prüfeinstieg ohne explizite `--repo` und `--base` statt einen sauberen
+HEAD-Checkout als Nachweis zu akzeptieren. Die Basis muss vom aufrufenden
+Workflow aus dem tatsächlichen Änderungskontext bestimmt werden.
+Damit ein CI-Workflow den identischen Prüfeinstieg durch `scripts/check-fast`
+verwenden kann, übergibt er Repository und Basis gemeinsam als
+`JS_RUNTIME_COVERAGE_REPO` und `JS_RUNTIME_COVERAGE_BASE`. Das prüft genau das
+benannte Repository; für mehrere betroffene App-Repositories wird der
+Prüfeinstieg je Repository mit dessen eigener Basis aufgerufen. Beispiel:
+
+```bash
+CI=true JS_RUNTIME_COVERAGE_REPO="$PWD/flz_organization" JS_RUNTIME_COVERAGE_BASE="$BASE_SHA" scripts/check-fast
+```
+
+Der Parent-Check installiert keine Git-Hooks und verdrahtet keine
+fremden App-CI-Workflows. Die tatsächliche Testausführung ist nur die technische
+Mindestgrenze: sinnvolle Verhaltensassertions, Negativfälle, der 85-Prozent-
+Zielwert für neuen oder wesentlich geänderten Code und der beobachtete
+Red–Green-Ablauf bleiben Gegenstand der fachlichen Abnahme gemäß `AGENTS.md`.
 
 ## Lokaler Markdown- und Abnahme-Viewer
 

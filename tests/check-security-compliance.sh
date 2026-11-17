@@ -15,6 +15,26 @@ trap cleanup EXIT
     exit 1
 }
 
+php -r '
+    $workspace = $argv[1];
+    $scope = json_decode(file_get_contents($workspace . "/security-compliance/scope.json"), true, 512, JSON_THROW_ON_ERROR);
+    $scopeIds = array_column($scope["applications"], "id");
+    $sharedLibraryFound = false;
+    foreach (file($workspace . "/config/workspace-repositories.tsv", FILE_IGNORE_NEW_LINES) as $line)
+    {
+        $row = str_getcsv($line, "\t", "\"", "");
+        if (($row[0] ?? "") !== "flz_shared")
+        {
+            continue;
+        }
+        $sharedLibraryFound = ($row[1] ?? "") === "library" && ($row[2] ?? "") === "-";
+    }
+    if (!$sharedLibraryFound || in_array("flz_shared", $scopeIds, true))
+    {
+        throw new RuntimeException("flz_shared muss als nicht deploybare Bibliothek außerhalb des App-Security-Scopes bleiben.");
+    }
+' "$workspace"
+
 "$checker" | grep -Fqx 'Security-Compliance-Konsistenz: OK'
 
 workspace_impact="$($checker --workspace-diff)"
@@ -37,7 +57,10 @@ cp "$workspace/security-compliance/scope.json" "$temporary/scope.json"
 php -r '
     $path = $argv[1];
     $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
-    array_pop($data["applications"]);
+    $data["applications"] = array_values(array_filter(
+        $data["applications"],
+        static fn(array $application): bool => $application["id"] !== "brtop",
+    ));
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/scope.json"
 if "$checker" --scope "$temporary/scope.json" >"$temporary/scope.out" 2>&1; then

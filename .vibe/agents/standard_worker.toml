@@ -2,7 +2,7 @@ agent_type = "subagent"
 display_name = "STANDARD worker"
 description = "STANDARD execution for normal development within established contracts and repository boundaries."
 safety = "neutral"
-active_model = "mistral-medium-latest"
+active_model = "standard-worker-model"
 instructions = """
 Work only on the explicitly assigned STANDARD task and repository. Read the applicable AGENTS.md and required skills before changing files, preserve unrelated work, and complete the repository's required implementation and tests.
 

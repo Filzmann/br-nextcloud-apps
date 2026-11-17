@@ -1,5 +1,20 @@
 # Projektlokale Mistral-Vibe-Steuerung für den Parent-Workspace.
-# Konkrete Modellnamen und Reasoning-Stufen stehen ausschließlich in
-# .vibe/agents/*.toml; diese Datei darf keine Modelle konfigurieren.
+# Modellnamen werden hier einmal als Vibe-Presets definiert; Rollen referenzieren
+# ausschließlich deren Aliase aus .vibe/agents/*.toml.
 enable_subagents = true
 max_concurrent_subagents = 3
+
+[[models]]
+name = "mistral-small-latest"
+provider = "mistral"
+alias = "routine-worker-model"
+
+[[models]]
+name = "mistral-medium-latest"
+provider = "mistral"
+alias = "standard-worker-model"
+
+[[models]]
+name = "mistral-large-4-0"
+provider = "mistral"
+alias = "complex-worker-model"
