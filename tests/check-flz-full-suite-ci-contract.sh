@@ -6,8 +6,8 @@ manifest="$workspace/config/workspace-repositories.tsv"
 php_coverage_baseline="$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv"
 mapfile -t apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
 consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
-branch_matched_consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop flz_permission_matrix flzrecruitment)
-pinned_consumers=(brstunden)
+branch_matched_consumers=(orgsuite flzcalendar flzurlaub flzroom brtop flz_permission_matrix flzrecruitment)
+pinned_consumers=(brstunden flzplaner)
 declare -A consumer_repositories=(
     [orgsuite]='nextcloud-orgsuite'
     [flzcalendar]='nextcloud-flzcalendar'
