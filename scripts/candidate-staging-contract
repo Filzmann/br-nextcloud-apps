@@ -34,7 +34,7 @@ case "$operation" in
                 candidate_intake_url='https://acceptance.staging.betriebsrat-ad.de/api/candidate-intake'
                 candidate_staging_target='br-staging'
                 ;;
-            Filzmann/nextcloud-localbase:localbase|Filzmann/nextcloud-orgsuite:orgsuite|Filzmann/nextcloud-flzplaner:flzplaner|Filzmann/nextcloud-flzcalendar:flzcalendar|Filzmann/nextcloud-flzurlaub:flzurlaub|Filzmann/nextcloud-flzroom:flzroom|Filzmann/nextcloud-flzrecruitment:flzrecruitment|Filzmann/nextcloud-flzbqplanung:flzbqplanung|Filzmann/nextcloud-flz-data-protection:flz_data_protection|Filzmann/nextcloud-flz-permission-matrix:flz_permission_matrix)
+            Filzmann/nextcloud-localbase:localbase|Filzmann/nextcloud-orgsuite:orgsuite|Filzmann/nextcloud-flzplaner:flzplaner|Filzmann/nextcloud-flzcalendar:flzcalendar|Filzmann/nextcloud-flzurlaub:flzurlaub|Filzmann/nextcloud-flzroom:flzroom|Filzmann/nextcloud-flzrecruitment:flzrecruitment|Filzmann/nextcloud-flzbqplanung:flzbqplanung|Filzmann/nextcloud-flz-data-protection:flz_data_protection|Filzmann/nextcloud-flz-permission-matrix:flz_permission_matrix|Filzmann/nextcloud-flz-organization:flz_organization|Filzmann/nextcloud-flz-akut:flz_akut)
                 candidate_intake_url='https://teamcloud.simonbeyer.de/api/candidate-intake'
                 candidate_staging_target='teamcloud'
                 ;;

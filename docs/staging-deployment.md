@@ -135,10 +135,27 @@ automatische Prüfungen → READY → Candidate → Staging-Deployment
 
 Die wiederverwendbaren Workflows liegen im Parent-Repository unter
 `.github/workflows/candidate-staging.yml` und
-`.github/workflows/deploy-staging.yml`. Die zwölf App-Repositories starten den
+`.github/workflows/deploy-staging.yml`. Die vierzehn App-Repositories starten den
 ersten nur über ihren erfolgreichen Candidate-`workflow_run`. Paketierung,
 OIDC-Intake, Prüfsummenprüfung, Installation und Rollbacklogik bleiben dadurch
 zentral gepflegt.
+
+`flz_organization` und `flz_akut` sind mit ihren kanonischen Repositorynamen
+als autoritative Teamcloud-Apps registriert. Resolver, Deploymentparameter,
+Teamcloud-SSH-Gate und Installationswrapper prüfen diese Zuordnung; keine
+der beiden Apps ist als BR-Runtime-Mirror freigegeben. Vor ihrem ersten
+Deployment müssen die geprüften Gate- und Wrapperdateien administrativ auf
+dem Server installiert und die entsprechenden Caller im Harness registriert
+sein.
+
+Die Paketierung übernimmt für `flzurlaub` zusätzlich dessen gesperrtes,
+namespace-isoliertes Kategorie-A-PHP-Runtimebundle unter
+`vendor/flz-shared`. Der Paketvertrag verlangt die vollständige freigegebene
+Dateimenge sowie den app-lokalen Lock- und Composer-Namespace. Zusätzliche
+Dateien, Entwicklungsverzeichnisse und Symlinks im Bundle verhindern den
+Paketbau. Andere Vendorbestände bleiben ausgeschlossen. Diese Prüfung
+begrenzt den ausgelieferten Bestand; die reproduzierbare Erzeugung und die
+fachliche Consumerprüfung erfolgen weiterhin in den App-/Bibliothekstests.
 
 ## Sicherheits- und Betriebsvertrag
 

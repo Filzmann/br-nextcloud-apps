@@ -11,6 +11,7 @@ commit=''
 archive=''
 metadata=''
 reproducible_archiver="$(cd "$(dirname "$0")" && pwd)/create-reproducible-tar-gz.sh"
+runtime_bundle_validator="$(cd "$(dirname "$0")" && pwd)/validate-staging-runtime-bundle.php"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -79,6 +80,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+runtime_bundle_manifest="$stage/runtime-bundle-files"
+if [[ "$app_id" == flzurlaub ]]; then
+    php "$runtime_bundle_validator" "$app_root" "$app_id" > "$runtime_bundle_manifest"
+fi
+
 mkdir -p "$stage/$app_id" "$(dirname "$archive")" "$(dirname "$metadata")"
 work_tar="$stage/source.tar"
 tar -C "$app_root" \
@@ -94,6 +100,11 @@ tar -C "$app_root" \
     -cf "$work_tar" .
 tar -C "$stage/$app_id" -xf "$work_tar"
 rm -f "$work_tar"
+if [[ -f "$runtime_bundle_manifest" ]]; then
+    tar -C "$app_root" --verbatim-files-from -T "$runtime_bundle_manifest" -cf "$work_tar"
+    tar -C "$stage/$app_id" -xf "$work_tar"
+    rm -f "$work_tar"
+fi
 if find "$stage/$app_id" -type l -print -quit | grep -q .; then
     echo "Symlink im Releaseinhalt gefunden: $app_id" >&2
     exit 2
