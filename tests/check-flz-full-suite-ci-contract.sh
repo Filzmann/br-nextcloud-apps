@@ -6,7 +6,8 @@ manifest="$workspace/config/workspace-repositories.tsv"
 php_coverage_baseline="$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv"
 mapfile -t apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
 consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
-branch_matched_consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
+branch_matched_consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop flz_permission_matrix flzrecruitment)
+pinned_consumers=(brstunden)
 declare -A consumer_repositories=(
     [orgsuite]='nextcloud-orgsuite'
     [flzcalendar]='nextcloud-flzcalendar'
@@ -89,6 +90,41 @@ for app in "${branch_matched_consumers[@]}"; do
     require_text "$workflow" 'git ls-remote --exit-code --heads https://github.com/Filzmann/nextcloud-localbase.git' 'Sichere LocalBase-Branchprüfung'
     require_text "$workflow" 'echo "ref=main" >> "$GITHUB_OUTPUT"' 'LocalBase-main-Fallback'
     require_text "$workflow" 'ref: ${{ steps.localbase-ref.outputs.ref }}' 'Aufgelöste LocalBase-Referenz'
+done
+
+for app in "${pinned_consumers[@]}"; do
+    workflow="$workspace/$app/.github/workflows/tests.yml"
+    # Der Workflow ist die einzige Wertquelle des veröffentlichten Test-Pins.
+    # Beide Jobs müssen denselben unveränderlichen Commit auschecken.
+    mapfile -t pinned_refs < <(sed -nE 's/^  LOCALBASE_TEST_REF: ([0-9a-f]{40})$/\1/p' "$workflow")
+    if (( ${#pinned_refs[@]} != 1 )) || [[ "$(grep -c '^  LOCALBASE_TEST_REF:' "$workflow")" != 1 ]]
+    then
+        echo "Eindeutiger vollständiger LocalBase-Commit-Pin fehlt in ${workflow#"$workspace/"}." >&2
+        exit 1
+    fi
+    if ! awk '
+        function check_step()
+        {
+            if (localbase)
+            {
+                checkouts++
+                if (!checkout || !pinned || !neighbor) invalid = 1
+            }
+            localbase = checkout = pinned = neighbor = 0
+        }
+        /^      - / { check_step() }
+        /^        uses: actions\/checkout@v7$/ { checkout = 1 }
+        /^          repository: Filzmann\/nextcloud-localbase$/ { localbase = 1 }
+        /^          ref: \$\{\{ env.LOCALBASE_TEST_REF \}\}$/ { pinned = 1 }
+        /^          path: localbase$/ { neighbor = 1 }
+        END {
+            check_step()
+            exit (checkouts != 2 || invalid)
+        }
+    ' "$workflow"; then
+        echo "PHP- und JavaScript-Checkout müssen denselben LocalBase-Commit-Pin verwenden: ${workflow#"$workspace/"}." >&2
+        exit 1
+    fi
 done
 
 localbase_workflow="$workspace/localbase/.github/workflows/tests.yml"
