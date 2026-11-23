@@ -39,7 +39,7 @@ fi
 
 mode=''
 case "$deployment_target:$app_id" in
-    teamcloud:localbase|teamcloud:orgsuite|teamcloud:flzplaner|teamcloud:flz_permission_matrix|teamcloud:flzcalendar|teamcloud:flzurlaub|teamcloud:flzroom|teamcloud:flzrecruitment|teamcloud:flzbqplanung|teamcloud:flz_data_protection)
+    teamcloud:localbase|teamcloud:orgsuite|teamcloud:flzplaner|teamcloud:flz_permission_matrix|teamcloud:flzcalendar|teamcloud:flzurlaub|teamcloud:flzroom|teamcloud:flzrecruitment|teamcloud:flzbqplanung|teamcloud:flz_data_protection|teamcloud:flz_organization|teamcloud:flz_akut)
         mode='authoritative'
         ;;
     br-staging:brstunden|br-staging:brtop)

@@ -106,6 +106,21 @@ grep -Fq -- "-n -u $installer_user $install_wrapper $archive $app_id $commit $ha
 gate_cleanup "$run_id" "$attempt" "$app_id"
 [[ ! -e "$run_dir" ]] || fail 'Cleanup entfernt das validierte Run-Verzeichnis nicht.'
 
+for registered_app in flz_organization flz_akut; do
+    printf 'synthetisches Archiv\n' | gate_upload 32576122337 1 "$registered_app"
+    gate_install 32576122337 1 "$registered_app" "$commit" "$hash" candidate-demo deployment-demo build-demo
+    gate_verify "$registered_app" candidate-demo deployment-demo "$commit" "$hash" build-demo
+    grep -Fq -- "verify $registered_app candidate-demo deployment-demo $commit $hash build-demo" "$sudo_log" \
+        || fail 'Neue Teamcloud-App wird nicht mit vollständiger Bindung verifiziert.'
+    gate_cleanup 32576122337 1 "$registered_app"
+done
+sudo_lines_before="$(wc -l < "$sudo_log")"
+if printf 'nicht abzulegen\n' | gate_upload 32576122338 1 unknown_app >/dev/null 2>&1; then
+    fail 'Gate erlaubt weiterhin eine nicht registrierte App.'
+fi
+[[ ! -e "$incoming_root/32576122338-1-unknown_app" ]] || fail 'Unbekannte App hinterlässt ein Uploadverzeichnis.'
+[[ "$(wc -l < "$sudo_log")" -eq "$sudo_lines_before" ]] || fail 'Unbekannte App ruft den Installwrapper auf.'
+
 working_setfacl="$setfacl_bin"
 setfacl_bin="$stage/missing-setfacl"
 if printf 'nicht abzulegen\n' | gate_upload 32576122334 1 "$app_id" >/dev/null 2>&1; then

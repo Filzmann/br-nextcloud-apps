@@ -11,8 +11,20 @@ latest officially released stable `nextcloud/server` tag and commit, its
 `version.php` value, the actual local DDEV version, comparison result, commands,
 and the established narrow smoke results. Mark the result `current` or
 `behind`, never `publishable`. This record proves neither the declared app
-range nor a future ceiling and cannot justify metadata changes. Sections 1–5
-below do not apply to this lightweight record.
+range nor a future ceiling. A same-major patch update cannot justify metadata
+changes because `max-version` contains only the integer major. If the stable
+tag is the first official release of a major without a green maintenance gate
+against that pinned release tag, this lightweight record must hand off to the
+new-major maintenance mode. Earlier evidence against a moving development
+branch does not close the release event. Sections 1–5 below do not apply to
+this lightweight record.
+
+For a newly released major maintenance gate, use one report for one immutable
+revision set containing every deployable app registered in
+`config/workspace-repositories.tsv`. Record the official release tag and
+commit that triggered the run and treat that major as an explicit required
+target. Complete every remaining section except the openDesk- and
+publication-only fields explicitly limited to a release candidate.
 
 For a release-candidate compatibility gate, use one report for one immutable
 candidate revision set and complete every remaining section.
@@ -21,14 +33,17 @@ candidate revision set and complete every remaining section.
 
 Record:
 
-- release-candidate label and UTC timestamp;
+- gate type, trigger, label, and UTC timestamp;
 - every app ID, repository URL, branch, and commit;
 - original `min-version` and `max-version`;
-- the authoritative openDesk release or deployment source, its immutable ref
-  or retrieval timestamp, and the current Nextcloud major resolved from it;
-- confirmation that every declared app range includes that openDesk major;
+- for a release-candidate gate, the authoritative openDesk release or
+  deployment source, its immutable ref or retrieval timestamp, and the current
+  Nextcloud major resolved from it;
+- for a release-candidate gate, confirmation that every declared app range
+  includes that openDesk major;
 - official lifecycle status and testability of the declared minimum major;
-- requested publication target and whether the run is diagnostic or a gate;
+- requested publication target when applicable and whether the run is
+  diagnostic or a gate;
 - approvals for app, Parent, DDEV/`occ`, staging, or external-state writes.
 
 ## 2. Upstream identity
@@ -100,14 +115,22 @@ Record:
 - the suite ceiling, equal to the minimum of included app maxima;
 - the proposed `info.xml` diff for each app;
 - any Parent/installer/CI hard-coded version contract that must change;
-- the post-update rerun and normal Delivery Gate result.
+- the post-update rerun and, according to gate type, the complete Workspace
+  verification or normal clean release Delivery Gate result.
+
+The verdict is `future-compatibility maintenance: green` only when the report
+matches the exact tested commits, every registered deployable app is included,
+every declared major and the newly released explicit target is green, updated
+metadata matches the decision, and post-update app and complete Workspace
+verification are green.
 
 The verdict is `publishable compatibility gate: green` only when the report
 matches the exact candidate commits, every declared major and explicit release
 target is green, updated metadata matches the decision, and the standard clean
 Delivery Gate is green. An exploratory failure above the truthful declared
 ceiling is allowed only when it is recorded and no range gap is claimed. This
-verdict does not authorize publishing or production use.
+verdict does not authorize publishing or production use. Neither green verdict
+authorizes deployment or a production upgrade.
 
 ## 5. Mandatory negative cases
 
@@ -129,4 +152,8 @@ Reject the gate when any of these applies:
 - the report uses a different app commit from the packaged candidate;
 - a hard-coded release check still enforces a stale maximum;
 - a failed future target was treated as optional even though it was already
-  declared or explicitly required for the release.
+  declared or explicitly required for the applicable full gate.
+- a newly released major was handled only as a lightweight currency check,
+  any registered deployable app was omitted from its maintenance gate, or the
+  proved `max-version` update was deferred without a repository approval
+  blocker being reported.

@@ -18,6 +18,7 @@ apps = {
     "flzroom": "FlzRoom",
     "flzrecruitment": "FlzRecruitment",
     "flzbqplanung": "FlzBqPlanning",
+    "flz_akut": "FlzAkut",
 }
 platform_apps = {
     "flz_data_protection": "FlzDataProtection",

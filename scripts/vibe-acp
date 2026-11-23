@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+workspace="$(cd "$(dirname "$0")/.." && pwd)"
+exec python3 "$workspace/scripts/lib/vibe_acp.py" "$@"

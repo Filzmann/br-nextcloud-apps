@@ -35,25 +35,24 @@ namespace Psr\Log {
     }
 }
 
-namespace OCA\LocalBase\AppInfo {
+namespace OCA\FlzOrganization\AppInfo {
     final class Application {
-        public const APP_ID = 'localbase';
+        public const APP_ID = 'flz_organization';
     }
 }
 
 namespace {
     use OCA\FlzPermissionMatrix\Service\OrganizationSnapshotService as MatrixOrganizationSnapshotService;
-    use OCA\LocalBase\Organization\FlzOrganizationSettingsService;
-    use OCA\LocalBase\Organization\FlzOrganizationSnapshotService;
-    use OCA\LocalBase\PublicApi\V1\OrganizationSnapshot;
-    use OCA\LocalBase\PublicApi\V1\OrganizationSnapshotService;
+    use OCA\FlzOrganization\Organization\OrganizationSettingsService;
+    use OCA\FlzOrganization\PublicApi\V1\OrganizationSnapshot;
+    use OCA\FlzOrganization\PublicApi\V1\OrganizationSnapshotService;
     use OCP\App\IAppManager;
     use OCP\Server;
     use Psr\Log\LoggerInterface;
 
     $workspace = dirname(__DIR__);
     $prefixes = [
-        'OCA\\LocalBase\\' => $workspace . '/localbase/lib/',
+        'OCA\\FlzOrganization\\' => $workspace . '/flz_organization/lib/',
         'OCA\\FlzPermissionMatrix\\' => $workspace . '/flz_permission_matrix/lib/',
     ];
     spl_autoload_register(static function(string $class) use ($prefixes): void {
@@ -81,7 +80,7 @@ namespace {
         }
     };
     $apps = new class implements IAppManager {
-        public array $enabled = ['localbase'];
+        public array $enabled = ['flz_organization'];
         public function getEnabledApps(): array { return $this->enabled; }
     };
     $logger = new class implements LoggerInterface {
@@ -97,27 +96,27 @@ namespace {
         public function log($level, $message, array $context = []): void {}
     };
 
-    $settings = new FlzOrganizationSettingsService($config);
+    $settings = new OrganizationSettingsService($config);
     $settings->save($settings->definition()->toArray());
-    $provider = new OrganizationSnapshotService(new FlzOrganizationSnapshotService($settings));
+    $provider = new OrganizationSnapshotService($settings);
     $snapshot = $provider->snapshot();
-    $assertSame(OrganizationSnapshot::CONTRACT_VERSION, $snapshot->contractVersion(), 'Unerwartete LocalBase-Vertragsversion.');
-    $assertSame(true, $snapshot->isValid(), 'Der reale LocalBase-Provider liefert keinen gültigen Snapshot.');
+    $assertSame(OrganizationSnapshot::CONTRACT_VERSION, $snapshot->contractVersion(), 'Unerwartete Organisations-Vertragsversion.');
+    $assertSame(true, $snapshot->isValid(), 'Der reale Organisationsprovider liefert keinen gültigen Snapshot.');
     $assertSame(false, isset($snapshot->toArray()['members']), 'Der öffentliche Snapshot enthält Mitgliederlisten.');
 
     Server::$service = $provider;
     $consumer = new MatrixOrganizationSnapshotService($apps, $logger);
     $valid = $consumer->snapshot();
-    $assertSame('VALID', $valid['status'], 'Der reale Matrix-Consumer akzeptiert den echten LocalBase-V1-Vertrag nicht.');
+    $assertSame('VALID', $valid['status'], 'Der reale Matrix-Consumer akzeptiert den echten flz_organization-V1-Vertrag nicht.');
     $assertSame(OrganizationSnapshot::CONTRACT_VERSION, $valid['contract_version'], 'Provider und Consumer verwenden unterschiedliche Vertragsversionen.');
     $assertSame($snapshot->checksum(), $valid['checksum'], 'Der Consumer bewahrt die Provider-Prüfsumme nicht.');
 
-    $apps->enabled = [];
-    $missing = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
-    $assertSame('MISSING', $missing['status'], 'Eine fehlende LocalBase-App wird nicht kontrolliert ausgewiesen.');
-    $assertSame([], $missing['roles'], 'Eine fehlende LocalBase-App liefert Rollenbedeutungen.');
-
     $apps->enabled = ['localbase'];
+    $missing = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
+    $assertSame('MISSING', $missing['status'], 'Ein fehlender Organisationsprovider wird nicht kontrolliert ausgewiesen.');
+    $assertSame([], $missing['roles'], 'LocalBase wird fälschlich als Organisationsfallback verwendet.');
+
+    $apps->enabled = ['flz_organization'];
     $incompatible = (new class($apps, $logger) extends MatrixOrganizationSnapshotService {
         protected function readProviderSnapshot(): OrganizationSnapshot {
             throw new UnexpectedValueException('synthetic missing V1 provider');
@@ -126,7 +125,7 @@ namespace {
     $assertSame('INCOMPATIBLE', $incompatible['status'], 'Ein aktivierter Provider ohne V1-Service wird nicht inkompatibel ausgewiesen.');
     $assertSame([], $incompatible['areas'], 'Ein inkompatibler Provider liefert Bereichsbedeutungen.');
 
-    $config->values['localbase']['flz_organization_definition'] = '{invalid';
+    $config->values['flz_organization'][OrganizationSettingsService::CONFIG_KEY] = '{invalid';
     $invalid = (new MatrixOrganizationSnapshotService($apps, $logger))->snapshot();
     $assertSame('INVALID', $invalid['status'], 'Beschädigte kanonische Organisationsdaten werden nicht fail-closed ausgewiesen.');
     $assertSame([], $invalid['roles'], 'Beschädigte Organisationsdaten liefern Rollenbedeutungen.');
@@ -136,5 +135,5 @@ namespace {
         throw new RuntimeException('Der Matrix-Consumer verwendet weiterhin interne LocalBase-Organisationsklassen.');
     }
 
-    echo 'LocalBase-Organisationsprovider-V1-Vertrag geprüft: localbase -> flz_permission_matrix' . PHP_EOL;
+    echo 'Organisationsprovider-V1-Vertrag geprüft: flz_organization -> flz_permission_matrix' . PHP_EOL;
 }

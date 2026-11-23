@@ -45,11 +45,14 @@ localbase/
 flz_permission_matrix/
 flzcalendar/
 flzurlaub/
+flz_organization/
 orgsuite/
 flzroom/
 flzrecruitment/
 flzbqplanung/
 flz_data_protection/
+flz_akut/
+flz_shared/
 flz-full-suite/
 filzmann-ai-harness/
 filzmann-ai-evidence/

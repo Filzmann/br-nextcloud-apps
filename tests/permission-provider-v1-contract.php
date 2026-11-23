@@ -17,6 +17,7 @@ $apps = [
     'OCA\\FlzRecruitment\\' => $workspace . '/flzrecruitment/lib/',
     'OCA\\FlzBqPlanning\\' => $workspace . '/flzbqplanung/lib/',
     'OCA\\FlzDataProtection\\' => $workspace . '/flz_data_protection/lib/',
+    'OCA\\FlzOrganization\\' => $workspace . '/flz_organization/lib/',
     'OCA\\LocalBase\\' => $workspace . '/localbase/lib/',
 ];
 
@@ -48,37 +49,51 @@ use OCA\BrStunden\Permission\BrStundenPermissionSourceInterface;
 use OCA\BrTop\Permission\BrTopPermissionProvider;
 use OCA\BrTop\Permission\BrTopPermissionSourceInterface;
 use OCA\FlzDataProtection\Permission\DataProtectionPermissionProvider;
-use OCA\FlzDataProtection\Service\RetentionSettingsService;
+use OCA\FlzDataProtection\Contract\OrganizationSnapshotSource;
+use OCA\FlzDataProtection\Service\OrganizationGroupPolicy;
+use OCA\FlzDataProtection\Service\PermissionAssignmentsService;
 use OCA\FlzPermissionMatrix\PublicApi\V1\PermissionProvider;
 use OCA\FlzRecruitment\Organization\OrganizationSnapshot as RecruitmentOrganizationSnapshot;
-use OCA\LocalBase\Organization\FlzOrganizationDefinition;
+use OCA\FlzOrganization\Organization\OrganizationDefinition;
+use OCA\FlzCalendar\Service\CalendarOrganization;
+use OCA\FlzUrlaub\Service\VacationOrganizationDefinition;
 use OCA\FlzRecruitment\Permission\RecruitmentPermissionProvider;
 use OCA\FlzRecruitment\Permission\RecruitmentPermissionSourceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 
-$definition = FlzOrganizationDefinition::defaults();
-$retentionSettings = new RetentionSettingsService(
-    new class implements IAppConfig {
+$definition = OrganizationDefinition::defaults()->toArray();
+$config = new class implements IAppConfig {
         public function getValueArray(string $appId, string $key, array $default = [], bool $lazy = false): array {
-            return ['Datenschutzbeauftragte'];
+            return $default;
         }
         public function getValueBool(string $appId, string $key, bool $default = false, bool $lazy = false): bool {
             return $default;
         }
         public function setValueArray(string $appId, string $key, array $value, bool $lazy = false): void {}
         public function setValueBool(string $appId, string $key, bool $value, bool $lazy = false): void {}
-    },
-    new class implements IGroupManager {
+    };
+$groups = new class implements IGroupManager {
         public function isAdmin(string $uid): bool { return false; }
         public function isInGroup(string $uid, string $gid): bool { return false; }
         public function groupExists(string $gid): bool { return true; }
-    },
+    };
+$organization = new class implements OrganizationSnapshotSource
+{
+    public function snapshot(): ?array
+    {
+        return ['contractVersion' => '1.0', 'valid' => true, 'roles' => [], 'areas' => []];
+    }
+};
+$retentionSettings = new PermissionAssignmentsService(
+    $config,
+    $groups,
+    new OrganizationGroupPolicy($organization, $groups),
 );
 $providers = [
     new CalendarPermissionProvider(new class($definition) implements CalendarPermissionSourceInterface {
-        public function __construct(private FlzOrganizationDefinition $definition) {}
-        public function definition(): FlzOrganizationDefinition { return $this->definition; }
+        public function __construct(private array $definition) {}
+        public function definition(): ?CalendarOrganization { return new CalendarOrganization($this->definition); }
         public function peerGroups(): array { return ['flz-EB']; }
     }),
     new PlanerPermissionProvider(new class implements PlanerPermissionSourceInterface {
@@ -86,18 +101,24 @@ $providers = [
         public function ebGroupId(): string { return 'flz-EB'; }
     }),
     new VacationPermissionProvider(new class($definition) implements VacationPermissionSourceInterface {
-        public function __construct(private FlzOrganizationDefinition $definition) {}
-        public function definition(): FlzOrganizationDefinition { return $this->definition; }
+        public function __construct(private array $definition) {}
+        public function definition(): ?VacationOrganizationDefinition { return VacationOrganizationDefinition::fromArray($this->definition); }
         public function teamGroupIds(): array { return ['flz-ASN-Test']; }
-        public function enabledPeerGroups(): array { return []; }
+        public function enabledPeerEditGroups(): array { return []; }
+        public function enabledPeerApprovalGroups(): array { return []; }
         public function asnPeerGroup(): string { return 'flz-ASN-*'; }
+        public function authorizationStatus(): string { return 'VALID'; }
     }),
     new RoomPermissionProvider(),
     new BrTopPermissionProvider(new class implements BrTopPermissionSourceInterface {
         public function memberGroupId(): string { return 'br-members'; }
+        public function chairGroupId(): string { return 'br-chair'; }
+        public function deputyGroupId(): string { return 'br-deputy'; }
     }),
     new BrStundenPermissionProvider(new class implements BrStundenPermissionSourceInterface {
-        public function memberGroupId(): string { return 'br-members'; }
+        public function status(): array { return ['complete' => true, 'warning' => null]; }
+        public function groupIds(): array { return ['member' => 'br-members', 'chair' => 'br-chair', 'deputy' => 'br-deputy']; }
+        public function assignments(): array { return \OCA\BrStunden\Service\CapabilitySettingsService::DEFAULTS; }
     }),
     new RecruitmentPermissionProvider(new class implements RecruitmentPermissionSourceInterface {
         public function organization(): RecruitmentOrganizationSnapshot {
@@ -114,13 +135,15 @@ $providers = [
         }
     }),
     new BqPermissionProvider(new class implements BqPermissionSourceInterface {
-        public function roleGroups(): array {
+        public function permissionRoleGroups(): array {
             return [
-                'planning' => 'bq-planning',
-                'teaching' => 'bq-teaching',
-                'publishing' => 'bq-publishing',
+                'planning' => ['bq-planning'],
+                'teaching' => ['bq-teaching'],
+                'publishing' => ['bq-publishing'],
             ];
         }
+        public function complete(): bool { return true; }
+        public function warnings(): array { return []; }
     }),
     new DataProtectionPermissionProvider($retentionSettings),
 ];

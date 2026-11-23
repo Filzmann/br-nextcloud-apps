@@ -18,6 +18,9 @@ br-nextcloud-apps/
 |-- .codex/
 |   |-- config.toml
 |   `-- agents/
+|-- .vibe/
+|   |-- config.toml
+|   `-- agents/
 |-- 00_ki_projektkonfiguration_br_nextcloud_apps.md
 |-- br-nextcloud-apps.code-workspace
 |-- docs/
@@ -32,11 +35,13 @@ br-nextcloud-apps/
 |       |-- docker-compose.flz_permission_matrix.yaml
 |       |-- docker-compose.flzcalendar.yaml
 |       |-- docker-compose.flzurlaub.yaml
+|       |-- docker-compose.flz_organization.yaml
 |       |-- docker-compose.orgsuite.yaml
 |       |-- docker-compose.flzroom.yaml
 |       |-- docker-compose.flzrecruitment.yaml
 |       |-- docker-compose.flzbqplanung.yaml
-|       `-- docker-compose.flz_data_protection.yaml
+|       |-- docker-compose.flz_data_protection.yaml
+|       `-- docker-compose.flz_akut.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
@@ -49,6 +54,7 @@ br-nextcloud-apps/
 |-- flzrecruitment/ # eigenes Git-Repo, Bewerbungs- und Recruitingprozesse
 |-- flzbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
 |-- flz_data_protection/ # eigenes Git-Repo, Datenschutz-Center
+|-- flz_akut/ # eigenes Git-Repo, Akutschichtvermittlung
 `-- flz-full-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -65,11 +71,13 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
 | Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
 | Filzmann Urlaubsplanung | `flzurlaub` | `flzurlaub/` | `https://nextcloud-dev.ddev.site/apps/flzurlaub/` |
+| Filzmann Organisation | `flz_organization` | `flz_organization/` | `https://nextcloud-dev.ddev.site/apps/flz_organization/` |
 | FLZ-/BR-Suite | `orgsuite` | `orgsuite/` | `https://nextcloud-dev.ddev.site/apps/orgsuite/flz` und `/br` |
 | Filzmann Raumplaner | `flzroom` | `flzroom/` | `https://nextcloud-dev.ddev.site/apps/flzroom/` |
 | Filzmann Recruitment | `flzrecruitment` | `flzrecruitment/` | `https://nextcloud-dev.ddev.site/apps/flzrecruitment/` |
 | Filzmann BQ-Planer | `flzbqplanung` | `flzbqplanung/` | `https://nextcloud-dev.ddev.site/apps/flzbqplanung/` |
 | Datenschutz-Center | `flz_data_protection` | `flz_data_protection/` | `https://nextcloud-dev.ddev.site/apps/flz_data_protection/` |
+| Akutschichtvermittlung | `flz_akut` | `flz_akut/` | `https://nextcloud-dev.ddev.site/apps/flz_akut/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `flz-full-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -103,7 +111,7 @@ Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/` und `flz-full-suite/` sind eigene Git-Repositories.
+- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/` und `flz-full-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -137,6 +145,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i flzroom
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzrecruitment
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzbqplanung
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_data_protection
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_akut
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -152,13 +161,26 @@ Commit, dessen `version.php` sowie die tatsächliche Ausgabe von `occ status`.
 Nach einem freigegebenen Update belegen die vorhandenen schmalen DDEV- und
 Workspace-Smokes, dass auf dieser Version gearbeitet wird. Der Ablauf und die
 Nachweisgrenze stehen im Skill `verify-nextcloud-future-compatibility`; der
-Aktualitätscheck allein ändert keine App-Metadaten und ist kein Releaseurteil.
+Aktualitätscheck allein ist kein Releaseurteil. Ein neues Patch-Release
+innerhalb derselben Hauptversion ändert keine App-Metadaten, weil
+`max-version` in `info.xml` ausschließlich als ganzzahlige Hauptversion
+geführt wird.
 
-Die vollständige Matrix vom deklarierten Minimum bis zu den offiziell
-benannten testbaren Zukunftsversionen wird erst beim Erstellen eines
-veröffentlichungsfähigen Release-Candidates ausgeführt. Dabei muss jede App
-die für diesen Kandidaten aktuelle openDesk-Nextcloud-Hauptversion einschließen;
-die höchste lückenlos grüne Version bestimmt `max-version`.
+Sobald eine neue stabile Nextcloud-Hauptversion offiziell veröffentlicht ist,
+wird ohne Warten auf einen Release-Candidate die vollständige
+Zukunftskompatibilitätsmatrix für jede im Workspace-Inventar registrierte
+deploybare App ausgeführt. Sie reicht vom deklarierten Minimum über die neue
+Hauptversion bis zu den offiziell benannten testbaren Zukunftsversionen. Nach
+lückenlosem belastbarem Nachweis wird die höchste zusammenhängend grüne
+Hauptversion jeder App verpflichtend als `max-version` übernommen. Rote oder
+unvollständige Nachweise bleiben als blockierende Kompatibilitätsaufgabe
+sichtbar und dürfen nicht durch eine ungeprüfte Metadatenanhebung oder das
+Auslassen einer App verdeckt werden.
+
+Beim Erstellen eines veröffentlichungsfähigen Release-Candidates wird dieselbe
+vollständige Matrix erneut gegen die unveränderlichen Kandidatenstände
+ausgeführt. Dabei muss jede App zusätzlich die für diesen Kandidaten aktuelle
+openDesk-Nextcloud-Hauptversion einschließen.
 
 ## App-Installation und Migrationen
 
@@ -271,6 +293,19 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.flzurlaub.yaml
 ```
 
+Filzmann Organisation:
+
+```text
+${WORKSPACE_ROOT}/flz_organization
+-> /var/www/html/html/custom_apps/flz_organization
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_organization.yaml
+```
+
 OrgSuite:
 
 ```text
@@ -336,6 +371,19 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.flz_data_protection.yaml
 ```
 
+Akutschichtvermittlung:
+
+```text
+${WORKSPACE_ROOT}/flz_akut
+-> /var/www/html/html/custom_apps/flz_akut
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_akut.yaml
+```
+
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
 Workspace-Roots verwenden. Eine persönliche Home-Verzeichnisstruktur ist kein
 Projektvertrag.
@@ -376,13 +424,68 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 - Einzige aktive systemweite Aufgabenquelle: `docs/zukunftsplan.md`
 - Wiederkehrende Workflows: `.agents/skills/`
 - Vollständige technische Repository-Liste: `config/workspace-repositories.tsv`
-- Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml`
+- Projektbezogene Sandbox- und Subagent-Grenzen: `.codex/config.toml` und
+  `.codex/agents/` (Codex) sowie `.vibe/config.toml` und `.vibe/agents/`
+  (Mistral Vibe); konkrete Codex-Modellnamen stehen in `.codex/agents/`,
+  Mistral-Modellnamen einmalig als Alias-Presets in `.vibe/config.toml`
 - Strukturprüfung aller Repository-Roots und lokalen Skill-Ketten: `scripts/check-workspace-structure`
 - Schneller Parent-Check: `scripts/check-fast`
+- Beaufsichtigte Mistral-Aufträge mit einzelnen Freigaben und Rückfragen:
+  [ACP-Steuerkanal](vibe-acp.md), Einstieg `scripts/vibe-acp`
 - Schnelle Tests aller registrierten App-Repositories: `scripts/check-apps`
 - Vollständiger Workspace-Check aus Parent plus allen Apps: `scripts/check-full`
 - Echtes sauberes Filzmann-Full-Suite-Delivery-Gate: `scripts/check-flz-full-suite-delivery`
 - Automatisches RC-Deployment auf Teamcloud: `docs/staging-deployment.md`
+
+### Verhaltensnachweis für JavaScript-Änderungen
+
+`scripts/check-fast` führt für neue, ungetrackte sowie gestagte oder ungestagte
+JavaScript-Dateien unter `js/` jeder registrierten App eine frische c8-Messung
+über deren `node tests/run-js.mjs` aus. Der vorhandene, gelockte c8-Einstieg
+unter `localbase/tests/coverage` wird wiederverwendet. Ein vollständig
+unausgeführtes betroffenes Skript blockiert unabhängig von der App-Baseline;
+reine Quelltextprüfungen reichen nicht aus. Unberührte Bestandsdateien werden
+dadurch nicht künstlich als neue Arbeit behandelt. Vorhandene niedrige
+Coverage-Baselines bleiben sichtbare Schulden und keine TDD-Ausnahme.
+Bei Node-vm-Tests mit relativen oder synthetischen Skriptnamen kann c8 eine
+Ausführung nicht der Produktivdatei zuordnen. Diese Nachweislücke bleibt
+blockierend: Ein frei vergebener VM-Skriptname allein ist kein verlässlicher
+Ausführungsnachweis. Geeignete Tests laden den echten Quelltext und verwenden
+den tatsächlichen absoluten Dateipfad als `filename`. Der fehlende Nachweis
+behauptet keine Fehlfunktion der App.
+
+Für ein einzelnes Repository oder bereits committete Änderungen lautet der
+gleiche Prüfeinstieg:
+
+```bash
+bash scripts/check-js-runtime-coverage --repo flz_organization
+bash scripts/check-js-runtime-coverage --repo flz_organization --base <Vergleichscommit>
+```
+
+Ohne `--base` ist `HEAD` die Basis; der aktuelle Worktree einschließlich Index
+und ungetrackter Dateien wird geprüft. Gestagtes JavaScript muss im Index und
+Worktree übereinstimmen, damit die Messung den möglichen Commit beschreibt.
+Bei einem sauberen Checkout muss eine
+passende Basis ausdrücklich angegeben werden, etwa die Merge-Basis zum
+Zielbranch. Bei `CI=true`, `CI=1` oder `GITHUB_ACTIONS=true` blockiert der
+Prüfeinstieg ohne explizite `--repo` und `--base` statt einen sauberen
+HEAD-Checkout als Nachweis zu akzeptieren. Die Basis muss vom aufrufenden
+Workflow aus dem tatsächlichen Änderungskontext bestimmt werden.
+Damit ein CI-Workflow den identischen Prüfeinstieg durch `scripts/check-fast`
+verwenden kann, übergibt er Repository und Basis gemeinsam als
+`JS_RUNTIME_COVERAGE_REPO` und `JS_RUNTIME_COVERAGE_BASE`. Das prüft genau das
+benannte Repository; für mehrere betroffene App-Repositories wird der
+Prüfeinstieg je Repository mit dessen eigener Basis aufgerufen. Beispiel:
+
+```bash
+CI=true JS_RUNTIME_COVERAGE_REPO="$PWD/flz_organization" JS_RUNTIME_COVERAGE_BASE="$BASE_SHA" scripts/check-fast
+```
+
+Der Parent-Check installiert keine Git-Hooks und verdrahtet keine
+fremden App-CI-Workflows. Die tatsächliche Testausführung ist nur die technische
+Mindestgrenze: sinnvolle Verhaltensassertions, Negativfälle, der 85-Prozent-
+Zielwert für neuen oder wesentlich geänderten Code und der beobachtete
+Red–Green-Ablauf bleiben Gegenstand der fachlichen Abnahme gemäß `AGENTS.md`.
 
 ## Lokaler Markdown- und Abnahme-Viewer
 

@@ -4,14 +4,17 @@ brtop	app	brtop	work-in-nextcloud-app,test-driven-change
 flzplaner	app	flzplaner	work-in-nextcloud-app,test-driven-change
 brstunden	app	brstunden	work-in-nextcloud-app,test-driven-change
 localbase	app	localbase	work-in-nextcloud-app,test-driven-change
+flz_shared	library	-	-
 flz_permission_matrix	app	flz_permission_matrix	work-in-nextcloud-app,test-driven-change
 flzcalendar	app	flzcalendar	work-in-nextcloud-app,test-driven-change
 flzurlaub	app	flzurlaub	work-in-nextcloud-app,test-driven-change
+flz_organization	app	flz_organization	work-in-nextcloud-app,test-driven-change
 orgsuite	app	orgsuite	work-in-nextcloud-app,test-driven-change
 flzroom	app	flzroom	work-in-nextcloud-app,test-driven-change
 flzrecruitment	app	flzrecruitment	work-in-nextcloud-app,test-driven-change
 flzbqplanung	app	flzbqplanung	work-in-nextcloud-app,test-driven-change
 flz_data_protection	app	flz_data_protection	work-in-nextcloud-app,test-driven-change
+flz_akut	app	flz_akut	work-in-nextcloud-app,test-driven-change
 flz-full-suite	product-docs	-	-
 filzmann-ai-harness	tool	-	-
 filzmann-ai-evidence	evidence	-	-

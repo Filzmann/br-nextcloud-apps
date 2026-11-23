@@ -133,7 +133,7 @@ if (array_key_exists('personal_runtime_data', $hoursCatalog->toArray())) {
 if ($brTopProvider->descriptor()->appId() !== 'brtop' || $brTopProvider->descriptor()->contractVersion() !== '1.0') {
     throw new RuntimeException('BR TOP veröffentlicht keine stabile Processing-Metadata-Identität.');
 }
-if ($brTopCatalog->processingIds() !== ['council_legislature_and_roster_management', 'meeting_agenda_and_protocol_management', 'invitation_snapshot_and_absence_management', 'document_generation_and_file_storage', 'temporary_admin_full_access']) {
+if ($brTopCatalog->processingIds() !== ['council_legislature_and_roster_management', 'meeting_agenda_and_protocol_management', 'invitation_snapshot_and_absence_management', 'document_generation_and_file_storage', 'temporary_admin_full_access', 'br_dpo_permission_assignment']) {
     throw new RuntimeException('Der BR-TOP-Katalog deckt seine personenbezogenen Verarbeitungen nicht vollständig ab.');
 }
 if (array_key_exists('personal_runtime_data', $brTopCatalog->toArray())) {

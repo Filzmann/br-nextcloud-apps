@@ -298,6 +298,18 @@ if (( evaluation_status != 0 )); then
         foreach ($data["scanners"] as $scanner => $status) {
             if ($status["status"] === "error") fwrite(STDERR, ucfirst($scanner) . " konnte nicht vollständig ausgeführt werden.\n");
         }
+        $reportedErrors = [];
+        foreach ($data["errors"] as $error)
+        {
+            $key = $error["scanner"] . ":" . $error["type"];
+            if (isset($reportedErrors[$key])) continue;
+            $reportedErrors[$key] = true;
+            fwrite(STDERR, ucfirst($error["scanner"]) . ": " . $error["type"] . ".\n");
+            if ($data["execution"]["mode"] === "production" && $error["scanner"] === "semgrep" && $error["type"] === "ScannerExecutionError")
+            {
+                fwrite(STDERR, "Semgrep benötigt Zugriff auf den lokalen Docker-Daemon und das gepinnte Scanner-Image. In einer eingeschränkten Sandbox den Check mit freigegebenem Docker-Zugriff wiederholen.\n");
+            }
+        }
         $warningScanners = [];
         foreach ($data["warnings"] as $warning) {
             $warningScanners[$warning["scanner"]] = true;

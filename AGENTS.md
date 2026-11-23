@@ -32,9 +32,13 @@ keine fachliche Schreibfreigabe.
 ## KI-Ausführungsrouting
 
 Für delegierbare Arbeit gilt die kleinste ausreichende Ausführungsklasse. Die
-einzige zentrale technische Routing-Policy liegt in `.codex/config.toml` und
-den dort referenzierten Dateien unter `.codex/agents/`; konkrete Modellnamen
-und Reasoning-Stufen stehen ausschließlich dort. Tasks speichern, sofern sie
+zentrale technische Routing-Policy liegt pro Laufzeit im Parent: unter Codex
+in `.codex/config.toml` und den dort referenzierten Dateien unter
+`.codex/agents/`, unter Mistral Vibe in `.vibe/config.toml` und den Dateien
+unter `.vibe/agents/`; konkrete Modellnamen und Reasoning-Stufen stehen
+ausschließlich dort. Die Vibe-Rollen bilden dieselben Ausführungsklassen als
+Custom Subagents mit abgestuften Mistral-Modellen (ROUTINE am schwächsten,
+COMPLEX und die Review-Rollen am stärksten). Tasks speichern, sofern sie
 dauerhaft erfasst werden, nur `execution_class: ROUTINE|STANDARD|COMPLEX|CRITICAL_REVIEW`.
 
 - `ROUTINE` gilt für eng begrenzte, mechanische und deterministische Arbeit
@@ -69,7 +73,10 @@ ohne Parent-Fallback mit `ROUTING_FAILED`; gemeldet werden Task,
 eines gestarteten Custom Agents technisch; das Selbstübernahmeverbot des
 Coordinators ist in der aktuellen Codex-Version eine Instruktionsgrenze und
 keine plattformseitige Ausführungssperre. Es darf nicht als stärkere
-technische Garantie dargestellt werden.
+technische Garantie dargestellt werden. Unter Mistral Vibe startet der
+Coordinator die Rolle als Custom Subagent (`agent_type = "subagent"`) mit
+ihrer `active_model` aus `.vibe/agents/`; auch dort gilt ohne Parent-Fallback
+`ROUTING_FAILED`, wenn die Rolle oder ihr Modell nicht gestartet werden kann.
 
 Erkennt ein Worker eine höhere Grenze, stoppt er vor weiteren abhängigen
 Änderungen mit `ESCALATION_REQUIRED`, Ausgangs- und Zielklasse, Grund und
@@ -81,9 +88,18 @@ Konfigurationsdatei, daraus aufgelöstes Modell, Reasoning-Stufe und
 Eskalationsstatus berichtet; Prompts, Secrets und unnötige personenbezogene
 Daten werden nicht protokolliert.
 
-Die separate Rolle `reviewer` bleibt ausschließlich für Codex-
+Die separate Rolle `reviewer` bleibt ausschließlich für
 Freigabeprüfungen erhalten und führt keine klassifizierten Tasks aus. Sie ist
-kein automatischer `CRITICAL_REVIEW`-Schritt.
+kein automatischer `CRITICAL_REVIEW`-Schritt. Unter Mistral Vibe ist sie als
+read-only Subagent in `.vibe/agents/reviewer.toml` abgebildet.
+
+Für ausdrücklich beauftragte Codex-Delegation an Mistral Vibe steht der
+beaufsichtigte ACP-Einstieg `scripts/vibe-acp` gemäß `docs/vibe-acp.md` bereit.
+Der Coordinator prüft und beantwortet konkrete einmalige Werkzeugfreigaben
+und Rückfragen innerhalb des Nutzerauftrags; erforderliche menschliche
+Entscheidungen bleiben beim Nutzer. Klassen-, Repository- und Stop-Gates
+gelten unverändert. Der ACP-Transport erzwingt die Wahl der Workerrolle
+nicht; tatsächliche Rolle, Modell und Ergebnis bleiben zu prüfen.
 
 ## Harte Repositorygrenzen
 
@@ -121,6 +137,33 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - Controller bleiben dünn; Fachlogik, Datenzugriff, Darstellung,
   Dokumenterzeugung und Dateiablage bleiben getrennt.
+- Quellcode bleibt menschenlesbar und strukturiert. Funktionen werden nicht
+  künstlich in einzelne Zeilen gequetscht; sinnvolle Umbrüche gliedern
+  Parameter, Ausdrücke und Datenstrukturen. Bei neuem oder ohnehin
+  bearbeitetem Code steht die öffnende geschweifte Klammer in einer eigenen
+  Zeile, und mehrzeilige Arrays werden eingerückt und mit einem Eintrag pro
+  Zeile formatiert, zum Beispiel:
+
+  ```php
+  function foo($par1, $par2)
+  {
+      $bar = array
+      (
+          'key' => 'value',
+          'otherKey' => 'otherValue',
+      );
+  }
+  ```
+
+  Diese Regel wird nach dem Prinzip „on touch“ angewendet; bestehender Code
+  wird nicht allein zur Formatbereinigung massenhaft umgeschrieben.
+- Kommentare gehören zum menschenlesbaren Code: Sie sind sauber, präzise,
+  zweckbezogen und knapp. Sie erklären Absicht, fachlichen Kontext oder
+  nicht offensichtliche Randbedingungen, statt den unmittelbar sichtbaren
+  Code lediglich zu wiederholen. Bei bearbeitetem Code werden betroffene
+  Kommentare aktualisiert oder entfernt, wenn sie veraltet oder irreführend
+  sind; diese Regel wird ebenfalls ausschließlich nach dem Prinzip „on touch“
+  angewendet und führt nicht zu einer massenhaften Kommentarbearbeitung.
 - Für jede relevante fachliche oder technische Information wird die bereits
   kanonische Quelle identifiziert und wiederverwendet. Abgeleitete
   Darstellungen werden daraus erzeugt oder dagegen geprüft; Rollen,
@@ -231,10 +274,12 @@ App-Arbeit selbstständig im lokalen Skill `work-in-nextcloud-app`.
 
 - OrgSuite besitzt die gemeinsamen FLZ-/BR-Einstiege; Fachapps duplizieren
   keine Suite-Linklisten.
-- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment` und
-  `flzbqplanung` bleiben einzeln installierbar. LocalBase und OrgSuite sind
-  Infrastruktur. Der BQ-Planer ist bis zur dokumentierten Release-Reife zwar
-  navigierbar, aber aus Full-Suite- und Einzelprodukt-Bundles ausgeschlossen.
+- `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`, `flzrecruitment`,
+  `flzbqplanung` und `flz_akut` bleiben einzeln installierbar. LocalBase und
+  OrgSuite sind Infrastruktur. Die Akutschichtvermittlung gehört zum
+  Full-Suite- und Einzelprodukt-Bundlevertrag. Der BQ-Planer ist bis zur
+  dokumentierten Release-Reife zwar navigierbar, aber aus diesen Bundles
+  ausgeschlossen.
 - Bei genau einem aktiven FLZ-Fachprodukt bleibt OrgSuite deaktiviert; ab zwei
   Fachprodukten aktiviert der geprüfte Installer OrgSuite.
 - Fachapps greifen nicht direkt auf Tabellen, Controller oder
@@ -269,6 +314,19 @@ begründeter Charakterisierungstest dienen. Der vollständige Ablauf steht aussc
 `test-driven-change`, einschließlich Red–Green–Refactor, Ausnahmen für
 Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 
+Bei der Abnahme einer Verhaltensänderung prüft der Coordinator den konkreten
+Red–Green-Nachweis und ob der Test den betroffenen Produktivcode ausführt und
+das beobachtbare Ergebnis sinnvoll behauptet. Ein grüner Quelltext-, Struktur-
+oder Architekturcheck reicht als Verhaltensnachweis nicht aus. Fehlender
+Nachweis bleibt eine offene, blockierende Testlücke; eine begründete Abweichung
+wird ausdrücklich ausgewiesen und darf nicht als TDD bezeichnet werden.
+Für neue und geänderte Dateien unter `js/` ergänzt
+`scripts/check-js-runtime-coverage` den Parent-Schnellcheck um eine frische
+Laufzeitmessung je betroffener Datei. Eine Datei mit ausführbaren Zeilen ohne
+jede Ausführung blockiert auch dann, wenn die App-Gesamtbaseline grün ist.
+Diese technische Mindestprüfung beweist weder sinnvolle Assertions noch die
+zeitliche Red–Green-Reihenfolge und ersetzt deren Prüfung nicht.
+
 - Cross-App-Verträge erhalten Provider- und Consumer-Contract-Tests.
 - Berührt eine Änderung eine fachliche oder sicherheitsrelevante Schutz- oder
   Zustandsgrenze, belegen Tests den erlaubten und mindestens einen sinnvollen
@@ -290,6 +348,14 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 
 ## Zustandsmodelle und Migrationen
 
+- Bestehende Datenmodelle werden nur „on touch“ an aktuelle Modellregeln
+  angepasst, also wenn dieselbe fachliche Änderung das Modell ohnehin berührt.
+  Die Anpassung erhält einen versionierten, idempotenten Upgradepfad und
+  passende Bestandsdaten-Tests; sie löst keinen pauschalen Altdaten-Audit aus.
+- Für binäre fachliche Bestätigungen wird ein positiv benanntes boolesches
+  Merkmal wie `isConfirmed` verwendet: `false` bedeutet Bedingung nicht
+  erfüllt, `true` bedeutet erfüllt. Fachstatus bleiben unabhängig; ist die
+  Modellierung nicht eindeutig, wird vor der Einführung nachgefragt.
 - Vor Kompatibilitäts- oder Migrationsarbeit gilt die kanonische
   Entwicklungsphasenregel in `docs/architecture.md`, Abschnitt
   „Entwicklungsphase und Kompatibilitätsbedarf“. Sie bestimmt zuerst, ob ein
@@ -342,16 +408,28 @@ Spikes und nicht verhaltensändernde Arbeit sowie Abschlussnachweisen.
 - Eine Installation ist erst geliefert, wenn Status, Migration, mindestens
   je ein CSS-/JavaScript-Asset im Static-Webserver-Kontext und über HTTPS mit
   richtigem Content-Type sowie die sichtbare Oberfläche geprüft wurden.
-- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den Entwicklungsstand; er ersetzt keine Release-Kompatibilitätsmatrix und erweitert keine Freigabe für DDEV-, Docker-, Nextcloud- oder `occ`-Änderungen.
-- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates mit dem Skill
-  `verify-nextcloud-future-compatibility` ausgeführt. Sie prüft den gesamten
-  deklarierten Bereich und jede offiziell benannte, testbare künftige
-  Hauptversion gegen gepinnte offizielle Nextcloud-Git-Quellen. Die höchste
-  lückenlos nachgewiesene künftige Hauptversion je App wird als `max-version`
-  in deren `info.xml` aufgenommen. Rote, lückenhafte, veraltete oder nur
-  statisch geprüfte Nachweise blockieren die Veröffentlichung. Außerhalb eines
-  Release-Candidate-Laufs entsteht aus dem Aktualitätscheck keine neue
-  `max-version`-Aussage.
+- Die lokale Entwicklungsruntime wird regelmäßig gegen die offiziellen Nextcloud-Quellen geprüft und auf der neuesten offiziell veröffentlichten
+  stabilen Nextcloud-Version betrieben. Dieser Aktualitätscheck belegt nur den
+  Entwicklungsstand und erweitert keine Freigabe für DDEV-, Docker-,
+  Nextcloud- oder `occ`-Änderungen. Da `max-version` ausschließlich die
+  Nextcloud-Hauptversion als Ganzzahl abbildet, löst ein neues Patch-Release
+  innerhalb einer bereits nachgewiesenen Hauptversion keine künstliche
+  Metadatenänderung aus.
+- Jede neu offiziell veröffentlichte stabile Nextcloud-Hauptversion löst ohne
+  Warten auf einen Release-Candidate einen verbindlichen portfolioweiten
+  Zukunftskompatibilitätslauf mit dem Skill
+  `verify-nextcloud-future-compatibility` aus. Er umfasst jede im
+  Workspace-Inventar registrierte deploybare App, den vollständigen
+  deklarierten Supportbereich und die neue Hauptversion; zusätzlich werden die
+  offiziell benannten testbaren Zukunftsversionen geprüft. Nach lückenlosem
+  belastbarem Nachweis wird die höchste zusammenhängend grüne Hauptversion je
+  App verpflichtend als ganzzahlige `max-version` in deren `info.xml`
+  übernommen. Ein roter oder unvollständiger Nachweis erzeugt stattdessen eine
+  sichtbare blockierende Kompatibilitätsaufgabe; er darf weder durch eine
+  ungeprüfte Metadatenanhebung noch durch Auslassen einer App kaschiert werden.
+- Die vollständige Kompatibilitätsmatrix wird beim Erstellen jedes veröffentlichungsfähigen Release-Candidates erneut ausgeführt. Rote,
+  lückenhafte, veraltete oder nur statisch geprüfte Nachweise blockieren die
+  Veröffentlichung.
 - `min-version` muss die zum Release-Candidate-Zeitpunkt aktuelle openDesk-Nextcloud-Hauptversion enthalten. Die autoritative openDesk-Quelle und die aufgelöste Hauptversion werden im RC-Nachweis festgehalten; ein niedrigeres weiterhin belegtes Minimum darf erhalten bleiben.
 - `min-version` wird niemals automatisch angehoben. Ein belegtes Supportende,
   eine nicht mehr sicher reproduzierbare Plattform oder eine notwendige

@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+nextcloud_source="$root/nextcloud-dev/html"
+data_protection_root="$root/flz_data_protection"
+room_root="$root/flzroom"
+result_dir=''
+step_timeout=600
+validate_only=''
+project=''
+project_name=''
+result_file=''
+current_stage='initialization'
+
+usage() {
+    cat <<'EOF'
+Usage:
+  scripts/run-v2-retention-runtime-acceptance [options]
+  scripts/run-v2-retention-runtime-acceptance --validate-result FILE
+
+Options:
+  --nextcloud-source DIR       Installed-source tree copied into the isolated runtime.
+  --data-protection-root DIR   flz_data_protection repository root.
+  --room-root DIR              flzroom repository root.
+  --result-dir DIR             Persistent evidence directory (default: build/v2-retention-runtime-<UTC>).
+  --timeout-seconds N          Per-command timeout in seconds (default: 600).
+  --validate-result FILE       Validate an existing structured result without starting DDEV.
+EOF
+}
+
+fail() {
+    echo "V2 retention runtime acceptance failed: $*" >&2
+    exit 1
+}
+
+validate_result() {
+    local file="$1"
+    [[ -f "$file" ]] || fail "result file is missing: $file"
+    php -r '
+        $path=$argv[1];
+        $data=json_decode((string)file_get_contents($path),true,512,JSON_THROW_ON_ERROR);
+        if(($data["schemaVersion"]??null)!==1)throw new RuntimeException("invalid schemaVersion");
+        if(($data["overall"]??null)!=="passed")throw new RuntimeException("runtime did not pass");
+        if(!is_array($data["runtime"]??null)||trim((string)($data["runtime"]["nextcloud"]??""))===""||trim((string)($data["runtime"]["database"]??""))==="")throw new RuntimeException("runtime metadata missing");
+        $required=["fresh_install","reinstall","provider_discovery","activation_fail_closed","synthetic_delete","job_restart_idempotency","concurrent_execution","hold_conflict","rollback_before_commit","restore_quarantine","upgrade_path"];
+        foreach($required as $scenario){
+            $entry=$data["scenarios"][$scenario]??null;
+            if(!is_array($entry))throw new RuntimeException("missing scenario: ".$scenario);
+            $status=$entry["status"]??null;
+            if($scenario==="upgrade_path"&&$status==="unsupported"){
+                if(trim((string)($entry["reason"]??""))==="")throw new RuntimeException("unsupported upgrade path has no reason");
+                continue;
+            }
+            if($status!=="passed")throw new RuntimeException("scenario did not pass: ".$scenario);
+        }
+    ' "$file"
+}
+
+while (($# > 0)); do
+    case "$1" in
+        --nextcloud-source) nextcloud_source="${2:-}"; shift 2 ;;
+        --data-protection-root) data_protection_root="${2:-}"; shift 2 ;;
+        --room-root) room_root="${2:-}"; shift 2 ;;
+        --result-dir) result_dir="${2:-}"; shift 2 ;;
+        --timeout-seconds) step_timeout="${2:-}"; shift 2 ;;
+        --validate-result) validate_only="${2:-}"; shift 2 ;;
+        --help|-h) usage; exit 0 ;;
+        *) fail "unknown option: $1" ;;
+    esac
+done
+
+if [[ -n "$validate_only" ]]; then
+    validate_result "$validate_only"
+    echo "Validated V2 retention runtime result: $validate_only"
+    exit 0
+fi
+
+[[ "$step_timeout" =~ ^[1-9][0-9]*$ ]] || fail '--timeout-seconds must be a positive integer'
+[[ -f "$nextcloud_source/lib/versioncheck.php" ]] || fail "invalid Nextcloud source: $nextcloud_source"
+for app_root in "$data_protection_root" "$room_root"; do
+    [[ -f "$app_root/appinfo/info.xml" && -f "$app_root/AGENTS.md" ]] || fail "invalid app root: $app_root"
+done
+command -v ddev >/dev/null || fail 'ddev is unavailable'
+command -v timeout >/dev/null || fail 'timeout is unavailable'
+command -v php >/dev/null || fail 'php is unavailable'
+
+if [[ -z "$result_dir" ]]; then
+    result_dir="$root/build/v2-retention-runtime-$(date -u +%Y%m%dT%H%M%SZ)"
+fi
+mkdir -p "$result_dir"
+result_dir="$(cd "$result_dir" && pwd)"
+result_file="$result_dir/result.json"
+[[ ! -e "$result_file" ]] || fail "result file already exists: $result_file"
+
+project="$(mktemp -d "${TMPDIR:-/tmp}/flz-v2-retention.XXXXXX")"
+project_name="flz-v2-retention-$$"
+
+cleanup() {
+    local status=$?
+    set +e
+    if [[ "$status" -ne 0 && -n "$result_file" && ! -f "$result_file" ]]; then
+        php -r '
+            $result=["schemaVersion"=>1,"overall"=>"failed","failure"=>["stage"=>$argv[2]]];
+            file_put_contents($argv[1],json_encode($result,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");
+        ' "$result_file" "$current_stage" >/dev/null 2>&1
+    fi
+    if [[ -n "$project" && -d "$project" ]]; then
+        (cd "$project" && timeout 120 ddev stop --unlist) >/dev/null 2>&1
+        rm -rf "$project"
+    fi
+    return "$status"
+}
+trap cleanup EXIT
+
+run_timed() {
+    timeout --foreground "$step_timeout" "$@"
+}
+
+ddev_command() {
+    (cd "$project" && run_timed ddev "$@")
+}
+
+occ() {
+    ddev_command exec -d /var/www/html/html php occ "$@" </dev/null
+}
+
+probe() {
+    local phase="$1"
+    shift
+    ddev_command exec -d /var/www/html/html php v2-retention-runtime-probe.php "$phase" /var/www/html/html/v2-retention-runtime-state.json "$@" </dev/null
+}
+
+probe_json() {
+    local phase="$1"
+    local destination="$2"
+    shift 2
+    local raw="$destination.raw"
+    local log="$destination.log"
+    probe "$phase" "$@" > "$raw" 2> "$log"
+    [[ -s "$raw" ]] || fail "probe produced no result: $phase (see $log)"
+    tail -n 1 "$raw" > "$destination"
+    php -r 'json_decode((string)file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);' "$destination"
+    rm -f "$raw"
+}
+
+occ_json() {
+    local destination="$1"
+    shift
+    local raw="$destination.raw"
+    occ "$@" > "$raw"
+    [[ -s "$raw" ]] || fail "OCC produced no JSON: $*"
+    tail -n 1 "$raw" > "$destination"
+    php -r 'json_decode((string)file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);' "$destination"
+    rm -f "$raw"
+}
+
+copy_app() {
+    local source="$1"
+    local app_id="$2"
+    local destination="$project/html/custom_apps/$app_id"
+    mkdir -p "$destination"
+    tar -C "$source" --exclude='./.git' --exclude='./build' -cf - . | tar -C "$destination" -xf -
+}
+
+current_stage='copy-runtime'
+mkdir -p "$project/html"
+tar -C "$nextcloud_source" \
+    --exclude='./config/config.php' \
+    --exclude='./data' \
+    --exclude='./custom_apps' \
+    -cf - . | tar -C "$project/html" -xf -
+mkdir -p "$project/html/config" "$project/html/custom_apps" "$project/.ddev"
+cp "$root/tests/runtime/v2-retention-runtime-probe.php" "$project/html/v2-retention-runtime-probe.php"
+copy_app "$data_protection_root" flz_data_protection
+copy_app "$room_root" flzroom
+
+cat > "$project/html/config/v2-runtime.config.php" <<'PHP'
+<?php
+$CONFIG = [
+    'appstoreenabled' => false,
+    'apps_paths' => [
+        ['path' => __DIR__ . '/../apps', 'url' => '/apps', 'writable' => false],
+        ['path' => __DIR__ . '/../custom_apps', 'url' => '/custom_apps', 'writable' => true],
+    ],
+];
+PHP
+
+cat > "$project/.ddev/config.yaml" <<YAML
+name: $project_name
+type: php
+docroot: html
+php_version: "8.3"
+webserver_type: apache-fpm
+database:
+  type: postgres
+  version: "16"
+use_dns_when_possible: true
+project_tld: ddev.site
+YAML
+
+current_stage='ddev-start'
+ddev_command start -y > "$result_dir/ddev-start.log" 2>&1
+
+current_stage='fresh-install'
+occ maintenance:install \
+    --database=pgsql --database-host=db --database-name=db \
+    --database-user=db --database-pass=db \
+    --admin-user=v2-admin --admin-pass=v2-admin \
+    --no-interaction > "$result_dir/install.log" 2>&1
+occ app:enable flz_data_protection > "$result_dir/enable-fresh.log" 2>&1
+occ app:enable flzroom >> "$result_dir/enable-fresh.log" 2>&1
+occ_json "$result_dir/status-fresh.json" status --output=json
+probe_json inspect "$result_dir/inspect-fresh.json"
+
+current_stage='reinstall'
+occ app:disable flzroom > "$result_dir/reinstall.log" 2>&1
+occ app:disable flz_data_protection >> "$result_dir/reinstall.log" 2>&1
+occ app:remove flzroom >> "$result_dir/reinstall.log" 2>&1
+occ app:remove flz_data_protection >> "$result_dir/reinstall.log" 2>&1
+copy_app "$data_protection_root" flz_data_protection
+copy_app "$room_root" flzroom
+occ app:enable flz_data_protection >> "$result_dir/reinstall.log" 2>&1
+occ app:enable flzroom >> "$result_dir/reinstall.log" 2>&1
+occ_json "$result_dir/status-reinstall.json" status --output=json
+probe_json inspect "$result_dir/inspect-reinstall.json"
+
+current_stage='activation-and-delete'
+probe_json seed-delete "$result_dir/seed-delete.json"
+probe_json execute-delete "$result_dir/execute-delete.json"
+
+current_stage='job-restart-idempotency'
+ddev_command restart > "$result_dir/ddev-restart.log" 2>&1
+probe_json verify-idempotent "$result_dir/verify-idempotent.json"
+
+current_stage='concurrent-execution'
+probe_json seed-concurrent "$result_dir/seed-concurrent.json"
+(cd "$project" && timeout --foreground "$step_timeout" ddev exec -d /var/www/html/html \
+    php v2-retention-runtime-probe.php execute-concurrent /var/www/html/html/v2-retention-runtime-state.json </dev/null) \
+    > "$result_dir/concurrent-left.json" 2> "$result_dir/concurrent-left.log" &
+left_pid=$!
+(cd "$project" && timeout --foreground "$step_timeout" ddev exec -d /var/www/html/html \
+    php v2-retention-runtime-probe.php execute-concurrent /var/www/html/html/v2-retention-runtime-state.json </dev/null) \
+    > "$result_dir/concurrent-right.json" 2> "$result_dir/concurrent-right.log" &
+right_pid=$!
+wait "$left_pid"
+wait "$right_pid"
+cp "$result_dir/concurrent-left.json" "$project/html/v2-concurrent-left.json"
+cp "$result_dir/concurrent-right.json" "$project/html/v2-concurrent-right.json"
+probe_json verify-concurrent "$result_dir/verify-concurrent.json" \
+    /var/www/html/html/v2-concurrent-left.json \
+    /var/www/html/html/v2-concurrent-right.json
+
+current_stage='rollback-before-commit'
+probe_json seed-rollback "$result_dir/seed-rollback.json"
+ddev_command exec -s db psql -U db -d db -v ON_ERROR_STOP=1 -c \
+    "CREATE OR REPLACE FUNCTION flz_v2_reject_delete() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''synthetic rollback fault''; END'; CREATE TRIGGER flz_v2_reject_delete AFTER DELETE ON oc_flz_room_bookings FOR EACH ROW EXECUTE FUNCTION flz_v2_reject_delete();" \
+    > "$result_dir/install-rollback-trigger.log" 2>&1
+probe_json execute-rollback "$result_dir/execute-rollback.json"
+ddev_command exec -s db psql -U db -d db -v ON_ERROR_STOP=1 -c \
+    'DROP TRIGGER flz_v2_reject_delete ON oc_flz_room_bookings; DROP FUNCTION flz_v2_reject_delete();' \
+    > "$result_dir/remove-rollback-trigger.log" 2>&1
+probe_json verify-rollback "$result_dir/verify-rollback.json"
+
+current_stage='restore-quarantine'
+probe_json seed-restore-quarantine "$result_dir/seed-restore-quarantine.json"
+ddev_command export-db --file="$project/v2-stale-restore.sql.gz" > "$result_dir/export-restore-snapshot.log" 2>&1
+probe_json disturb-restore "$result_dir/disturb-restore.json"
+ddev_command import-db --file="$project/v2-stale-restore.sql.gz" > "$result_dir/import-restore-snapshot.log" 2>&1
+probe_json verify-restore-quarantine "$result_dir/verify-restore-quarantine.json"
+
+current_stage='runtime-metadata'
+occ_json "$result_dir/status-final.json" status --output=json
+ddev_command exec -s db psql -U db -d db -Atc 'SHOW server_version;' > "$result_dir/postgresql-version.txt"
+
+current_stage='structured-result'
+php -r '
+    $status=json_decode((string)file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);
+    $database=trim((string)file_get_contents($argv[3]));
+    $result=[
+        "schemaVersion"=>1,
+        "overall"=>"passed",
+        "runtime"=>[
+            "nextcloud"=>(string)($status["versionstring"]??$status["version"]??"unknown"),
+            "database"=>"PostgreSQL ".$database,
+        ],
+        "scenarios"=>[
+            "fresh_install"=>["status"=>"passed","evidence"=>"inspect-fresh.json"],
+            "reinstall"=>["status"=>"passed","evidence"=>"inspect-reinstall.json"],
+            "provider_discovery"=>["status"=>"passed","evidence"=>"inspect-reinstall.json"],
+            "activation_fail_closed"=>["status"=>"passed","evidence"=>"seed-delete.json"],
+            "synthetic_delete"=>["status"=>"passed","evidence"=>"execute-delete.json"],
+            "job_restart_idempotency"=>["status"=>"passed","evidence"=>"verify-idempotent.json"],
+            "concurrent_execution"=>["status"=>"passed","evidence"=>"verify-concurrent.json"],
+            "hold_conflict"=>["status"=>"passed","evidence"=>"execute-delete.json"],
+            "rollback_before_commit"=>["status"=>"passed","evidence"=>"execute-rollback.json"],
+            "restore_quarantine"=>["status"=>"passed","evidence"=>"verify-restore-quarantine.json"],
+            "upgrade_path"=>[
+                "status"=>"unsupported",
+                "reason"=>"No authoritative prior V2 runtime snapshot exists; the workspace development-phase contract requires a clean reinstall instead of fabricating historical compatibility.",
+            ],
+        ],
+    ];
+    file_put_contents($argv[1],json_encode($result,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");
+' "$result_file" "$result_dir/status-final.json" "$result_dir/postgresql-version.txt"
+
+validate_result "$result_file"
+current_stage='complete'
+echo "V2 retention runtime acceptance passed: $result_file"

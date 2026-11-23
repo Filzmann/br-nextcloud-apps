@@ -8,13 +8,15 @@
 - Ergänzung erster Kategorie-B-Pilot: 2026-09-06
 - Ergänzung Provider-Lifecycle des ersten Piloten: 2026-09-07
 - Ergänzung Veröffentlichungs- und LocalBase-Zielrichtung: 2026-09-26
+- Ergänzung eigenständiger Organisationsprovider: 2026-11-14
 - Geltungsbereich: Parent-Workspace, alle neu angelegten Apps sowie alle
   künftigen Shared-Code-, Cross-App- und Veröffentlichungsentscheidungen
-- Teilweise umgesetzt: der öffentliche LocalBase-Organisationsvertrag V1 mit
-  `flz_permission_matrix` als erstem Consumer einschließlich
-  In-place-Update, Provider-Deaktivierung, -Entfernung, -Wiederinstallation
-  und Rückbau auf einen Stand ohne V1; die übrige LocalBase-Migration bleibt
-  offen
+- Teilweise umgesetzt: Der erste LocalBase-Pilot einschließlich seines
+  Lifecycle-Nachweises ist abgeschlossen. Im aktuellen Arbeitsbaum konsumiert
+  `flz_permission_matrix` stattdessen den öffentlichen V1-Vertrag der
+  eigenständigen Laufzeit-App `flz_organization` fail-closed. Deren realer
+  Installations-, Deaktivierungs-, Entfernungs- und Wiederinstallationsnachweis
+  bleibt offen; die übrige LocalBase-Migration ist ebenfalls nicht abgeschlossen.
 
 ## Kontext und Belegstatus
 
@@ -66,7 +68,7 @@ persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus
 | `brtop` | API-Responder, Modelltrait, Logger, Gruppenservice sowie LocalBase-JavaScript | `brtop/lib/Controller/ApiController.php`, `lib/Model/Meeting.php`, `lib/Service/BrtopLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
 | `flzplaner` | technische PHP-/JS-Bausteine, Organisationsdefinition/-persistenz, Demokonten, Navigation und Capability-Event | `flzplaner/lib/Controller/ApiController.php`, `lib/Store/TeamSettingsStore.php`, `lib/Service/PlanerDemoPackService.php`, `lib/Listener/StandaloneNavigationListener.php`, `templates/index.php` |
 | `brstunden` | API-Responder, Modelltrait, Logger, Gruppenservice und LocalBase-JavaScript | `brstunden/lib/Controller/ApiController.php`, `lib/Model/HourEntry.php`, `lib/Service/BrStundenLogger.php`, `lib/Service/BrGroupsService.php`, `templates/index.php` |
-| `flz_permission_matrix` | optionaler Organisationssnapshot über `OCA\\LocalBase\\PublicApi\\V1`; eigenständiger Test-Runner und Nextcloud-Navigation | `flz_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `flz_permission_matrix/tests/run.php`, `flz_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
+| `flz_permission_matrix` | optionaler Organisationssnapshot über `OCA\\FlzOrganization\\PublicApi\\V1`; eigenständiger Test-Runner und Nextcloud-Navigation | `flz_permission_matrix/lib/Service/OrganizationSnapshotService.php`, `flz_permission_matrix/tests/run.php`, `flz_permission_matrix/lib/Listener/StandaloneNavigationListener.php` |
 | `flzcalendar` | Organisations-/Rechteverträge, Kalender-/Abwesenheits-/Konflikt-Events, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `flzcalendar/lib/Service/CalendarAccessService.php`, `lib/Service/AbsenceService.php`, `lib/Listener/ScheduleConflictQueryListener.php`, `lib/Controller/ApiController.php`, `templates/index.php` |
 | `flzurlaub` | Organisations-/Rechteverträge, Abwesenheitsprovider, Konflikt-Consumer, Feiertage, Demo-/Navigation-/Capability-Dienste und LocalBase-JavaScript | `flzurlaub/lib/Service/VacationAccessService.php`, `lib/Listener/AbsenceQueryListener.php`, `lib/Service/VacationService.php`, `lib/Service/HolidayCalendarService.php`, `templates/index.php` |
 | `orgsuite` | Produktkatalog, LocalBase-Template/Assets, LocalBase-Admin-API | `orgsuite/lib/Controller/EntryController.php`, `lib/Listener/NavigationListener.php`, `lib/Settings/Admin.php`, `orgsuite/tests/http-smoke.sh` |
@@ -479,18 +481,16 @@ Store-Release hängt nie von einer halb abgeschlossenen Entkopplung ab.
 
 Umgesetzt und verbindlich ist das Entscheidungs- und Releasemodell. Ebenfalls
 verbindlich ist, dass neue Apps nicht automatisch von LocalBase abhängen.
-Der erste Kategorie-B-Schritt ist technisch umgesetzt: LocalBase projiziert
-seine kanonische Organisationskonfiguration über
-`OCA\\LocalBase\\PublicApi\\V1` Version `1.0`; die Berechtigungsmatrix prüft
-Aktivierung und Version vor der Klassenauflösung und bleibt bei fehlendem,
-älterem oder fehlerhaftem Provider fail-closed funktionsfähig. Der reale
-Contract, Fresh Installs mit und ohne LocalBase sowie Deaktivierung, Entfernung
-und Wiederinstallation des aktuellen V1- und eines älteren Providers ohne V1
-sind auf Nextcloud 34 nachgewiesen. Zusätzlich ist das In-place-Update von
-LocalBase `0.12.0-dev.1` auf `0.12.0-dev.2` mit unverändertem synthetischem
-Organisationszustand und weiterhin funktionsfähiger Matrix grün. Offen bleiben
-die Paketextraktion, Namespace-Isolierung, die übrigen öffentlichen API-Grenzen
-sowie die Lifecycle-Nachweise der weiteren Consumer.
+Der erste Kategorie-B-Pilot über LocalBase ist technisch einschließlich seines
+Nextcloud-34-Lifecycle-Nachweises abgeschlossen. Im aktuellen Arbeitsbaum
+stellt die eigenständige Laufzeit-App `flz_organization` den öffentlichen
+Vertrag `OCA\\FlzOrganization\\PublicApi\\V1` Version `1.0` bereit. Die
+Berechtigungsmatrix prüft Aktivierung und Version vor der Klassenauflösung und
+bleibt bei fehlendem, älterem oder fehlerhaftem Provider fail-closed. Die
+app-lokalen Provider- und Consumer-Contract-Tests sind grün; der reale
+Installations-, Deaktivierungs-, Entfernungs- und Wiederinstallationsnachweis
+für `flz_organization` ist noch offen. Offen bleiben außerdem die weiteren
+Kategorie-A-/B-Migrationen und die Lifecycle-Nachweise der übrigen Consumer.
 
 Öffentliche App-Store-Veröffentlichungen sind derzeit nicht freigegeben und
 werden später je App einzeln entschieden. Das strategische LocalBase-Ziel ist

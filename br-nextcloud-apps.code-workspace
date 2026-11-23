@@ -21,6 +21,10 @@
       "path": "localbase"
     },
     {
+      "name": "flz_shared",
+      "path": "flz_shared"
+    },
+    {
       "name": "flz_permission_matrix",
       "path": "flz_permission_matrix"
     },
@@ -31,6 +35,10 @@
     {
       "name": "flzurlaub",
       "path": "flzurlaub"
+    },
+    {
+      "name": "flz_organization",
+      "path": "flz_organization"
     },
     {
       "name": "orgsuite",
@@ -51,6 +59,10 @@
     {
       "name": "flz_data_protection",
       "path": "flz_data_protection"
+    },
+    {
+      "name": "flz_akut",
+      "path": "flz_akut"
     },
     {
       "name": "filzmann-ai-harness",

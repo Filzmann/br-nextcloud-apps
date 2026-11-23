@@ -50,7 +50,7 @@ echo '== Öffentlicher Datenschutzprovider-V1-Vertrag =='
 (cd "$workspace" && php tests/privacy-provider-v1-contract.php)
 (cd "$workspace" && php tests/processing-metadata-provider-v1-contract.php)
 
-echo '== Öffentlicher LocalBase-Organisationsprovider-V1-Vertrag =='
+echo '== Öffentlicher Organisationsprovider-V1-Vertrag =='
 (cd "$workspace" && php tests/localbase-organization-v1-contract.php)
 
 if (( structure_tracking_warning )); then

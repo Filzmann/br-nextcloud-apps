@@ -90,10 +90,53 @@ assert_contains "$candidate_env" 'CANDIDATE_STAGING_TARGET=br-staging'
 assert_contains "$candidate_env" 'CANDIDATE_INTAKE_URL=https://teamcloud.simonbeyer.de/api/candidate-intake'
 assert_contains "$candidate_env" 'CANDIDATE_STAGING_TARGET=teamcloud'
 
+for registered_pair in \
+    'Filzmann/nextcloud-flz-organization flz_organization' \
+    'Filzmann/nextcloud-flz-akut flz_akut'; do
+    read -r registered_repository registered_app_id <<< "$registered_pair"
+    : > "$candidate_env"
+    "$candidate_contract" resolve \
+        --repository "$registered_repository" \
+        --app-id "$registered_app_id" \
+        --github-env "$candidate_env"
+    assert_contains "$candidate_env" 'CANDIDATE_INTAKE_URL=https://teamcloud.simonbeyer.de/api/candidate-intake'
+    assert_contains "$candidate_env" 'CANDIDATE_STAGING_TARGET=teamcloud'
+    mode="$("$input_validator" \
+        --app-id "$registered_app_id" \
+        --deployment-target teamcloud \
+        --candidate-staging-target teamcloud \
+        --source-ref "$commit" \
+        --candidate-id "$candidate_id" \
+        --candidate-source-commit "$commit" \
+        --candidate-build-id "$build_id" \
+        --candidate-build-sha256 "$build_hash")"
+    [[ "$mode" == authoritative-candidate ]] || fail 'Neue Teamcloud-App verliert ihre Candidate-Bindung.'
+    wrapper_failure="$stage/wrapper-$registered_app_id.log"
+    if "$server_wrapper" \
+        "/var/tmp/teamcloud-staging-incoming/1-1-$registered_app_id/$registered_app_id.tar.gz" \
+        "$registered_app_id" invalid "$build_hash" > "$wrapper_failure" 2>&1; then
+        fail 'Teamcloud-Wrapper akzeptiert einen ungültigen Commit.'
+    fi
+    assert_contains "$wrapper_failure" 'Ungültige Commit-ID oder SHA-256-Prüfsumme.'
+    if "$input_validator" \
+        --app-id "$registered_app_id" \
+        --deployment-target br-staging \
+        --candidate-staging-target teamcloud \
+        --source-ref "$commit" \
+        --candidate-id "$candidate_id" \
+        --candidate-source-commit "$commit" \
+        --candidate-build-id "$build_id" \
+        --candidate-build-sha256 "$build_hash" >/dev/null 2>&1; then
+        fail 'Neue Teamcloud-App wird als BR-Mirror akzeptiert.'
+    fi
+done
+
 for rejected_pair in \
     'Filzmann/nextcloud-brstunden localbase' \
     'Filzmann/nextcloud-localbase brstunden' \
-    'Filzmann/unknown brstunden'; do
+    'Filzmann/unknown brstunden' \
+    'Filzmann/nextcloud-flz-organization flz_akut' \
+    'Filzmann/nextcloud-flz-akut flz_organization'; do
     read -r rejected_repository rejected_app_id <<< "$rejected_pair"
     : > "$candidate_env"
     if "$candidate_contract" resolve \
@@ -293,6 +336,85 @@ mapfile -t roots < <(tar -tzf "$archive" | cut -d/ -f1 | sort -u)
 if tar -tzf "$archive" | grep -Eq '(^|/)(\.git|\.github|tests|AGENTS\.md)(/|$)'; then
     fail 'Archiv enthält Entwicklungsdateien.'
 fi
+
+bundle_app="$stage/source/flzurlaub"
+cp -a "$app" "$bundle_app"
+sed -i 's/demoapp/flzurlaub/g' "$bundle_app/appinfo/info.xml"
+mkdir -p "$bundle_app/vendor"
+cp -a "$workspace/flzurlaub/vendor/flz-shared" "$bundle_app/vendor/flz-shared"
+mkdir -p "$bundle_app/vendor/development-tool/tests"
+printf 'must not ship\n' > "$bundle_app/vendor/development-tool/tests/private.txt"
+bundle_archive="$stage/output/flzurlaub.tar.gz"
+"$package_script" --app-root "$bundle_app" --app-id flzurlaub --commit "$commit" \
+    --archive "$bundle_archive" --metadata "$stage/output/flzurlaub.env"
+mkdir "$stage/bundle-extracted"
+tar -xzf "$bundle_archive" -C "$stage/bundle-extracted"
+diff -r "$bundle_app/vendor/flz-shared" "$stage/bundle-extracted/flzurlaub/vendor/flz-shared" \
+    || fail 'Das freigegebene Kategorie-A-Runtimebundle fehlt oder wurde verändert.'
+[[ ! -e "$stage/bundle-extracted/flzurlaub/vendor/development-tool" ]] \
+    || fail 'Paketierung übernimmt einen nicht freigegebenen Vendorbestand.'
+php -r '
+    require $argv[1] . "/vendor/flz-shared/php/vendor/autoload.php";
+    if (!trait_exists("OCA\\FlzUrlaub\\Vendor\\Filzmann\\Shared\\Model\\ModelApiTrait")) {
+        throw new RuntimeException("Gepacktes Runtimebundle ist nicht autoloadbar.");
+    }
+' "$stage/bundle-extracted/flzurlaub"
+touch -d '2031-01-01 00:00:00 UTC' "$bundle_app/vendor/flz-shared/LICENSE"
+"$package_script" --app-root "$bundle_app" --app-id flzurlaub --commit "$commit" \
+    --archive "$stage/output/flzurlaub-second.tar.gz" --metadata "$stage/output/flzurlaub-second.env"
+cmp "$bundle_archive" "$stage/output/flzurlaub-second.tar.gz" \
+    || fail 'Das gebündelte Runtimepaket verhindert reproduzierbare Candidate-Archive.'
+
+reject_bundle() {
+    local name="$1"
+    if "$package_script" --app-root "$bundle_app" --app-id flzurlaub --commit "$commit" \
+        --archive "$stage/output/rejected-$name.tar.gz" --metadata "$stage/output/rejected-$name.env" >/dev/null 2>&1; then
+        fail "Unsicheres oder unvollständiges Runtimebundle wird akzeptiert: $name"
+    fi
+    [[ ! -e "$stage/output/rejected-$name.tar.gz" && ! -e "$stage/output/rejected-$name.env" ]] \
+        || fail 'Abgelehntes Runtimebundle hat ein verwendbares Deploymentartefakt hinterlassen.'
+}
+
+bundle_root="$bundle_app/vendor/flz-shared"
+mv "$bundle_root" "$stage/complete-bundle"
+reject_bundle missing-bundle
+cp -a "$stage/complete-bundle" "$bundle_root"
+printf 'must not ship\n' > "$bundle_root/.env"
+reject_bundle unexpected-file
+rm "$bundle_root/.env"
+mkdir "$bundle_root/tests"
+printf 'must not ship\n' > "$bundle_root/tests/example.php"
+reject_bundle development-files
+rm -r "$bundle_root/tests"
+mv "$bundle_root/LICENSE" "$stage/bundle-license"
+ln -s "$stage/bundle-license" "$bundle_root/LICENSE"
+reject_bundle linked-file
+rm "$bundle_root/LICENSE"
+mv "$stage/bundle-license" "$bundle_root/LICENSE"
+cp "$bundle_root/flz-shared.lock.json" "$stage/bundle-lock.json"
+sed -i 's/FlzUrlaub/ForeignApp/g' "$bundle_root/flz-shared.lock.json"
+reject_bundle foreign-namespace
+cp "$stage/bundle-lock.json" "$bundle_root/flz-shared.lock.json"
+sed -i 's/"app_id": "flzurlaub"/"app_id": "foreign"/' "$bundle_root/flz-shared.lock.json"
+reject_bundle foreign-app
+cp "$stage/bundle-lock.json" "$bundle_root/flz-shared.lock.json"
+cp "$bundle_root/php/composer.json" "$stage/bundle-composer.json"
+php -r '
+    $path = $argv[1];
+    $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+    $data["scripts"] = ["post-install-cmd" => "unexpected-command"];
+    file_put_contents($path, json_encode($data, JSON_THROW_ON_ERROR));
+' "$bundle_root/php/composer.json"
+reject_bundle composer-script
+cp "$stage/bundle-composer.json" "$bundle_root/php/composer.json"
+mv "$bundle_root/php/vendor/autoload.php" "$stage/bundle-autoload.php"
+reject_bundle missing-autoloader
+mv "$stage/bundle-autoload.php" "$bundle_root/php/vendor/autoload.php"
+mv "$bundle_app/vendor" "$stage/linked-vendor-target"
+ln -s "$stage/linked-vendor-target" "$bundle_app/vendor"
+reject_bundle linked-vendor-root
+rm "$bundle_app/vendor"
+mv "$stage/linked-vendor-target" "$bundle_app/vendor"
 
 nextcloud="$stage/nextcloud"
 state="$stage/state"
@@ -686,6 +808,8 @@ deployment_apps=(
     flzroom
     flzrecruitment
     flzbqplanung
+    flz_organization
+    flz_akut
 )
 
 for app_id in "${deployment_apps[@]}"; do
