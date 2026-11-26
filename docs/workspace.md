@@ -41,7 +41,8 @@ br-nextcloud-apps/
 |       |-- docker-compose.flzrecruitment.yaml
 |       |-- docker-compose.flzbqplanung.yaml
 |       |-- docker-compose.flz_data_protection.yaml
-|       `-- docker-compose.flz_akut.yaml
+|       |-- docker-compose.flz_akut.yaml
+|       `-- docker-compose.flz_kapazitaet.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
@@ -55,6 +56,7 @@ br-nextcloud-apps/
 |-- flzbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
 |-- flz_data_protection/ # eigenes Git-Repo, Datenschutz-Center
 |-- flz_akut/ # eigenes Git-Repo, Akutschichtvermittlung
+|-- flz_kapazitaet/ # eigenes Git-Repo, Kapazitätsmeldungen
 `-- flz-full-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -78,6 +80,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | Filzmann BQ-Planer | `flzbqplanung` | `flzbqplanung/` | `https://nextcloud-dev.ddev.site/apps/flzbqplanung/` |
 | Datenschutz-Center | `flz_data_protection` | `flz_data_protection/` | `https://nextcloud-dev.ddev.site/apps/flz_data_protection/` |
 | Akutschichtvermittlung | `flz_akut` | `flz_akut/` | `https://nextcloud-dev.ddev.site/apps/flz_akut/` |
+| Kapazitätsmeldungen | `flz_kapazitaet` | `flz_kapazitaet/` | `https://nextcloud-dev.ddev.site/apps/flz_kapazitaet/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `flz-full-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -111,7 +114,7 @@ Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/` und `flz-full-suite/` sind eigene Git-Repositories.
+- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/`, `flz_kapazitaet/` und `flz-full-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -146,6 +149,7 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i flzrecruitment
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzbqplanung
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_data_protection
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_akut
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_kapazitaet
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -382,6 +386,19 @@ Konfiguration:
 
 ```text
 nextcloud-dev/.ddev/docker-compose.flz_akut.yaml
+```
+
+Kapazitätsmeldungen:
+
+```text
+${WORKSPACE_ROOT}/flz_kapazitaet
+-> /var/www/html/html/custom_apps/flz_kapazitaet
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_kapazitaet.yaml
 ```
 
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten

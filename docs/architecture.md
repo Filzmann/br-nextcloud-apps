@@ -60,6 +60,28 @@ genannte Grundsatz, dass Navigation keine Rechte erweitert, gilt auch hier.
 über einen app-eigenen Port. Fachliche Planungsregeln und das Verhalten bei
 eingeschränkter Kalenderverfügbarkeit stehen in `flzbqplanung/AGENTS.md`.
 
+App-übergreifende fachliche Zeitzone: Die in den Nextcloud-Systemeinstellungen
+hinterlegte Instanz-Zeitzone (`config.php` `timezone`, gelesen über
+`IConfig::getSystemValueString('timezone', 'UTC')`, Fallback UTC bei leerem
+oder ungültigem Wert) ist die fachliche Zeitzone aller FLZ-Apps. Der
+organisationsweite Kalenderkontext (`flz_organization`, gespiegelt in
+LocalBase) führt sie im Feld `timezone`; persönliche Nextcloud-Zeitzonen
+beeinflussen ausschließlich individuelle Anzeigen. App-lokal hartkodierte
+Zeitzonen (z. B. `Europe/Berlin`) sind unzulässig; die DB-Speicherung erfolgt
+weiterhin in UTC.
+
+App-übergreifende Locale: Ebenso gilt die Nextcloud-Locale — serverseitig
+`config.php` `locale` (`IConfig::getSystemValueString('locale', …)`),
+clientseitig `OC.getLocale()`. Apps dürfen keine eigene Locale hartkodieren
+(clientseitig `de-DE`, serverseitig `OUTPUT_LOCALE`-Konstanten); ein
+fachlicher Fallback (z. B. `de-DE` für deutsche Lohnunterlagen) ist nur als
+Default erlaubt, wenn die Instanz keine Locale konfiguriert hat. Mailversand
+erfolgt ausschließlich über den Nextcloud-Mail-Transport (Core-Mailsettings),
+niemals über app-eigene SMTP-Einstellungen. Ebenso gilt: Personenzuweisungen
+für besondere Rollen (z. B. Datenschutzberechtigte) erfolgen ausschließlich
+über **native Nextcloud-Gruppen** (`IGroupManager`), niemals über app-eigene
+UID-Listen in AppConfig; die App speichert höchstens die Gruppen-ID.
+
 Die normative Einteilung gemeinsamen Codes und app-übergreifender
 Laufzeitdienste, die Store-Regeln sowie die komponentenweise
 LocalBase-Bestandsaufnahme stehen in

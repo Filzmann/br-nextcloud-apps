@@ -65,6 +65,10 @@
       "path": "flz_akut"
     },
     {
+      "name": "flz_kapazitaet",
+      "path": "flz_kapazitaet"
+    },
+    {
       "name": "filzmann-ai-harness",
       "path": "filzmann-ai-harness"
     },
