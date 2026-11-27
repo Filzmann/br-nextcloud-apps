@@ -610,6 +610,21 @@ Laufzeitprüfung ausgeführt. Der Umfang und die Beweisgrenze jedes aktuellen
 Checks stehen in dessen Ausgabe und im zuständigen Skill; historische
 Auditberichte sind keine Betriebsanleitung.
 
+### Opt-in DDEV-Browser-Smoke (gemeinsamer CDP-Baustein)
+
+`scripts/browser-ddev-smoke.sh` startet headless Chrome und führt über
+`scripts/js/browser-ddev-smoke.mjs` + `scripts/js/cdp-browser.mjs` den
+authentifizierten Login (inkl. CSRF-Requesttoken) und die App-Öffnung aus;
+der app-spezifische Flow liegt als Modul mit `export async function run(api)`
+im jeweiligen App-Repository und wird über `FLZ_BROWSER_FLOW` gereicht.
+Aufruf aus dem App-Repo (nie im schnellen Standardlauf):
+
+```bash
+FLZ_BROWSER_USER=... FLZ_BROWSER_PASSWORD=... \
+FLZ_BROWSER_APP=<app-id> FLZ_BROWSER_FLOW="$PWD/tests/js/browser-ddev-smoke.mjs" \
+../br-nextcloud-apps/scripts/browser-ddev-smoke.sh
+```
+
 ## Git-Regeln
 
 Keine Commits, kein Push und kein Deployment ohne ausdrueckliche Freigabe durch Simon.

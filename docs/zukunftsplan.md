@@ -1,6 +1,6 @@
 # Systemweiter Zukunftsplan
 
-Stand: 4. Oktober 2026
+Stand: 27. November 2026
 
 Diese Datei ist die einzige aktive systemweite Planungsquelle des Workspaces.
 Sie enthält ausschließlich offene, blockierte oder vor einer Umsetzung noch zu
@@ -45,8 +45,7 @@ für jedes betroffene Repository bleibt erforderlich.
 | DP-06 | P1 | Native Files-, Share-, Groupfolders- und Calendar-Rechte zuerst über öffentliche Verträge vervollständigen; Fremd-App-Abdeckung danach ausschließlich read-only inventarisieren. | Fehlende Details bleiben sichtbar `UNKNOWN`, `UNSUPPORTED`, `partial` oder `missing`. |
 | DP-08 | P1 | Die noch fehlenden app-lokalen Processing-Kataloge und die systemweite Coverage-Prüfung in einzelnen, freigegebenen App-Aufträgen vervollständigen. | Fachliche Lücken bleiben `PRIVACY-DECISION-REQUIRED`; Root-Schema und app-lokaler Katalog bleiben die einzige Wertquelle. |
 | DP-09 | P1 | Weitere app-eigene Retention-Policies nur mit eindeutigem Trigger, Datenowner, versioniertem V2-Provider, Holds und Wiederherstellungsvertrag ergänzen. | Der auslieferbare Processing-Katalog führt Datenklassen, technische Fristen und offene lokale Entscheidungen. Kundenspezifische Rechtsgrundlagen, Vereinbarungen, Rollenbezeichnungen und Evidenz werden weder hardcodiert noch zum technischen DELETE-Gate gemacht. |
-| DP-10 | P1 | Eine mögliche schreibende Matrix-Bedienoberfläche erst nach Erweiterung von [ADR 0003](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md) (`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`) und einer Owner-/Source-of-Truth-Matrix bewerten. | Öffentlicher opt-in Verwaltungsvertrag, Audit, CSRF sowie Allow-/Deny-/Manipulations- und Lifecycle-Tests sind vor jeder Umsetzung erforderlich. |
-| DP-11 | P1 | Die bereits app-lokalen Funktionen für temporären Admin-Vollzugriff jeweils in einem zusammengehörigen, zugänglichen Overlay-/Klappbereich der Fachapp bündeln. | Die UI-Bündelung verändert weder app-lokale Daten- und Auditquellen noch Rollen, Höchstdauer oder serverseitige Prüfungen aus ADR 0004. Jede betroffene App benötigt Tastatur-, Fokus-, Allow-/Deny-, CSRF- und Manipulationsnachweise; die Umstellung erfolgt nur in einzeln beauftragten App-Läufen. |
+| DP-10 | P1 | Schreibende Matrix-Bedienoberfläche nach Erweiterung von [ADR 0003](architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md) (`docs/architecture-decisions/0003-permission-matrix-ikt-privacy-portfolio.md`) und einer Owner-/Source-of-Truth-Matrix umsetzen (freigegeben 27.11.2026, siehe `docs/change-report-2026-11-27.md`). | Öffentlicher opt-in Verwaltungsvertrag, Audit, CSRF sowie Allow-/Deny-/Manipulations- und Lifecycle-Tests sind vor jeder Umsetzung erforderlich. |
 
 ## Vorgemerkte Suite-Module
 
@@ -55,12 +54,14 @@ Daten, Rechte, Datenschutz, Runtimegrenze und Releaseweg zu entscheiden.
 
 | ID | Vorhaben | Nächste Entscheidung |
 | --- | --- | --- |
-| ZM-02 | DPA-Fallsteuerung | Fachowner, Rechtsgrundlage, Datenklassen, Audit- und Retentionvertrag |
 | ZM-03 | Personalbedarfsprognose | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
 | ZM-04 | Kapazitäts-/Fallbackplanung | Lokale Erweiterung, gebundelte Bibliothek oder Laufzeit-App gemäß ADR 0001 |
 | ZM-05 | Aggregierte Berichte | Empfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
-| ZM-06 | Suiteweite Lokalisierung | Entscheidung: keine eigene App — Nextcloud-l10n ist app-scoped (Übersetzungsdomain = App-ID, Kataloge in `<app>/l10n/`; eine zentrale App kann fremde Texte nicht übersetzen). Sprachquelle Deutsch (Fallback, auch bei admin/admin), Kataloge `l10n/en.*` + `l10n/en_GB.*` je App mit englischer Übersetzung als Bonus — alle Apps, einschließlich `flzcalendar` und `flz_organization`, sind auf DE-Quelltexte umgestellt. Umsetzung pro App in einzeln beauftragten App-Läufen (`t()`/`IL10N::t()`, JS-Adapter, Rohtext-Gate je App), BR-Apps zuletzt |
 | ZM-07 | Recruitment–BQ-Integration | Minimaler Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
+
+ZM-02 (DPA-Fallsteuerung) ist als erster Pilot freigegeben (27.11.2026) und wird
+im zuständigen App-Repository `flz_dpa` geführt; ZM-06 (Suiteweite
+Lokalisierung) ist entschieden — siehe `docs/change-report-2026-11-27.md`.
 
 Für alle personalbezogenen Zukunftsmodule gelten vor einer Produktentscheidung:
 keine Leistungs- oder Vermittlungsscores, Rankings, Blacklists, Diagnosen,
