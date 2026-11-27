@@ -59,7 +59,7 @@ Daten, Rechte, Datenschutz, Runtimegrenze und Releaseweg zu entscheiden.
 | ZM-03 | Personalbedarfsprognose | Kennzahlen, Quelle, Zeitbezug, Mindestmengen und Fehlinterpretationsschutz |
 | ZM-04 | Kapazitäts-/Fallbackplanung | Lokale Erweiterung, gebundelte Bibliothek oder Laufzeit-App gemäß ADR 0001 |
 | ZM-05 | Aggregierte Berichte | Empfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
-| ZM-06 | Suiteweite Lokalisierung | Nach erneuter Freigabe: Pilot-App, Locales, Sprachquelle, Fallback und Rohtext-Gate |
+| ZM-06 | Suiteweite Lokalisierung | Entscheidung: keine eigene App — Nextcloud-l10n ist app-scoped (Übersetzungsdomain = App-ID, Kataloge in `<app>/l10n/`; eine zentrale App kann fremde Texte nicht übersetzen). Sprachquelle Deutsch (Fallback, auch bei admin/admin), Kataloge `l10n/en.*` + `l10n/en_GB.*` je App mit englischer Übersetzung als Bonus — alle Apps, einschließlich `flzcalendar` und `flz_organization`, sind auf DE-Quelltexte umgestellt. Umsetzung pro App in einzeln beauftragten App-Läufen (`t()`/`IL10N::t()`, JS-Adapter, Rohtext-Gate je App), BR-Apps zuletzt |
 | ZM-07 | Recruitment–BQ-Integration | Minimaler Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
 
 Für alle personalbezogenen Zukunftsmodule gelten vor einer Produktentscheidung:
