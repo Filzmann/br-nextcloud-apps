@@ -86,7 +86,7 @@ Suite-Konvention (ZM-06): Quelltexte sind deutsch — Deutsch ist das Fallback
 Englisch als Bonus; bei Locale `de` greift ohne Katalogeintrag der deutsche
 Quelltext. Alle Apps (einschließlich `flzcalendar` und `flz_organization`)
 sind umgestellt; Vorbild für JS-Adapter `js/modules/localization.js` und
-Inventar `docs/l10n-inventory.md` je App. Mailversand
+Inventar `<app>/docs/l10n-inventory.md` je App-Repository. Mailversand
 erfolgt ausschließlich über den Nextcloud-Mail-Transport (Core-Mailsettings),
 niemals über app-eigene SMTP-Einstellungen. Ebenso gilt: Personenzuweisungen
 für besondere Rollen (z. B. Datenschutzberechtigte) erfolgen ausschließlich
