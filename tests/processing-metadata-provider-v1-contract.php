@@ -197,7 +197,7 @@ $registration->register($incompatible);
 if (array_keys($registration->providers()) !== ['flz_data_protection', 'flzroom', 'flzplaner', 'flzcalendar', 'flzurlaub', 'flzrecruitment', 'brstunden', 'brtop', 'flzbqplanung', 'flz_permission_matrix']) {
     throw new RuntimeException('Ein inkompatibler Provider hat die gesunde Pilotabdeckung verändert.');
 }
-if ($registration->registrationFailures() !== ['incompatible_app' => 'Processing metadata provider incompatible.']) {
+if ($registration->registrationFailures() !== ['incompatible_app' => 'Verarbeitungsmetadaten-Provider ist inkompatibel.']) {
     throw new RuntimeException('Ein inkompatibler Provider bleibt nicht kontrolliert diagnostizierbar.');
 }
 

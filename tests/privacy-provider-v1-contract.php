@@ -109,7 +109,7 @@ $duplicateRegistration = new RegisterPersonalDataProvidersEvent();
 $duplicateRegistration->register($providers['flzroom']);
 $duplicateRegistration->register($providers['flzroom']);
 $assertSame(
-    ['flzroom' => 'Provider incompatible.'],
+    ['flzroom' => 'Personendaten-Provider ist inkompatibel.'],
     $duplicateRegistration->registrationFailures(),
     'Eine doppelte reale Provider-ID wird nicht kontrolliert abgewiesen.',
 );
