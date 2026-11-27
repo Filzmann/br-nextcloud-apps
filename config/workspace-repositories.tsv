@@ -16,6 +16,9 @@ flzbqplanung	app	flzbqplanung	work-in-nextcloud-app,test-driven-change
 flz_data_protection	app	flz_data_protection	work-in-nextcloud-app,test-driven-change
 flz_akut	app	flz_akut	work-in-nextcloud-app,test-driven-change
 flz_kapazitaet	app	flz_kapazitaet	work-in-nextcloud-app,test-driven-change
+flz_dpa	app	flz_dpa	work-in-nextcloud-app,test-driven-change
+flz_prognose	app	flz_prognose	work-in-nextcloud-app,test-driven-change
+flz_berichte	app	flz_berichte	work-in-nextcloud-app,test-driven-change
 flz-full-suite	product-docs	-	-
 filzmann-ai-harness	tool	-	-
 filzmann-ai-evidence	evidence	-	-

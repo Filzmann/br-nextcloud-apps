@@ -1,0 +1,4 @@
+services:
+  web:
+    volumes:
+      - ${DDEV_APPROOT}/../flz_prognose:/var/www/html/html/custom_apps/flz_prognose:cached

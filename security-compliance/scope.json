@@ -74,6 +74,9 @@
     {"id": "flzbqplanung", "repository": "flzbqplanung", "kind": "development-domain-app"},
     {"id": "flz_data_protection", "repository": "flz_data_protection", "kind": "independent-runtime-app"},
     {"id": "flz_akut", "repository": "flz_akut", "kind": "domain-app"},
-    {"id": "flz_kapazitaet", "repository": "flz_kapazitaet", "kind": "domain-app"}
+    {"id": "flz_kapazitaet", "repository": "flz_kapazitaet", "kind": "domain-app"},
+    {"id": "flz_dpa", "repository": "flz_dpa", "kind": "domain-app"},
+    {"id": "flz_prognose", "repository": "flz_prognose", "kind": "domain-app"},
+    {"id": "flz_berichte", "repository": "flz_berichte", "kind": "domain-app"}
   ]
 }

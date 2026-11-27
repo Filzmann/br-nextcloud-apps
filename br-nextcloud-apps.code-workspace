@@ -69,6 +69,18 @@
       "path": "flz_kapazitaet"
     },
     {
+      "name": "flz_dpa",
+      "path": "flz_dpa"
+    },
+    {
+      "name": "flz_prognose",
+      "path": "flz_prognose"
+    },
+    {
+      "name": "flz_berichte",
+      "path": "flz_berichte"
+    },
+    {
       "name": "filzmann-ai-harness",
       "path": "filzmann-ai-harness"
     },
