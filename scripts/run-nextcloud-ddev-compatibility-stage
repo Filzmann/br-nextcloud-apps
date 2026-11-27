@@ -268,9 +268,11 @@ enable_apps() {
 }
 
 # Synthetische fachliche Umgebung fuer die Freigabephase: persistierter
-# LocalBase-BR-Gruppenvertrag (Default-Gruppen, Revision 1) und Mitgliedschaft
-# des Compat-Admins in der BR-Mitgliedergruppe. Idempotent; ohne Vertrag bleibt
-# der BrMembershipSnapshot V1 ungültig und BR-Fachrollen fail-closed.
+# LocalBase-BR-Gruppenvertrag (Default-Gruppen, Revision 1) samt angelegten
+# BR-Rollengruppen. Idempotent; ohne Vertrag bleibt der BrMembershipSnapshot V1
+# ungueltig und BR-Fachrollen fail-closed. Die Mitgliedschaft des Compat-Admins
+# wird bewusst NICHT geseeded: Apps wie brstunden grants exactly ueber die
+# Mitgliedschaft, die pre-grant-Probes muessen false bleiben.
 seed_localbase_br_definition() {
     local effective_major="$1"
     [[ -d "$project/html/custom_apps/localbase" ]] || return 0
@@ -308,11 +310,6 @@ foreach (['Betriebsrat', 'Betriebsrat-Vorsitzende', 'Betriebsrat-Stellvertreter'
         $groups->createGroup($gid);
         echo "group-created\t$gid\n";
     }
-}
-$member = $groups->get('Betriebsrat');
-if ($member !== null && !$groups->isInGroup($uid, 'Betriebsrat')) {
-    $member->addUser($user);
-    echo "member-added\t$uid\n";
 }
 PHP
     (cd "$project" && ddev exec -d /var/www/html/html php compatibility-br-seed.php "$admin_user") </dev/null \
