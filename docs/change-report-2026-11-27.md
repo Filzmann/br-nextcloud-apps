@@ -38,10 +38,29 @@ app-lokalen Auftrag entschieden; fehlende fachliche Festlegungen bleiben
 
 ## DP-10 — Schreibende Matrix-Bedienoberfläche (freigegeben)
 
-ADR 0003 wird um den schreibenden opt-in Verwaltungsvertrag erweitert und eine
-Owner-/Source-of-Truth-Matrix erstellt; danach Umsetzung in
-`flz_permission_matrix` mit öffentlichem Vertrag, Audit, CSRF sowie
-Allow-/Deny-/Manipulations- und Lifecycle-Tests.
+ADR 0003 wurde um den schreibenden opt-in Verwaltungsvertrag erweitert
+(„Erweiterung 2026-11-27“): Änderungen an Berechtigungen nimmt ausschließlich
+die native Nextcloud-Gruppe „Datenschutzbeauftragte“ vor (nicht native
+NC-Admins); Owner-/Source-of-Truth-Matrix je Berechtigungsquelle; öffentlicher
+opt-in Vertrag mit CSRF, app-lokalem Audit sowie Allow-/Deny-/Manipulations-
+und Lifecycle-Tests; UI als zugängliches Overlay. Umsetzung folgt in
+`flz_permission_matrix` (Roadmap-Paket BPM-WRITE-UI).
+
+## ROOM-STORE-01/02 — Rebranding „Filzmann Rooms“ (gestartet)
+
+Store-Anforderungen am 27.11.2026 gegen die offiziellen Quellen erhoben
+(docs.nextcloud.com App-Store-Regeln, nextcloud/appstore developer.rst) und die
+Umbenennungsmatrix festgelegt: App-ID `flzrooms`, Name „Filzmann Rooms“,
+Namespace `FlzRooms`, Präfix `flz-rooms-*`, l10n-Domain `flzrooms`. Siehe
+`flzroom/docs/store-readiness.md`; vor jedem RC erneut verifizieren.
+
+## RECR-POOL-ACTIVATION — Bewerberpool (freigegeben)
+
+Eckwerte bestätigt: 12-Monats-Default (konfigurierbar, Pflege nur durch die
+Gruppe „Datenschutzbeauftragte“), Self-Service nur für die eigene versionierte
+Einwilligung (erteilen/erneuern/widerrufen), keine Fremddaten, nicht-wertende
+Regelvorschläge nur auf Berufsgruppe/Stundenkorridor/Region mit manueller
+Bestätigung. Siehe `flzrecruitment/ROADMAP.md`.
 
 ## Learning Candidate CDP-Browser-Smoke (freigegeben)
 

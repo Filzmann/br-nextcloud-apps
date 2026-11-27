@@ -210,3 +210,25 @@ migriert oder verändert.
 - Die Art.-15-Providerlücke ist geschlossen. Fachliche Retention- und
   Maßnahmenentscheidungen bleiben sichtbar und werden nicht durch die bloße
   thematische Zuordnung als gelöst dargestellt.
+
+## Erweiterung 2026-11-27: Schreibender Verwaltungsvertrag (DP-10, freigegeben)
+
+Die Matrix erhält eine schreibende Bedienoberfläche nach folgendem Vertrag:
+
+- **Actor:** Änderungen an Berechtigungen nimmt ausschließlich die native
+  Nextcloud-Gruppe „Datenschutzbeauftragte“ vor (serverseitig geprüft; native
+  NC-Admins allein erhalten keinen fachlichen Schreibzugriff auf Matrixdaten).
+  Personenzuweisungen erfolgen über native Gruppen, niemals über app-eigene
+  UID-Listen in AppConfig.
+- **Owner-/Source-of-Truth-Matrix:** Jede Berechtigungsquelle (Files, Shares,
+  Groupfolders, Calendar, Fremd-Apps) hat genau einen fachlichen Owner; die
+  Matrix bleibt read-only Projektion und führt keine zweite Datenwahrheit.
+- **Öffentlicher opt-in Verwaltungsvertrag:** versionierte API mit explizitem
+  Opt-in je Datendomäne, CSRF-Schutz auf allen Schreibendpunkten, Audit-Log
+  (Actor, Zeitpunkt, Domäne, alter/neuer Wert) app-lokal und revisionssicher.
+- **Lifecycle:** Anlegen/Ändern/Entfernen von Berechtigungseinträgen jeweils mit
+  Allow-, Deny-, Manipulations- und Lifecycle-Tests in `flz_permission_matrix`.
+- **UI:** Bündelung in einem zusammengehörigen, zugänglichen Overlay-/Klappbereich
+  gemäß ADR 0004-Vertrag; Tastatur-, Fokus- und Accessibility-Nachweise Pflicht.
+- Umsetzung erfolgt ausschließlich im App-Repository `flz_permission_matrix`
+  nach diesem Vertrag; dieses ADR wird nicht abgeschwächt.
