@@ -533,7 +533,7 @@ als Produktion, direkte Fremdtabellenzugriffe, zyklische App-Abhängigkeiten,
 eine Basis-App nur für Hilfsfunktionen und oberflächliche Grep-Gates mit
 irreführendem Grünurteil.
 
-## ZM-04: Klassifikationsvorschlag Kapazitäts-/Fallbackplanung (2026-11-28, Vorschlag — nicht entschieden)
+## ZM-04: Klassifikation Kapazitäts-/Fallbackplanung (2026-11-28, entschieden durch Simon: Kategorie B)
 
 Die Kapazitäts-/Fallbackplanung (`flz_kapazitaet`, heute als explizites
 Navigationsziel in der OrgSuite geführt, noch ohne eigenes Repository im
@@ -555,8 +555,9 @@ Inventar) wird nach diesem Vertrag wie folgt vorgeschlagen:
 - **Kein direkter Zugriff** auf Tabellen, Controller oder Assets anderer
   Fachapps; keine still voraussgesetzte private App in einem Store-Paket.
 
-Dieser Vorschlag ist bis zur ausdrücklichen Freigabe unverbindlich und löst
-keine Anlage eines neuen Repositories aus.
+**Entscheidung 28.11.2026 (Simon):** Der Vorschlag ist freigegeben —
+`flz_kapazitaet` bleibt eigenständige Kategorie-B-Laufzeit-App; die Kopplung
+erfolgt ausschließlich über öffentliche V1-Verträge.
 
 ## Datierte Änderung 28. November 2026 — FR-09 als verbindliche Regel geschlossen
 
