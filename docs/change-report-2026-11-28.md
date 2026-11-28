@@ -94,3 +94,24 @@ keine Datenmigration nötig.
 - LocalBase bleibt als Repository bestehen (Test-Harness: PhpTestRunner und
   Coverage-Tooling unter `tests/`, Compat-Stage/Staging-Mirror), wird aber
   nicht mehr gebündelt. Vollständiger Code-Rückbau bleibt offen.
+
+## Entscheidungen vom 28. November 2026 (Session-Abschluss, Simon)
+
+- **FR-01/FR-02 (P0) — weiter ausbauen**: Die V1-Verträge
+  (`OCA\FlzOrganization\PublicApi\V1`, `OCA\FlzPermissionMatrix\PublicApi\V1`)
+  werden additiv weiter ausgebaut; jeder neue Vertrag braucht Owner,
+  Provider-/Consumer-Contract-Tests und Fehlersemantik.
+- **ZM-03 (Personalbedarfsprognose) — zurückgestellt**: bleibt offen im
+  Zukunftsplan, keine Umsetzung.
+- **ZM-05 (Aggregierte Berichte) — Konzept zuerst**: vor einem Pilot in
+  flz_berichte wird ein Datenschutzkonzept (Empfänger, Granularität, Export,
+  Aufbewahrung, Reidentifikationsrisiko) erstellt.
+- **ZM-07 (Recruitment–BQ-Integration) — Minimal-Vertrag**: kleiner
+  versionierter V1-Vertrag zwischen flzrecruitment und flzbqplanung (fehlender
+  Provider bleibt gültiger Standalone-Zustand); flzbqplanung bleibt bis zur
+  Release-Reife aus den Bundles ausgeschlossen.
+- **DP-06/DP-09 — inkrementell weiter**: bleiben laufende Pflicht bei jeder
+  neuen Datenklasse/Verarbeitung; Lücken bleiben sichtbar als `partial`,
+  `UNKNOWN`, `UNSUPPORTED`.
+- **flzroom 0.13.0**: stabiler Versionsbump für den offiziellen App Store
+  (flzroom PR #15), Store-Artefakt rc4.
