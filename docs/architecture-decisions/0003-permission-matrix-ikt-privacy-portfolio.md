@@ -112,10 +112,8 @@ Die Ausnahme gilt nur gemeinsam mit diesen Schutzgrenzen:
 - erweiterte ACLs, Team-/Circle-Zuordnungen, die historische App-ID
   `files_groupfolders`, abweichende Versionen und Quellfehler führen sichtbar
   zu `UNKNOWN` beziehungsweise `PARTIAL`;
-- vor jedem Release mit diesem Adapter prüft
-  `flz_permission_matrix/scripts/check-groupfolders-source-compatibility`
-  einen
-  frischen offiziellen Groupfolders-Checkout. Änderungen an Version,
+- vor jedem Release mit diesem Adapter prüfte das damalige Quellgate-Skript
+  einen frischen offiziellen Groupfolders-Checkout. Änderungen an Version,
   Ziel-Nextcloud, DTO-Feldern oder Methode blockieren die Freigabe, bis
   Adapter, Tests und Gate bewusst gemeinsam aktualisiert wurden.
 
