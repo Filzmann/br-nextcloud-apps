@@ -3,7 +3,7 @@ path	kind	app_id	required_skills
 brtop	app	brtop	work-in-nextcloud-app,test-driven-change
 flzplaner	app	flzplaner	work-in-nextcloud-app,test-driven-change
 brstunden	app	brstunden	work-in-nextcloud-app,test-driven-change
-localbase	app	localbase	work-in-nextcloud-app,test-driven-change
+localbase	tool	-	-
 flz_shared	library	-	-
 flz_permission_matrix	app	flz_permission_matrix	work-in-nextcloud-app,test-driven-change
 flzcalendar	app	flzcalendar	work-in-nextcloud-app,test-driven-change

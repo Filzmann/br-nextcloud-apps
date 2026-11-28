@@ -129,3 +129,23 @@ keine Datenmigration nötig.
   nachweislichem Mehrbedarf gibt es einen versionierten OCS-/OpenAPI-Vertrag
   mit Autorisierung, Fehlersemantik und Kombinations-Contract-Tests. In ADR
   0001 verankert.
+
+- **LB-RUNTIME-RETIREMENT — vollständiger LocalBase-Code-Rückbau erledigt
+  (Freigabe Simon, 28.11.2026)**: Alle Laufzeit-Pilotkomponenten aus
+  `localbase` entfernt (lib/, routes, templates, js/css/img/l10n, resources/,
+  Pilot-Tests; PR nextcloud-localbase#12, info.xml auf registrierungsfreie Hülle
+  0.13.0). Test-Harness unter `tests/` bleibt vollständig (PhpTestRunner,
+  js-runner, fake-dom-Helper, Coverage-Tooling, consumer-contracts-CI);
+  `PilotRemovalContractTest` sichert den Zustand. Parent: tsv-Kind `tool`,
+  Coverage-Baselines ohne localbase, ADR-0001-Amendment, workspace.md/Zukunftsplan
+  aktualisiert. Art.-15-Pilot ebenfalls zurückgebaut (kein Fremd-Fallback).
+- **Rote main-CI repariert**: flz_akut (TZ-Pin im JS-Test + fehlende
+  flz_organization/flzplaner/flz_kapazitaet-Checkouts; f1699c2, JS-Coverage
+  96,07 %) und flz_organization (fehlende flz_kapazitaet/flzplaner-Checkouts
+  79b8702 + neuer OrganizationDefinitionContractTest b40f981, PHP-Coverage
+  77,50 % über Gate 67,79 %). Alle 14 App-Repos auf main grün.
+- **flzroom 0.13.1-rc.1**: „Erste Schritte“-Karte im Adminbereich (PR #17) —
+  sichtbar solange kein Raum existiert, rein informativ, verschwindet
+  automatisch nach dem ersten Raum.
+- **DDEV-Delivery-Gate erneut grün** (RC=0, 28.11.2026 13:12 UTC) nach
+  `occ upgrade` (flzroom 0.13.1-rc.1 übernommen).

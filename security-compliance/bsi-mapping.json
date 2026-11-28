@@ -154,7 +154,7 @@
       "topic": "security-relevant events, diagnosability and data-minimized logs",
       "status": "partial",
       "implementation_refs": ["AGENTS.md", "docs/architecture.md", "security-compliance/README.md"],
-      "verification_refs": ["localbase/tests/Service/AppLoggerSmokeTest.php", "flz_permission_matrix/tests/unit/AccessServiceTest.php"],
+      "verification_refs": ["flz_shared/tests/run.php", "flz_permission_matrix/tests/unit/AccessServiceTest.php"],
       "evidence": ["safe scalar logger context", "app-local admin grant and permission-matrix audit records", "error isolation tests"],
       "scope": ["all-apps"],
       "gap": "No cross-app security-event taxonomy or organizational retention/monitoring owner is approved.",

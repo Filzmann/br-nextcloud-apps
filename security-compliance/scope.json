@@ -7,7 +7,7 @@
   },
   "sources": {
     "repository_inventory": "config/workspace-repositories.tsv",
-    "flz_product_catalog": "localbase/resources/flz-product-catalog.json",
+    "flz_product_catalog": "orgsuite/resources/flz-product-catalog.json",
     "architecture": "docs/architecture.md",
     "privacy": "docs/privacy-architecture.md"
   },
@@ -42,7 +42,7 @@
     "Nextcloud and its public OCP APIs",
     "configured LDAP or other Nextcloud user backends",
     "Nextcloud mail service",
-    "OpenHolidays API through the single LocalBase adapter",
+    "OpenHolidays API through the single flz_organization adapter",
     "user-configured CalDAV endpoints including Kopano",
     "Google Calendar OAuth/API where explicitly configured",
     "GitHub Actions and referenced build actions"
@@ -54,29 +54,100 @@
     "formal BSI certification and external penetration testing"
   ],
   "support_policy": {
-    "available_states": ["supported", "security-fixes-only", "end-of-life"],
+    "available_states": [
+      "supported",
+      "security-fixes-only",
+      "end-of-life"
+    ],
     "current_state": "development",
     "decision": "DECISION-REQUIRED",
     "source_for_platform_versions": "each appinfo/info.xml plus reproducible future-compatibility evidence"
   },
   "applications": [
-    {"id": "brtop", "repository": "brtop", "kind": "domain-app"},
-    {"id": "flzplaner", "repository": "flzplaner", "kind": "domain-app"},
-    {"id": "brstunden", "repository": "brstunden", "kind": "domain-app"},
-    {"id": "localbase", "repository": "localbase", "kind": "shared-runtime-app"},
-    {"id": "flz_permission_matrix", "repository": "flz_permission_matrix", "kind": "independent-runtime-app"},
-    {"id": "flzcalendar", "repository": "flzcalendar", "kind": "domain-app"},
-    {"id": "flzurlaub", "repository": "flzurlaub", "kind": "domain-app"},
-    {"id": "flz_organization", "repository": "flz_organization", "kind": "independent-runtime-app"},
-    {"id": "orgsuite", "repository": "orgsuite", "kind": "navigation-infrastructure-app"},
-    {"id": "flzroom", "repository": "flzroom", "kind": "domain-app"},
-    {"id": "flzrecruitment", "repository": "flzrecruitment", "kind": "domain-app"},
-    {"id": "flzbqplanung", "repository": "flzbqplanung", "kind": "development-domain-app"},
-    {"id": "flz_data_protection", "repository": "flz_data_protection", "kind": "independent-runtime-app"},
-    {"id": "flz_akut", "repository": "flz_akut", "kind": "domain-app"},
-    {"id": "flz_kapazitaet", "repository": "flz_kapazitaet", "kind": "domain-app"},
-    {"id": "flz_dpa", "repository": "flz_dpa", "kind": "domain-app"},
-    {"id": "flz_prognose", "repository": "flz_prognose", "kind": "domain-app"},
-    {"id": "flz_berichte", "repository": "flz_berichte", "kind": "domain-app"}
+    {
+      "id": "brtop",
+      "repository": "brtop",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flzplaner",
+      "repository": "flzplaner",
+      "kind": "domain-app"
+    },
+    {
+      "id": "brstunden",
+      "repository": "brstunden",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_permission_matrix",
+      "repository": "flz_permission_matrix",
+      "kind": "independent-runtime-app"
+    },
+    {
+      "id": "flzcalendar",
+      "repository": "flzcalendar",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flzurlaub",
+      "repository": "flzurlaub",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_organization",
+      "repository": "flz_organization",
+      "kind": "independent-runtime-app"
+    },
+    {
+      "id": "orgsuite",
+      "repository": "orgsuite",
+      "kind": "navigation-infrastructure-app"
+    },
+    {
+      "id": "flzroom",
+      "repository": "flzroom",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flzrecruitment",
+      "repository": "flzrecruitment",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flzbqplanung",
+      "repository": "flzbqplanung",
+      "kind": "development-domain-app"
+    },
+    {
+      "id": "flz_data_protection",
+      "repository": "flz_data_protection",
+      "kind": "independent-runtime-app"
+    },
+    {
+      "id": "flz_akut",
+      "repository": "flz_akut",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_kapazitaet",
+      "repository": "flz_kapazitaet",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_dpa",
+      "repository": "flz_dpa",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_prognose",
+      "repository": "flz_prognose",
+      "kind": "domain-app"
+    },
+    {
+      "id": "flz_berichte",
+      "repository": "flz_berichte",
+      "kind": "domain-app"
+    }
   ]
 }

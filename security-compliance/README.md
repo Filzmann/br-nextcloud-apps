@@ -11,7 +11,7 @@ liegt nicht vor und wird hier nicht behauptet.
 
 - `scope.json` bestimmt Repository-, Verantwortungs- und Plattformgrenzen.
 - FLZ-Produktmengen stammen ausschließlich aus
-  `localbase/resources/flz-product-catalog.json`; App-Laufzeitabhängigkeiten
+  `orgsuite/resources/flz-product-catalog.json`; App-Laufzeitabhängigkeiten
   stammen ausschließlich aus der jeweiligen `appinfo/info.xml`. Der
   Security-Scope dupliziert beide Aussagen bewusst nicht.
 - `bsi-mapping.json` ist die einzige zentrale Zuordnung von
