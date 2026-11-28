@@ -72,7 +72,8 @@ for app in "${apps[@]}"; do
         if ((string)$xml->id !== $expectedId) throw new RuntimeException("App-ID stimmt nicht mit dem Ordner überein");
         if (strtolower((string)$xml->licence) !== "agpl") throw new RuntimeException("Lizenzmetadatum ist nicht AGPL");
         if (version_compare((string)$xml->dependencies->php["min-version"], "8.3", "<")) throw new RuntimeException("PHP-Minimum liegt unter 8.3");
-        if ((string)$xml->website !== "https://github.com/Filzmann/flz-full-suite") throw new RuntimeException("Zentrale Projektseite fehlt");
+        $website = (string)$xml->website;
+        if ($website !== "https://github.com/Filzmann/flz-full-suite" && $website !== "https://github.com/Filzmann/nextcloud-" . $expectedId) throw new RuntimeException("Zentrale Projektseite oder eigene Repository-Seite fehlt");
         if (!str_starts_with((string)$xml->bugs, "https://github.com/Filzmann/nextcloud-") || !str_ends_with((string)$xml->bugs, "/issues")) throw new RuntimeException("Öffentlicher Fehlerkanal ist ungültig");
         if (!str_starts_with((string)$xml->repository, "https://github.com/Filzmann/nextcloud-")) throw new RuntimeException("Öffentliches Quellrepository ist ungültig");
     ' "$info" "$app"

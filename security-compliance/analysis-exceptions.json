@@ -1,23 +1,66 @@
 {
-  "schema_version": 1,
-  "policy": {
-    "required_fields": [
-      "id",
-      "scanner",
-      "repository",
-      "path",
-      "finding_id",
-      "content_hash",
-      "fingerprint",
-      "classification",
-      "reason",
-      "compensating_controls",
-      "review_on",
-      "expires_on"
-    ],
-    "allowed_scanners": ["gitleaks", "semgrep"],
-    "allowed_classifications": ["false-positive", "risk-accepted"],
-    "gitleaks_allowed_classifications": ["false-positive"]
+ "schema_version": 1,
+ "policy": {
+  "required_fields": [
+   "id",
+   "scanner",
+   "repository",
+   "path",
+   "finding_id",
+   "content_hash",
+   "fingerprint",
+   "classification",
+   "reason",
+   "compensating_controls",
+   "review_on",
+   "expires_on"
+  ],
+  "allowed_scanners": [
+   "gitleaks",
+   "semgrep"
+  ],
+  "allowed_classifications": [
+   "false-positive",
+   "risk-accepted"
+  ],
+  "gitleaks_allowed_classifications": [
+   "false-positive"
+  ]
+ },
+ "exceptions": [
+  {
+   "scanner": "gitleaks",
+   "repository": "flz_data_protection",
+   "finding_id": "generic-api-key",
+   "classification": "false-positive",
+   "reason": "gitleaks meldet generic-api-key auf dem Konfigurationsschlüssel 'permission_assignments_v1' (Zeichenfolge ohne Geheimniswert); es handelt sich um einen benannten AppConfig-Schlüssel, nicht um einen API-Key.",
+   "compensating_controls": [
+    "Der Wert ist ein statischer Konfigurationsschlüssel ohne Geheimnisgehalt; Secrets liegen ausschließlich in der Nextcloud-Konfiguration außerhalb des Repos.",
+    "gitleaks läuft gepinnt im Delivery-Gate; künftige echte Schlüsselfunde fallen weiterhin auf."
+   ],
+   "review_on": "2026-12-31",
+   "expires_on": "2027-06-30",
+   "id": "GITLEAKS-FP-2026-11-28-001",
+   "path": "lib/Service/PermissionAssignmentsService.php",
+   "content_hash": "df7de84d173c3da4ecca56cc7b83eda872486f1e1c782ff4175b1ca87e7dd523",
+   "fingerprint": "cac51f84e8b31243aacce9152e84ae3cf59665821ddcb531046c531c38da9f2c"
   },
-  "exceptions": []
+  {
+   "scanner": "gitleaks",
+   "repository": "flz_data_protection",
+   "finding_id": "generic-api-key",
+   "classification": "false-positive",
+   "reason": "gitleaks meldet generic-api-key auf dem Konfigurationsschlüssel 'permission_assignments_v1' (Zeichenfolge ohne Geheimniswert); es handelt sich um einen benannten AppConfig-Schlüssel, nicht um einen API-Key.",
+   "compensating_controls": [
+    "Der Wert ist ein statischer Konfigurationsschlüssel ohne Geheimnisgehalt; Secrets liegen ausschließlich in der Nextcloud-Konfiguration außerhalb des Repos.",
+    "gitleaks läuft gepinnt im Delivery-Gate; künftige echte Schlüsselfunde fallen weiterhin auf."
+   ],
+   "review_on": "2026-12-31",
+   "expires_on": "2027-06-30",
+   "id": "GITLEAKS-FP-2026-11-28-002",
+   "path": "tests/unit/PermissionConfigurationSourceContractTest.php",
+   "content_hash": "e959e3d31f091be077b33e82864369189f9388ad88f77201c5dce7e2eb013fcf",
+   "fingerprint": "185e86147f91d852bab25de63e40f37ca60f676bba253b670677d07cedd9f3c4"
+  }
+ ]
 }
