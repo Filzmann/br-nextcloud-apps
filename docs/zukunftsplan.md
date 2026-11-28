@@ -33,7 +33,7 @@ für jedes betroffene Repository bleibt erforderlich.
 
 | ID | Priorität | Grenze | Nächster Schritt / Gate |
 | --- | --- | --- | --- |
-| FR-01 | P0 | `localbase` und heutige Consumer | Die Kategorie-A/B/C-Migration aus ADR 0001 je eindeutigem Vertrag fortsetzen. Für jeden Pilot und Consumer sind Owner, Installations-, Update-, Deinstallations- und Rückbauverhalten sowie Provider-/Consumer-Contracts nachzuweisen. |
+| FR-01 | P0 | `localbase` und heutige Consumer | **Erledigt 28.11.2026:** Kategorie-A/B/C-Migration abgeschlossen, alle Consumer migriert, LocalBase-Pilotcode vollständig zurückgebaut (Test-Harness bleibt). Siehe datierter Änderungsbericht 2026-11-28. |
 | FR-02 | P0 | Öffentliche Organisations-, Kalender-, Capability- und Katalogverträge | Für jeden Vertrag kleinste öffentliche V1-Grenze, Aktivierungs-/Versionshandshake, Fehlersemantik und additive Kompatibilität entscheiden und testbar machen. Keine zweite Datenquelle einführen. |
 | FR-06 | P1 | Groupfolders-Ausnahme der Berechtigungsmatrix | Die private 22.x-Ausnahme nur mit dem in ADR 0003 vorgesehenen Quellkompatibilitäts- und Negativgate fortführen. Unbekannte Versionen bleiben `UNKNOWN`. |
 | FR-09 | P2 | künftige externe oder Inter-App-HTTP-APIs | Vor Veröffentlichung prüfen, ob ein Nextcloud-Standard genügt; andernfalls versionierten OCS-/OpenAPI-Vertrag mit Autorisierung, Fehlersemantik und Kombinations-Contracts freigeben. |

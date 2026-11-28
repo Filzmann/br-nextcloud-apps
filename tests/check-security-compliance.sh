@@ -90,8 +90,8 @@ php -r '
     $data["exceptions"][] = [
         "id" => "TEST-OVERDUE",
         "scanner" => "osv-scanner",
-        "repository" => "localbase",
-        "path" => "tests/coverage/package-lock.json",
+        "repository" => "brtop",
+        "path" => "tests/run.php",
         "fingerprint" => str_repeat("a", 64),
         "vulnerability" => "CVE-2099-0001",
         "severity" => "high",
@@ -118,8 +118,8 @@ php -r '
     $data["exceptions"][] = [
         "id" => "TEST-NULL-FIELD",
         "scanner" => "osv-scanner",
-        "repository" => "localbase",
-        "path" => "tests/coverage/package-lock.json",
+        "repository" => "brtop",
+        "path" => "tests/run.php",
         "fingerprint" => str_repeat("b", 64),
         "vulnerability" => "CVE-2099-0002",
         "severity" => "high",

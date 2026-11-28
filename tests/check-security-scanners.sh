@@ -496,7 +496,12 @@ php -r '
     if (($error["level"] ?? null) !== "error" || ($error["type"] ?? null) !== "ParseError") throw new RuntimeException("Semgrep-Parserfehler ist nicht explizit typisiert");
     if (($data["warnings"] ?? []) !== []) throw new RuntimeException("Semgrep-Parserfehler wurde als Warnung typisiert");
 ' "$temporary/semgrep-report-error.json"
-if MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-failed.json" >/dev/null 2>&1; then
+mkdir -p "$temporary/osv-probe"
+printf '%s\n' '{"name":"osv-probe","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"dependencies":{"lodash":"4.17.20"}},"node_modules/lodash":{"version":"4.17.20"}},"dependencies":{"lodash":{"version":"4.17.20"}}}' \
+    > "$temporary/osv-probe/package-lock.json"
+git -C "$temporary/osv-probe" init -q
+git -C "$temporary/osv-probe" add package-lock.json
+if MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-failed.json" --repository "osv-probe=$temporary/osv-probe" >/dev/null 2>&1; then
     echo 'Eine nicht akzeptierte Dependency-Schwachstelle wurde zugelassen.' >&2
     exit 1
 fi
@@ -528,7 +533,7 @@ php -r '
     ];
     file_put_contents($argv[3], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/osv-failed.json" "$workspace/security-compliance/vulnerability-exceptions.json" "$temporary/osv-accepted.json"
-MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-accepted-evidence.json" \
+MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-accepted-evidence.json" --repository "osv-probe=$temporary/osv-probe" \
     --vulnerability-exceptions "$temporary/osv-accepted.json" >/dev/null
 
 php -r '
@@ -536,7 +541,7 @@ php -r '
     $data["exceptions"][0]["severity"] = "LOW";
     file_put_contents($argv[2], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 ' "$temporary/osv-accepted.json" "$temporary/osv-stale-severity.json"
-if MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-stale-severity-evidence.json" \
+if MOCK_OSV_FINDING=1 run_scanners "$temporary/osv-stale-severity-evidence.json" --repository "osv-probe=$temporary/osv-probe" \
     --vulnerability-exceptions "$temporary/osv-stale-severity.json" >/dev/null 2>&1; then
     echo 'Eine veraltete Dependency-Risikoakzeptanz blieb trotz geänderter Schwere wirksam.' >&2
     exit 1

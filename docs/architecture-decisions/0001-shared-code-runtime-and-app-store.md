@@ -42,20 +42,20 @@ versioniert. Die Statusangaben bedeuten:
 
 ## Verifizierter Ist-Zustand
 
-### Eigener LocalBase-Lebenszyklus
+### Eigener LocalBase-Lebenszyklus (historisch — Ist-Zustand bei der Inventarisierung, vor dem Rückbau am 28. November 2026; die genannten LocalBase-Pfade existieren danach nicht mehr)
 
-| Eigenschaft | Befund | Status und Beleg |
+| Eigenschaft | Befund (Stand bei Inventarisierung) | Status und Beleg |
 | --- | --- | --- |
-| Nextcloud-App | Eigene App-ID `localbase`, Version, Repository, Namespace und Nextcloud-Kompatibilitätsbereich | verifiziert: `localbase/appinfo/info.xml` |
-| Datenbanktabellen | Keine eigene Fach- oder Cachetabelle gefunden | verifiziert: `localbase/lib/Migration/Version000001Date202607220001.php` registriert nur einen Job; Suche in `localbase/lib` findet kein `createTable` |
-| Migration | Eine Migration registriert den Kalenderjob additiv | verifiziert: `localbase/lib/Migration/Version000001Date202607220001.php` |
-| Hintergrundjob | Tägliche Aktualisierung des laufenden und der zwei folgenden Kalenderjahre | verifiziert: `localbase/appinfo/info.xml`, `localbase/lib/BackgroundJob/RefreshHolidayCalendarJob.php` |
-| Gemeinsam gespeicherte Daten | Kalenderkontext, Feiertagsjahre, Organisationsdefinition, Peerfreigaben und Demo-Kontoregister liegen in `IAppConfig`; persönliche Adminanordnung liegt in `IUserConfig` | verifiziert: `localbase/lib/Calendar/CalendarContextSettingsService.php`, `HolidayCalendarCacheStore.php`, `localbase/lib/Organization/FlzOrganizationSettingsService.php`, `FlzSuiteAdminSettingsService.php`, `localbase/lib/Service/DemoAccountProvisioningService.php`, `FlzSuiteAdminLayoutService.php` |
-| Öffentliche Laufzeitdienste | PHP-Klassen unter `OCA\LocalBase`, Event-/Capability-Verträge und per DI konsumierte Services | verifiziert: `localbase/docs/architecture.md` sowie Consumerstellen unten |
-| Capabilities | Keine Nextcloud-`ICapability` in `info.xml`; vorhanden ist ein eigener öffentlicher Eventvertrag für Integrationsfähigkeiten | verifiziert: `localbase/lib/Integration/IntegrationCapabilityQueryEvent.php`, `FlzIntegrationCapabilities.php`, `IntegrationCapabilityService.php` |
-| Benutzeroberfläche | Organisationseditor mit CSS, JavaScript, Template und Settings-Adaptern | verifiziert: `localbase/templates/organization-admin.php`, `localbase/js/admin/organization-admin.js`, `localbase/css/organization-admin.css`, `localbase/lib/Settings/StandaloneOrganizationAdmin.php` |
-| Routen und API | Fünf geschützte Adminrouten für Lesen, Kalenderkontext, Organisation, Freigaben und persönliches Layout | verifiziert: `localbase/appinfo/routes.php`, `localbase/lib/Controller/FlzSuiteAdminApiController.php` |
-| Externer Dienst | OpenHolidays-Adapter ohne Schlüssel, mit LocalBase-Cache und Fehlerzuständen | verifiziert: `localbase/lib/Calendar/OpenHolidaysClient.php`, `HolidayCalendarService.php` |
+| Nextcloud-App | Eigene App-ID `localbase`, Version, Repository, Namespace und Nextcloud-Kompatibilitätsbereich | verifiziert in `localbase/appinfo/info.xml` (heute registrierungsfreie Hülle 0.13.0) |
+| Datenbanktabellen | Keine eigene Fach- oder Cachetabelle gefunden | verifiziert: damalige Migration registrierte nur einen Job; kein `createTable` im damaligen LocalBase-lib-Verzeichnis |
+| Migration | Eine Migration registrierte den Kalenderjob additiv | historisch: damalige Migration `Version000001Date202607220001` |
+| Hintergrundjob | Tägliche Aktualisierung des laufenden und der zwei folgenden Kalenderjahre | historisch: damaliger `RefreshHolidayCalendarJob` |
+| Gemeinsam gespeicherte Daten | Kalenderkontext, Feiertagsjahre, Organisationsdefinition, Peerfreigaben und Demo-Kontoregister lagen in `IAppConfig`; persönliche Adminanordnung in `IUserConfig` | historisch: damalige Calendar-/Organization-/Service-Klassen im damaligen LocalBase-lib-Verzeichnis |
+| Öffentliche Laufzeitdienste | PHP-Klassen unter `OCA\LocalBase`, Event-/Capability-Verträge und per DI konsumierte Services | historisch: damalige LocalBase-Architekturdokumentation sowie Consumerstellen unten; heute liegen die Verträge in `flz_organization`/`flz_permission_matrix`/`flz_data_protection` |
+| Capabilities | Keine Nextcloud-`ICapability` in `info.xml`; eigener öffentlicher Eventvertrag für Integrationsfähigkeiten | historisch: damalige Integration-Event-Klassen im damaligen LocalBase-lib-Verzeichnis |
+| Benutzeroberfläche | Organisationseditor mit CSS, JavaScript, Template und Settings-Adaptern | historisch: damalige Template-/JS-/CSS-/Settings-Dateien in LocalBase |
+| Routen und API | Fünf geschützte Adminrouten für Lesen, Kalenderkontext, Organisation, Freigaben und persönliches Layout | historisch: damalige Routen-Datei und Admin-Controller in LocalBase |
+| Externer Dienst | OpenHolidays-Adapter ohne Schlüssel, mit LocalBase-Cache und Fehlerzuständen | historisch: damalige OpenHolidays-/Holiday-Klassen im damaligen LocalBase-lib-Verzeichnis |
 
 Es gibt damit keine LocalBase-eigenen Tabellen, aber sehr wohl zentralen
 persistenten Zustand und einen eigenständigen Laufzeit- und Update-Lebenszyklus.
@@ -86,7 +86,7 @@ OrgSuite: `scripts/read-flz-product-catalog.php` lädt
 `orgsuite/lib/Catalog/FlzProductCatalog.php` und
 `scripts/build-flz-full-suite-release.sh` liest
 `orgsuite/resources/flz-product-catalog.json`. (Datierte Änderung 28. November
-2026: Zuvor lud der Reader `localbase/lib/Catalog/FlzProductCatalog.php`; mit
+2026: Zuvor lud der Reader die damalige LocalBase-Katalogklasse; mit
 dem LocalBase-Retirement aus den Bundles ist OrgSuite die alleinige
 Katalogquelle.) Diese Quellbaumkopplung ist für
 den internen Suite-Build belegt, aber kein zulässiges Modell für ein
@@ -568,3 +568,18 @@ OCS-/OpenAPI-Vertrag mit Autorisierung, Fehlersemantik und
 Kombinations-Contract-Tests freigegeben. App-lokale Events (z. B. ZM-07
 `ApplicationHiredEvent`) sind der bevorzugte Mechanismus und bleiben ohne
 HTTP-Vertrag.
+
+## Datierte Änderung 28. November 2026 — LocalBase vollständig zurückgebaut
+
+Nach Abschluss der Kategorie-A/B/C-Migration (alle Consumer auf
+`OCA\FlzOrganization\PublicApi\V1\*`, `OCA\FlzPermissionMatrix\PublicApi\V1\*`,
+`OCA\FlzDataProtection\PublicApi\V1\*` bzw. app-lokale Komponenten und
+`vendor/flz-shared` umgestellt; Freigabe Simon, 28. November 2026) wurde die
+Kategorie-B-Laufzeitapp `localbase` vollständig zurückgebaut: kein `lib/`, keine
+Registrierungen in `appinfo/info.xml`, keine Templates/JS/CSS/l10n/resources mehr
+(Version 0.13.0, PR nextcloud-localbase#12). LocalBase bleibt als Test-Harness
+(`tests/`, inkl. PhpTestRunner, js-runner, fake-dom, Coverage-Tooling) und leere
+Compat-Stage-App bestehen; der Workspace-Inventar-Eintrag wechselt auf `tool`.
+Damit ist die in diesem ADR verankerte Kategorie-B-Pilotrolle von `localbase`
+erledigt; künftige gemeinsame Bausteine entstehen nur noch als Kategorie-A-Bibliothek
+(`flz_shared`, gebündelt pro App) oder in einer fachlich zuständigen Kategorie-B-App.

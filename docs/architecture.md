@@ -27,6 +27,13 @@ semantischen und testbaren Vertrag benötigen. `orgsuite` besitzt die
 gemeinsamen FLZ-/BR-Einstiege und den Adminadapter für app-übergreifende
 Organisationskonfiguration; sie besitzt keine Fachdaten.
 
+**Stand 28. November 2026 (LB-RUNTIME-RETIREMENT, Freigabe Simon):** `localbase`
+wurde vollständig zur Test-Harness-/Compat-Stage-App zurückgebaut (kein `lib/`,
+keine Registrierung in `appinfo/info.xml` mehr). Die ehemaligen LocalBase-Verträge
+liegen in `flz_organization`, `flz_permission_matrix` und `flz_data_protection`
+(PublicApi V1) bzw. als app-lokal gebündelte Kategorie-A-Bibliothek
+(`vendor/flz-shared`). Der Workspace-Inventar-Eintrag ist entsprechend `tool`.
+
 Die sieben FLZ-Fachprodukte `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom`,
 `flzrecruitment`, `flzbqplanung` und `flz_akut` bleiben einzeln installierbar.
 Die Akutschichtvermittlung gehört zum Full-Suite- und

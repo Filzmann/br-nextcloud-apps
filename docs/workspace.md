@@ -49,7 +49,7 @@ br-nextcloud-apps/
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
-|-- localbase/  # eigenes Git-Repo, gemeinsame lokale Basisbausteine
+|-- localbase/  # eigenes Git-Repo, Test-Harness + leere Compat-Stage (seit 28.11.2026 ohne Pilot-Code)
 |-- flz_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- flzcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
 |-- flzurlaub/   # eigenes Git-Repo, Urlaubsplanung
@@ -75,7 +75,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | BRTop | `brtop` | `brtop/` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
 | FlzPlaner | `flzplaner` | `flzplaner/` | `https://nextcloud-dev.ddev.site/apps/flzplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
-| LocalBase | `localbase` | `localbase/` | keine Navigation |
+| LocalBase (Test-Harness) | `localbase` | `localbase/` | keine Navigation, keine Laufzeit-Pilotkomponenten |
 | Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
 | Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
 | Filzmann Urlaubsplanung | `flzurlaub` | `flzurlaub/` | `https://nextcloud-dev.ddev.site/apps/flzurlaub/` |
