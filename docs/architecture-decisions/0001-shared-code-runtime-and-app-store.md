@@ -529,3 +529,28 @@ Quellcodekopien in Consumer-Repositories, Submodule, Composer-Path-Repositories
 als Produktion, direkte Fremdtabellenzugriffe, zyklische App-Abhängigkeiten,
 eine Basis-App nur für Hilfsfunktionen und oberflächliche Grep-Gates mit
 irreführendem Grünurteil.
+
+## ZM-04: Klassifikationsvorschlag Kapazitäts-/Fallbackplanung (2026-11-28, Vorschlag — nicht entschieden)
+
+Die Kapazitäts-/Fallbackplanung (`flz_kapazitaet`, heute als explizites
+Navigationsziel in der OrgSuite geführt, noch ohne eigenes Repository im
+Inventar) wird nach diesem Vertrag wie folgt vorgeschlagen:
+
+- **Kategorie B: eigenständige Nextcloud-Laufzeit-App.** Kapazitätsplanung
+  besitzt fachliche Persistenz (Schicht- und Verfügbarkeitsdaten mit
+  Personenbezug), eigene Berechtigungslogik und mindestens einen
+  Background-/Konsistenzpfad. Sie ist damit kein Kandidat für eine gebündelte
+  Bibliothek (Kategorie A) und kein bewusst lokaler Code (Kategorie C).
+- **Kein Kategorie-A-Anteil in flz_shared ohne zweiten Consumer.** Reine
+  Value-Objects (z. B. Belegungsintervalle) dürfen erst extrahiert werden, wenn
+  mindestens zwei Apps sie semantisch gleich benötigen und der Vertrag
+  app-übergreifend testbar ist.
+- **Optionale Kopplung an bestehende Fachapps ausschließlich über öffentliche
+  Verträge:** Abwesenheits-/Konfliktdaten über `OCA\FlzOrganization\PublicApi\V1`
+  (AbsenceQuery/ScheduleConflict), Organisations- und BR-Rollen über die
+  V1-Snapshots; ein fehlender Provider ist ein gültiger Standalone-Zustand.
+- **Kein direkter Zugriff** auf Tabellen, Controller oder Assets anderer
+  Fachapps; keine still voraussgesetzte private App in einem Store-Paket.
+
+Dieser Vorschlag ist bis zur ausdrücklichen Freigabe unverbindlich und löst
+keine Anlage eines neuen Repositories aus.
