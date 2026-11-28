@@ -6,7 +6,7 @@ catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t products < <(php "$catalog_reader" products)
 
-for app in localbase orgsuite "${products[@]}"; do
+for app in orgsuite "${products[@]}"; do
     info="$workspace/$app/appinfo/info.xml"
     if grep -Eq '<app([[:space:]>])' "$info"; then
         echo "Nicht unterstützte App-Abhängigkeit in $app/appinfo/info.xml" >&2

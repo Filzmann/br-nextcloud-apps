@@ -92,14 +92,15 @@ make_cloud() {
 make_bundle "$temporary/calendar" flzcalendar
 "$installer" --nextcloud-root "$cloud" --bundle-dir "$temporary/calendar/bundle" --product flzcalendar
 
-for app in localbase orgsuite flzcalendar; do
+for app in orgsuite flzcalendar; do
     [[ -f "$cloud/custom_apps/$app/appinfo/info.xml" ]] || { echo "Installierte App fehlt: $app" >&2; exit 1; }
 done
-php -r '$s=json_decode(file_get_contents($argv[1]),true); if (!isset($s["localbase"],$s["flzcalendar"]) || isset($s["orgsuite"])) exit(1);' "$cloud/enabled.json"
+[[ ! -d "$cloud/custom_apps/localbase" ]] || { echo "LocalBase darf nicht mehr installiert werden." >&2; exit 1; }
+php -r '$s=json_decode(file_get_contents($argv[1]),true); if (!isset($s["flzcalendar"]) || isset($s["orgsuite"]) || isset($s["localbase"])) exit(1);' "$cloud/enabled.json"
 
 make_bundle "$temporary/planer" flzplaner
 "$installer" --nextcloud-root "$cloud" --bundle-dir "$temporary/planer/bundle" --product flzplaner
-php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","flzcalendar","flzplaner","orgsuite"] as $app) if (!isset($s[$app])) exit(1);' "$cloud/enabled.json"
+php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["flzcalendar","flzplaner","orgsuite"] as $app) if (!isset($s[$app])) exit(1);' "$cloud/enabled.json"
 if [[ "$(grep -c '^upgrade$' "$cloud/occ.log")" -ne 2 ]]; then
     echo 'Nextcloud-App-Upgrades wurden nicht nach jedem Produktlauf ausgeführt.' >&2
     exit 1
@@ -115,7 +116,7 @@ for ((left=0; left<${#products[@]}; left++)); do
         make_bundle "$temporary/pair-$first-$second-second" "$second"
         "$installer" --nextcloud-root "$pair_cloud" --bundle-dir "$temporary/pair-$first-$second-first/bundle" --product "$first" >/dev/null
         "$installer" --nextcloud-root "$pair_cloud" --bundle-dir "$temporary/pair-$first-$second-second/bundle" --product "$second" >/dev/null
-        php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","orgsuite",$argv[2],$argv[3]] as $app) if (!isset($s[$app])) exit(1);' "$pair_cloud/enabled.json" "$first" "$second"
+        php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["orgsuite",$argv[2],$argv[3]] as $app) if (!isset($s[$app])) exit(1);' "$pair_cloud/enabled.json" "$first" "$second"
     done
 done
 
@@ -154,7 +155,7 @@ recruitment_cloud="$temporary/recruitment-cloud"
 make_cloud "$recruitment_cloud"
 make_bundle "$temporary/recruitment" flzrecruitment
 "$installer" --nextcloud-root "$recruitment_cloud" --bundle-dir "$temporary/recruitment/bundle" --product flzrecruitment >/dev/null
-php -r '$s=json_decode(file_get_contents($argv[1]),true); foreach (["localbase","flzrecruitment"] as $app) if (!isset($s[$app])) exit(1); if (isset($s["orgsuite"])) exit(2);' "$recruitment_cloud/enabled.json"
+php -r '$s=json_decode(file_get_contents($argv[1]),true); if (!isset($s["flzrecruitment"])) exit(1); if (isset($s["orgsuite"]) || isset($s["localbase"])) exit(2);' "$recruitment_cloud/enabled.json"
 
 cp -R "$temporary/calendar/bundle" "$temporary/broken"
 printf '0%.0s' {1..64} > "$temporary/broken/SHA256SUMS"

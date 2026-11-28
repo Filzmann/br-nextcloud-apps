@@ -73,7 +73,7 @@ legacy_tokens = (
     "OCA\\FilzmannDataProtection", "OCA\\FilzmannPermissionMatrix", "fdp_",
 )
 runtime_roots = [workspace / app_id for app_id in all_apps]
-runtime_roots.extend((workspace / "localbase", workspace / "orgsuite"))
+runtime_roots.extend((workspace / "orgsuite",))
 extensions = {".php", ".js", ".mjs", ".json", ".xml", ".md"}
 for root in runtime_roots:
     for path in root.rglob("*"):
