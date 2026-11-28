@@ -2,7 +2,7 @@ app	minimum_line_coverage_percent
 brtop	39.89
 flzplaner	44.47
 brstunden	36.27
-localbase	95.71
+localbase	95.38
 flz_permission_matrix	47.13
 flz_organization	67.79
 flzcalendar	85
@@ -13,4 +13,8 @@ flzrecruitment	43.78
 flzbqplanung	85
 flz_data_protection	0.00
 flz_akut	85
+flz_kapazitaet	0.00
+flz_dpa	0.00
+flz_prognose	0.00
+flz_berichte	0.00
 TOTAL	47.76

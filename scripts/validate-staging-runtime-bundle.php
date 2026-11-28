@@ -27,6 +27,7 @@ try
         'php/src/Controller/ApiResponder.php',
         'php/src/Model/ModelApiTrait.php',
         'php/src/Service/AppLogger.php',
+        'php/src/Service/DemoAccountProvisioningService.php',
         'php/vendor/autoload.php',
         'php/vendor/composer/ClassLoader.php',
         'php/vendor/composer/LICENSE',

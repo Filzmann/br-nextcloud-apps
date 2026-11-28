@@ -5,7 +5,7 @@ declare(strict_types=1);
 use OCA\LocalBase\Catalog\FlzProductCatalog;
 
 $workspace = dirname(__DIR__);
-$catalogFile = getenv('FLZ_PRODUCT_CATALOG_FILE') ?: $workspace . '/localbase/resources/flz-product-catalog.json';
+$catalogFile = getenv('FLZ_PRODUCT_CATALOG_FILE') ?: $workspace . '/orgsuite/resources/flz-product-catalog.json';
 require_once $workspace . '/localbase/lib/Catalog/FlzProductCatalog.php';
 
 $catalog = new FlzProductCatalog($catalogFile);

@@ -205,6 +205,51 @@
       "threats": [
         {"id": "flz-akut-cross-bureau-or-candidate-bypass", "description": "A caller could access a foreign bureau shift or assign a person who is not an active member of its ASN team.", "controls": ["AUTHZ-01", "WEB-01", "CONTRACT-01", "PRIVACY-01", "JOBS-01"], "verification_refs": ["flz_akut/tests/Service/AccessPolicyTest.php", "flz_akut/tests/Domain/ShiftWorkflowTest.php", "flz_akut/tests/Contract/ProviderCompatibilityTest.php"], "residual_risk": "Runtime wiring against real Nextcloud groups and provider events remains subject to the separately authorized DDEV acceptance run."}
       ]
+    },
+    {
+      "id": "flz_kapazitaet",
+      "assets": ["capacity reports of assistants (uid, day, restriction, note, creator)"],
+      "actors": ["assistant (own reports)", "member of a configured office group (all reports)", "consumer app flz_akut (read-only event contract)", "privacy reviewer"],
+      "entry_points": ["page route", "capacity state/create/bulk/delete API routes", "public CapacityQueryEvent V1", "public privacy and processing-metadata provider events"],
+      "trust_boundaries": ["session identity to own-write check", "office group membership to all-read/all-write", "CapacityQueryEvent result to consumer (fail-closed without provider)", "event contract to foreign app tables (forbidden)"],
+      "privileges": ["read and write own capacities", "office groups: read and write all capacities", "serve read-only capacity intervals to consumers", "review own app-owned provider projections"],
+      "threats": [
+        {"id": "flz-kapazitaet-foreign-write-or-read", "description": "A caller could read or modify capacity reports of another assistant without office membership.", "controls": ["AUTHZ-01", "WEB-01", "PRIVACY-01"], "verification_refs": ["flz_kapazitaet/tests/Domain/CapacityWorkflowTest.php", "flz_kapazitaet/tests/Contract/RouteSecurityContractTest.php"], "residual_risk": "Runtime wiring against real Nextcloud groups and the database remains subject to the separately authorized DDEV acceptance run."},
+        {"id": "flz-kapazitaet-unbounded-consumer-leak", "description": "A consumer could receive capacities beyond the requested employees and time window, or a missing provider could be treated as authoritative.", "controls": ["CONTRACT-01", "AUTHZ-01", "PRIVACY-01"], "verification_refs": ["flz_kapazitaet/tests/Contract/CapacityQueryContractTest.php", "flz_akut/tests/Contract/CapacityGatewayContractTest.php"], "residual_risk": "Consumer-side fail-closed behavior is covered by contract tests; production event wiring remains subject to DDEV acceptance."}
+      ]
+    },
+    {
+      "id": "flz_dpa",
+      "assets": ["pilot page rendering (no domain data yet)"],
+      "actors": ["any logged-in Nextcloud user", "temporarily authorized Nextcloud admin"],
+      "entry_points": ["page route GET /"],
+      "trust_boundaries": ["session identity to page access", "no domain data or write endpoints exist in the pilot"],
+      "privileges": ["view the pilot page"],
+      "threats": [
+        {"id": "flz-dpa-pilot-page-exposure", "description": "The pilot page could be exposed without a session or grant unintended rights.", "controls": ["WEB-01", "AUTHZ-01"], "verification_refs": ["flz_dpa/tests/AppStructureContractTest.php", "flz_dpa/tests/nextcloud-compatibility-smoke.php"], "residual_risk": "The pilot exposes no domain data; runtime wiring remains subject to the separately authorized DDEV acceptance run."}
+      ]
+    },
+    {
+      "id": "flz_prognose",
+      "assets": ["pilot page rendering (no domain data yet)"],
+      "actors": ["any logged-in Nextcloud user", "temporarily authorized Nextcloud admin"],
+      "entry_points": ["page route GET /"],
+      "trust_boundaries": ["session identity to page access", "no domain data or write endpoints exist in the pilot"],
+      "privileges": ["view the pilot page"],
+      "threats": [
+        {"id": "flz-prognose-pilot-page-exposure", "description": "The pilot page could be exposed without a session or grant unintended rights.", "controls": ["WEB-01", "AUTHZ-01"], "verification_refs": ["flz_prognose/tests/AppStructureContractTest.php", "flz_prognose/tests/nextcloud-compatibility-smoke.php"], "residual_risk": "The pilot exposes no domain data; runtime wiring remains subject to the separately authorized DDEV acceptance run."}
+      ]
+    },
+    {
+      "id": "flz_berichte",
+      "assets": ["pilot page rendering (no domain data yet)"],
+      "actors": ["any logged-in Nextcloud user", "temporarily authorized Nextcloud admin"],
+      "entry_points": ["page route GET /"],
+      "trust_boundaries": ["session identity to page access", "no domain data or write endpoints exist in the pilot"],
+      "privileges": ["view the pilot page"],
+      "threats": [
+        {"id": "flz-berichte-pilot-page-exposure", "description": "The pilot page could be exposed without a session or grant unintended rights.", "controls": ["WEB-01", "AUTHZ-01"], "verification_refs": ["flz_berichte/tests/AppStructureContractTest.php", "flz_berichte/tests/nextcloud-compatibility-smoke.php"], "residual_risk": "The pilot exposes no domain data; runtime wiring remains subject to the separately authorized DDEV acceptance run."}
+      ]
     }
   ]
 }

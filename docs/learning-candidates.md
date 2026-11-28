@@ -1,6 +1,6 @@
 # Unverbindliche Learning Candidates
 
-Stand: 28. Juli 2026
+Stand: 25. November 2026
 
 Diese Datei enthält ausschließlich offene, noch nicht entschiedene Learning
 Candidates. Nach einer Entscheidung wird der Candidate entfernt.
@@ -11,4 +11,7 @@ Verschiebung folgen dem Skill `evaluate-learning-candidate`.
 
 ## Offene Candidates
 
-Derzeit sind keine offenen Learning Candidates vorhanden.
+Keine offenen Candidates. Der CDP-Browser-Smoke-Candidate wurde am
+27.11.2026 freigegeben und als opt-in-Testbaustein im Parent umgesetzt
+(`scripts/browser-ddev-smoke.sh` + `scripts/js/cdp-browser.mjs`, siehe
+`docs/change-report-2026-11-27.md`).

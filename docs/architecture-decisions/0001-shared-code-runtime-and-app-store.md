@@ -85,7 +85,7 @@ Der Parent-Releasecode liest LocalBase-Interna direkt:
 `scripts/read-flz-product-catalog.php` lädt
 `localbase/lib/Catalog/FlzProductCatalog.php`, und
 `scripts/build-flz-full-suite-release.sh` liest
-`localbase/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
+`orgsuite/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
 den internen Suite-Build belegt, aber kein zulässiges Modell für ein
 eigenständiges App-Store-Archiv.
 
@@ -103,7 +103,7 @@ LocalBase-Template, LocalBase-Routen und die interne Produktkatalogdatei.
 Die fünf im Produktkatalog als `product` und `standalone` geführten Apps
 `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom` und `flzrecruitment` sind die
 verifizierten Kandidaten für getrennte Produktveröffentlichungen
-(`localbase/resources/flz-product-catalog.json`,
+(`orgsuite/resources/flz-product-catalog.json`,
 `flz-full-suite/docs/ARCHITECTURE.md`). Die BR-Apps besitzen derzeit ebenso wie die
 übrigen Workspace-Apps kein freigegebenes öffentliches Store-Ziel. Eine
 spätere Veröffentlichung bleibt eine gesonderte Entscheidung je App;
@@ -139,6 +139,20 @@ Deinstallation von LocalBase würde außerdem gemeinsam gespeicherte AppConfig,
 Adminoberfläche, Cache und Job betreffen. Update- und Rollbackfähigkeit sind
 deshalb erst nach expliziter Vertragsversionierung und sauber getesteten
 Installationskombinationen belegbar.
+
+Ergänzung vom 2026-11-28: Die Ersetzung von LocalBase schreitet voran. Der
+kanonische FLZ-Produktkatalog liegt nun in
+`orgsuite/resources/flz-product-catalog.json` mit app-lokaler
+Reader-Klasse `OCA\OrgSuite\Catalog\FlzProductCatalog`; die Parent-Skripte
+lesen ausschließlich diese Quelle (ggf. per `FLZ_PRODUCT_CATALOG_FILE`
+übersteuerbar). `flz_organization` hostet die öffentliche
+`PublicApi\V1`-Schnittstelle (OrganisationSnapshot, CalendarContext,
+HolidayCalendar, AbsenceQuery, ScheduleConflict, IntegrationCapabilities),
+über die ehemalige LocalBase-Events konsumieren; `flz_shared` ist die
+gebundelte Kategorie-A-Bibliothek (`OCA\<App>\Vendor\Filzmann\Shared`).
+Standalone-Navigation, Berechtigungsmatrix und Demo-Packs sind app-lokal.
+Sobald kein Consumer mehr `OCA\LocalBase` in lib/appinfo/templates/js
+referenziert, wird der LocalBase-Retirement-Schritt (Phase 8) ausgelöst.
 
 ## Entscheidung
 
@@ -515,3 +529,28 @@ Quellcodekopien in Consumer-Repositories, Submodule, Composer-Path-Repositories
 als Produktion, direkte Fremdtabellenzugriffe, zyklische App-Abhängigkeiten,
 eine Basis-App nur für Hilfsfunktionen und oberflächliche Grep-Gates mit
 irreführendem Grünurteil.
+
+## ZM-04: Klassifikationsvorschlag Kapazitäts-/Fallbackplanung (2026-11-28, Vorschlag — nicht entschieden)
+
+Die Kapazitäts-/Fallbackplanung (`flz_kapazitaet`, heute als explizites
+Navigationsziel in der OrgSuite geführt, noch ohne eigenes Repository im
+Inventar) wird nach diesem Vertrag wie folgt vorgeschlagen:
+
+- **Kategorie B: eigenständige Nextcloud-Laufzeit-App.** Kapazitätsplanung
+  besitzt fachliche Persistenz (Schicht- und Verfügbarkeitsdaten mit
+  Personenbezug), eigene Berechtigungslogik und mindestens einen
+  Background-/Konsistenzpfad. Sie ist damit kein Kandidat für eine gebündelte
+  Bibliothek (Kategorie A) und kein bewusst lokaler Code (Kategorie C).
+- **Kein Kategorie-A-Anteil in flz_shared ohne zweiten Consumer.** Reine
+  Value-Objects (z. B. Belegungsintervalle) dürfen erst extrahiert werden, wenn
+  mindestens zwei Apps sie semantisch gleich benötigen und der Vertrag
+  app-übergreifend testbar ist.
+- **Optionale Kopplung an bestehende Fachapps ausschließlich über öffentliche
+  Verträge:** Abwesenheits-/Konfliktdaten über `OCA\FlzOrganization\PublicApi\V1`
+  (AbsenceQuery/ScheduleConflict), Organisations- und BR-Rollen über die
+  V1-Snapshots; ein fehlender Provider ist ein gültiger Standalone-Zustand.
+- **Kein direkter Zugriff** auf Tabellen, Controller oder Assets anderer
+  Fachapps; keine still voraussgesetzte private App in einem Store-Paket.
+
+Dieser Vorschlag ist bis zur ausdrücklichen Freigabe unverbindlich und löst
+keine Anlage eines neuen Repositories aus.

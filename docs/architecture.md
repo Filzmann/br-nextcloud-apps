@@ -60,6 +60,39 @@ genannte Grundsatz, dass Navigation keine Rechte erweitert, gilt auch hier.
 über einen app-eigenen Port. Fachliche Planungsregeln und das Verhalten bei
 eingeschränkter Kalenderverfügbarkeit stehen in `flzbqplanung/AGENTS.md`.
 
+App-übergreifende fachliche Zeitzone: Die in den Nextcloud-Systemeinstellungen
+hinterlegte Instanz-Zeitzone (`config.php` `timezone`, gelesen über
+`IConfig::getSystemValueString('timezone', 'UTC')`, Fallback UTC bei leerem
+oder ungültigem Wert) ist die fachliche Zeitzone aller FLZ-Apps. Der
+organisationsweite Kalenderkontext (`flz_organization`, gespiegelt in
+LocalBase) führt sie im Feld `timezone`; persönliche Nextcloud-Zeitzonen
+beeinflussen ausschließlich individuelle Anzeigen. App-lokal hartkodierte
+Zeitzonen (z. B. `Europe/Berlin`) sind unzulässig; die DB-Speicherung erfolgt
+weiterhin in UTC.
+
+App-übergreifende Locale: Ebenso gilt die Nextcloud-Locale — serverseitig
+`config.php` `locale` (`IConfig::getSystemValueString('locale', …)`),
+clientseitig `OC.getLocale()`. Apps dürfen keine eigene Locale hartkodieren
+(clientseitig `de-DE`, serverseitig `OUTPUT_LOCALE`-Konstanten); ein
+fachlicher Fallback (z. B. `de-DE` für deutsche Lohnunterlagen) ist nur als
+Default erlaubt, wenn die Instanz keine Locale konfiguriert hat. Sichtbare
+Texte werden pro App über die Nextcloud-Lokalisierung ausgegeben: Quelltexte
+sind mit `t()`/`IL10N::t()` unter der eigenen App-ID als Übersetzungsdomain
+markiert, die Kataloge liegen in `<app>/l10n/`. Eine zentrale
+Lokalisierungs-App existiert bewusst nicht, weil Nextcloud-Übersetzungen
+app-scoped sind und eine App fremde Templates oder Assets nicht anfassen darf.
+Suite-Konvention (ZM-06): Quelltexte sind deutsch — Deutsch ist das Fallback
+(auch bei admin/admin), die Kataloge `l10n/en.*` und `l10n/en_GB.*` liefern
+Englisch als Bonus; bei Locale `de` greift ohne Katalogeintrag der deutsche
+Quelltext. Alle Apps (einschließlich `flzcalendar` und `flz_organization`)
+sind umgestellt; Vorbild für JS-Adapter `js/modules/localization.js` und
+Inventar `<app>/docs/l10n-inventory.md` je App-Repository. Mailversand
+erfolgt ausschließlich über den Nextcloud-Mail-Transport (Core-Mailsettings),
+niemals über app-eigene SMTP-Einstellungen. Ebenso gilt: Personenzuweisungen
+für besondere Rollen (z. B. Datenschutzberechtigte) erfolgen ausschließlich
+über **native Nextcloud-Gruppen** (`IGroupManager`), niemals über app-eigene
+UID-Listen in AppConfig; die App speichert höchstens die Gruppen-ID.
+
 Die normative Einteilung gemeinsamen Codes und app-übergreifender
 Laufzeitdienste, die Store-Regeln sowie die komponentenweise
 LocalBase-Bestandsaufnahme stehen in

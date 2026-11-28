@@ -41,7 +41,11 @@ br-nextcloud-apps/
 |       |-- docker-compose.flzrecruitment.yaml
 |       |-- docker-compose.flzbqplanung.yaml
 |       |-- docker-compose.flz_data_protection.yaml
-|       `-- docker-compose.flz_akut.yaml
+|       |-- docker-compose.flz_akut.yaml
+|       |-- docker-compose.flz_kapazitaet.yaml
+|       |-- docker-compose.flz_dpa.yaml
+|       |-- docker-compose.flz_prognose.yaml
+|       `-- docker-compose.flz_berichte.yaml
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
@@ -55,6 +59,10 @@ br-nextcloud-apps/
 |-- flzbqplanung/ # eigenes Git-Repo, Basisqualifizierungsplanung
 |-- flz_data_protection/ # eigenes Git-Repo, Datenschutz-Center
 |-- flz_akut/ # eigenes Git-Repo, Akutschichtvermittlung
+|-- flz_kapazitaet/ # eigenes Git-Repo, Kapazitätsmeldungen
+|-- flz_dpa/ # eigenes Git-Repo, Pilot DPA-Fallsteuerung (ZM-02)
+|-- flz_prognose/ # eigenes Git-Repo, Pilot Personalbedarfsprognose (ZM-03)
+|-- flz_berichte/ # eigenes Git-Repo, Pilot Aggregierte Berichte (ZM-05)
 `-- flz-full-suite/   # eigenes Git-Repo, öffentliche Produktdokumentation
 ```
 
@@ -78,6 +86,10 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | Filzmann BQ-Planer | `flzbqplanung` | `flzbqplanung/` | `https://nextcloud-dev.ddev.site/apps/flzbqplanung/` |
 | Datenschutz-Center | `flz_data_protection` | `flz_data_protection/` | `https://nextcloud-dev.ddev.site/apps/flz_data_protection/` |
 | Akutschichtvermittlung | `flz_akut` | `flz_akut/` | `https://nextcloud-dev.ddev.site/apps/flz_akut/` |
+| Kapazitätsmeldungen | `flz_kapazitaet` | `flz_kapazitaet/` | `https://nextcloud-dev.ddev.site/apps/flz_kapazitaet/` |
+| DPA-Fallsteuerung (Pilot) | `flz_dpa` | `flz_dpa/` | `https://nextcloud-dev.ddev.site/apps/flz_dpa/` |
+| Personalbedarfsprognose (Pilot) | `flz_prognose` | `flz_prognose/` | `https://nextcloud-dev.ddev.site/apps/flz_prognose/` |
+| Aggregierte Berichte (Pilot) | `flz_berichte` | `flz_berichte/` | `https://nextcloud-dev.ddev.site/apps/flz_berichte/` |
 
 Die öffentliche Produktübersicht und Release-Unterlagen liegen im getrennten Repository `flz-full-suite/`; es enthält keinen deploybaren App-Code und keinen Nextcloud-Mount.
 
@@ -111,7 +123,7 @@ Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/` und `flz-full-suite/` sind eigene Git-Repositories.
+- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/`, `flz_kapazitaet/`, `flz_dpa/`, `flz_prognose/`, `flz_berichte/` und `flz-full-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -146,6 +158,10 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i flzrecruitment
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzbqplanung
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_data_protection
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_akut
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_kapazitaet
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_dpa
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_prognose
+ddev exec -d /var/www/html/html php occ app:list | grep -i flz_berichte
 ```
 
 In Codex-Sessions koennen DDEV-Befehle wegen Docker-/Stream-FD-Zugriffen eskalierten Zugriff brauchen. Das ist dann ein Sandbox-Thema, kein Hinweis auf einen kaputten DDEV-Stand.
@@ -384,6 +400,38 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.flz_akut.yaml
 ```
 
+Kapazitätsmeldungen:
+
+```text
+${WORKSPACE_ROOT}/flz_kapazitaet
+-> /var/www/html/html/custom_apps/flz_kapazitaet
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_kapazitaet.yaml
+```
+
+Pilot-Apps (ZM-02, ZM-03, ZM-05):
+
+```text
+${WORKSPACE_ROOT}/flz_dpa
+-> /var/www/html/html/custom_apps/flz_dpa
+${WORKSPACE_ROOT}/flz_prognose
+-> /var/www/html/html/custom_apps/flz_prognose
+${WORKSPACE_ROOT}/flz_berichte
+-> /var/www/html/html/custom_apps/flz_berichte
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.flz_dpa.yaml
+nextcloud-dev/.ddev/docker-compose.flz_prognose.yaml
+nextcloud-dev/.ddev/docker-compose.flz_berichte.yaml
+```
+
 Mount-Pfade muessen die tatsächliche Schreibweise des lokal ermittelten
 Workspace-Roots verwenden. Eine persönliche Home-Verzeichnisstruktur ist kein
 Projektvertrag.
@@ -561,6 +609,21 @@ DDEV-, HTTP- und Rollen-Smokes werden nur bei ausdrücklich beauftragter
 Laufzeitprüfung ausgeführt. Der Umfang und die Beweisgrenze jedes aktuellen
 Checks stehen in dessen Ausgabe und im zuständigen Skill; historische
 Auditberichte sind keine Betriebsanleitung.
+
+### Opt-in DDEV-Browser-Smoke (gemeinsamer CDP-Baustein)
+
+`scripts/browser-ddev-smoke.sh` startet headless Chrome und führt über
+`scripts/js/browser-ddev-smoke.mjs` + `scripts/js/cdp-browser.mjs` den
+authentifizierten Login (inkl. CSRF-Requesttoken) und die App-Öffnung aus;
+der app-spezifische Flow liegt als Modul mit `export async function run(api)`
+im jeweiligen App-Repository und wird über `FLZ_BROWSER_FLOW` gereicht.
+Aufruf aus dem App-Repo (nie im schnellen Standardlauf):
+
+```bash
+FLZ_BROWSER_USER=... FLZ_BROWSER_PASSWORD=... \
+FLZ_BROWSER_APP=<app-id> FLZ_BROWSER_FLOW="$PWD/tests/js/browser-ddev-smoke.mjs" \
+../br-nextcloud-apps/scripts/browser-ddev-smoke.sh
+```
 
 ## Git-Regeln
 

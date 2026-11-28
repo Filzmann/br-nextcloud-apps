@@ -2,11 +2,19 @@
 set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
-catalog="$workspace/localbase/resources/flz-product-catalog.json"
+catalog="$workspace/orgsuite/resources/flz-product-catalog.json"
 reader="$workspace/scripts/read-flz-product-catalog.php"
 
 [[ -f "$catalog" ]] || { echo 'Kanonischer FLZ-Produktkatalog fehlt.' >&2; exit 1; }
 [[ -f "$reader" ]] || { echo 'Maschinenlesbarer FLZ-Produktkatalog-Reader fehlt.' >&2; exit 1; }
+
+# Solange LocalBase noch eine eigene Kopie ausliefert, darf diese nicht von der
+# kanonischen OrgSuite-Quelle abweichen; beim LocalBase-Retirement entfällt die Kopie.
+legacy_copy="$workspace/localbase/resources/flz-product-catalog.json"
+if [[ -f "$legacy_copy" ]] && ! cmp -s "$legacy_copy" "$catalog"; then
+    echo 'LocalBase-Kopie des FLZ-Produktkatalogs weicht von der kanonischen OrgSuite-Quelle ab.' >&2
+    exit 1
+fi
 
 php "$reader" validate >/dev/null
 mapfile -t products < <(php "$reader" products)
