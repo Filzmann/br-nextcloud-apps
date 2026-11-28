@@ -56,7 +56,7 @@ expected_recruitment_url = "https://github.com/Filzmann/nextcloud-flzrecruitment
 if expected_recruitment_url not in suite_readme:
     raise SystemExit("Filzmann-Full-Suite-Übersicht verweist nicht auf das kanonische Recruitment-Repository")
 
-catalog_file = workspace / "localbase/resources/flz-product-catalog.json"
+catalog_file = workspace / "orgsuite/resources/flz-product-catalog.json"
 catalog = json.loads(catalog_file.read_text(encoding="utf-8"))
 products = [entry for entry in catalog["entries"] if entry["kind"] == "product"]
 if [entry["id"] for entry in products] != list(apps):

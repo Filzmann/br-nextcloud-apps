@@ -3,7 +3,7 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 installer="$workspace/scripts/install-flz-product-bundle.sh"
-catalog="$workspace/localbase/resources/flz-product-catalog.json"
+catalog="$workspace/orgsuite/resources/flz-product-catalog.json"
 catalog_reader="$workspace/scripts/read-flz-product-catalog.php"
 php "$catalog_reader" validate >/dev/null
 mapfile -t products < <(php "$catalog_reader" bundle-products)

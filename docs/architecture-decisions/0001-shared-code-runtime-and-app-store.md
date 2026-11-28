@@ -85,7 +85,7 @@ Der Parent-Releasecode liest LocalBase-Interna direkt:
 `scripts/read-flz-product-catalog.php` lädt
 `localbase/lib/Catalog/FlzProductCatalog.php`, und
 `scripts/build-flz-full-suite-release.sh` liest
-`localbase/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
+`orgsuite/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
 den internen Suite-Build belegt, aber kein zulässiges Modell für ein
 eigenständiges App-Store-Archiv.
 
@@ -103,7 +103,7 @@ LocalBase-Template, LocalBase-Routen und die interne Produktkatalogdatei.
 Die fünf im Produktkatalog als `product` und `standalone` geführten Apps
 `flzcalendar`, `flzplaner`, `flzurlaub`, `flzroom` und `flzrecruitment` sind die
 verifizierten Kandidaten für getrennte Produktveröffentlichungen
-(`localbase/resources/flz-product-catalog.json`,
+(`orgsuite/resources/flz-product-catalog.json`,
 `flz-full-suite/docs/ARCHITECTURE.md`). Die BR-Apps besitzen derzeit ebenso wie die
 übrigen Workspace-Apps kein freigegebenes öffentliches Store-Ziel. Eine
 spätere Veröffentlichung bleibt eine gesonderte Entscheidung je App;
@@ -139,6 +139,20 @@ Deinstallation von LocalBase würde außerdem gemeinsam gespeicherte AppConfig,
 Adminoberfläche, Cache und Job betreffen. Update- und Rollbackfähigkeit sind
 deshalb erst nach expliziter Vertragsversionierung und sauber getesteten
 Installationskombinationen belegbar.
+
+Ergänzung vom 2026-11-28: Die Ersetzung von LocalBase schreitet voran. Der
+kanonische FLZ-Produktkatalog liegt nun in
+`orgsuite/resources/flz-product-catalog.json` mit app-lokaler
+Reader-Klasse `OCA\OrgSuite\Catalog\FlzProductCatalog`; die Parent-Skripte
+lesen ausschließlich diese Quelle (ggf. per `FLZ_PRODUCT_CATALOG_FILE`
+übersteuerbar). `flz_organization` hostet die öffentliche
+`PublicApi\V1`-Schnittstelle (OrganisationSnapshot, CalendarContext,
+HolidayCalendar, AbsenceQuery, ScheduleConflict, IntegrationCapabilities),
+über die ehemalige LocalBase-Events konsumieren; `flz_shared` ist die
+gebundelte Kategorie-A-Bibliothek (`OCA\<App>\Vendor\Filzmann\Shared`).
+Standalone-Navigation, Berechtigungsmatrix und Demo-Packs sind app-lokal.
+Sobald kein Consumer mehr `OCA\LocalBase` in lib/appinfo/templates/js
+referenziert, wird der LocalBase-Retirement-Schritt (Phase 8) ausgelöst.
 
 ## Entscheidung
 
