@@ -58,7 +58,7 @@ export function runJavaScriptSuite(options) {
     const commonJsTests = testFiles.filter((file) => file.endsWith('.js'));
     const moduleTests = testFiles.filter((file) => !file.endsWith('.js'));
     if (commonJsTests.length > 0) {
-        const isolatedWorkspace = mkdtempSync(join(tmpdir(), 'localbase-js-tests.'));
+        const isolatedWorkspace = mkdtempSync(join(tmpdir(), 'flz-js-tests.'));
         const isolatedRoot = join(isolatedWorkspace, basename(options.root));
         try {
             mkdirSync(isolatedRoot, { recursive: true });
@@ -67,17 +67,15 @@ export function runJavaScriptSuite(options) {
             symlinkSync(join(options.root, 'js'), join(isolatedRoot, 'js'), 'dir');
             cpSync(join(options.root, 'tests'), join(isolatedRoot, 'tests'), { recursive: true });
 
-            const localbaseRoot = join(dirname(options.root), 'localbase');
-            if (localbaseRoot !== options.root && existsSync(localbaseRoot)) {
-                mkdirSync(join(isolatedWorkspace, 'localbase'), { recursive: true });
-                if (existsSync(join(localbaseRoot, 'js'))) {
-                    symlinkSync(join(localbaseRoot, 'js'), join(isolatedWorkspace, 'localbase', 'js'), 'dir');
+            const workspaceRoot = dirname(options.root);
+            const harnessRoot = existsSync(join(workspaceRoot, 'test-harness'))
+                ? join(workspaceRoot, 'test-harness')
+                : join(workspaceRoot, 'parent', 'test-harness');
+            if (existsSync(harnessRoot)) {
+                mkdirSync(join(isolatedWorkspace, 'test-harness'), { recursive: true });
+                if (existsSync(join(harnessRoot, 'js'))) {
+                    symlinkSync(join(harnessRoot, 'js'), join(isolatedWorkspace, 'test-harness', 'js'), 'dir');
                 }
-                cpSync(
-                    join(localbaseRoot, 'tests', 'js', 'helpers'),
-                    join(isolatedWorkspace, 'localbase', 'tests', 'js', 'helpers'),
-                    { recursive: true },
-                );
             }
             for (const file of commonJsTests) {
                 runCommand(isolatedRoot, 'node', [file]);

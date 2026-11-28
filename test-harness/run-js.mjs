@@ -2,12 +2,12 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runJavaScriptSuite } from './Support/js-runner.mjs';
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = dirname(fileURLToPath(import.meta.url));
 
 runJavaScriptSuite({
     root,
     testFiles: [
-        'tests/Support/js-runner-smoke.mjs',
+        'Support/js-runner-smoke.mjs',
     ],
-    successMessage: 'LocalBase JavaScript tests passed',
+    successMessage: 'Test-harness JavaScript tests passed',
 });

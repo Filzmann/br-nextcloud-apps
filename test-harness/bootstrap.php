@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$root = dirname(__DIR__);
+$root = __DIR__;
 
 spl_autoload_register(static function (string $class) use ($root): void {
     $prefix = 'OCA\\LocalBase\\';
