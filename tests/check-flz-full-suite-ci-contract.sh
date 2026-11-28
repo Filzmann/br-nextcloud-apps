@@ -84,6 +84,7 @@ for app in "${consumers[@]}"; do
             {
                 checkouts++
                 if (!checkout || !root || !noclean || !mainref) invalid = 1
+                if (parent_ln == 0) parent_ln = NR
             }
             parent = checkout = root = noclean = mainref = 0
         }
@@ -93,12 +94,15 @@ for app in "${consumers[@]}"; do
         /^          ref: main$/ { mainref = 1 }
         /^          path: .{3}$/ { root = 1 }
         /^          clean: false$/ { noclean = 1 }
+        /^      - name: App auschecken$/ { if (app_ln == 0) app_ln = NR }
         END {
             check_step()
-            exit (checkouts != 2 || invalid)
+            # checkout mit path "." wischelt den Workspace, daher muss der
+            # Parent-Checkout vor dem App-Checkout (path: app) laufen.
+            exit (checkouts != 2 || invalid || parent_ln == 0 || app_ln == 0 || parent_ln > app_ln)
         }
     ' "$workflow"; then
-        echo "PHP- und JavaScript-Job müssen je einen Parent-Checkout (ref: main, path: '.', clean: false) enthalten: ${workflow#"$workspace/"}." >&2
+        echo "PHP- und JavaScript-Job müssen je einen Parent-Checkout (ref: main, path: '.', clean: false) vor dem App-Checkout enthalten: ${workflow#"$workspace/"}." >&2
         exit 1
     fi
 done
