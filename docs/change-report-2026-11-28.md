@@ -177,3 +177,27 @@ keine Datenmigration nötig.
   klonbar, die Staging-Runtime-Spiegel in den Compat-/Staging-Skripten bleiben
   damit funktionsfaehig).
 - DDEV: `docker-compose.localbase.yaml` entfernt, App `localbase` deaktiviert.
+
+## Entscheidungen Simon vom 28.11.2026 (nachmittag) — im Zukunftsplan/ADR vermerkt
+
+- **FR-01**: LocalBase endgültig archiviert — Test-Harness liegt im Parent
+  (`test-harness/`), GitHub-Repo `nextcloud-localbase` auf `archived=true`,
+  DDEV ohne localbase-Mount, App deaktiviert. Alle 18 App-Repos stellen
+  Bootstraps/Workflows auf den Parent-Checkout um (PRs gemerged bzw. direkt
+  gepusht); Parent-PRs #24/#25/#26/#27 gemerged. CI-Vertrag erzwingt
+  Parent-Checkout vor App-Checkout.
+- **FR-06**: Groupfolders-22.x-Ausnahme endgültig entfernt (ADR-0003-konform,
+  `UNKNOWN` sichtbar) — erledigt.
+- **FR-09**: Policy „NC-Standard zuerst", sonst versionierter OCS-/OpenAPI-Vertrag.
+- **DP-06**: Fremd-App-Abdeckung read-only inventarisieren — freigegeben.
+- **DP-09**: Retention-V2-Provider mit Holds/Wiederherstellung als Nächstes bauen — beauftragt.
+- **ZM-03**: Personalbedarfsprognose (flz_prognose) als Nächstes beauftragt.
+- **ZM-04**: entschieden — Kategorie-B-eigene App (ADR-0001-Vorschlag freigegeben).
+- **ZM-05**: Datenschutzkonzept verbindlich — Empfänger = berichtspflichtige
+  Gruppen, k≥5 pro Aggregationszelle, Export nur PDF/CSV im Browser, keine
+  Persistenz, Audit nur Typ+Empfängergruppe.
+- **ZM-07**: minimaler einseitiger Vertrag recruitment → `bq_hiring_event_inbox`
+  (read-only, kein Rückkanal) bleibt.
+- **ZM-08/brsprechstundenbuch**: manuelles Löschrecht umgesetzt (dev.9, PR
+  nextcloud-brsprechstundenbuch#10) — eigene Sprechstunde samt Einträgen/Fällen
+  jederzeit vor Retention-Frist löschbar (DELETE, CSRF, Eigentümerprüfung).
