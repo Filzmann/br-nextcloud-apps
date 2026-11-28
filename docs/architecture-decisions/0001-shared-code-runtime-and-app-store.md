@@ -557,3 +557,14 @@ Inventar) wird nach diesem Vertrag wie folgt vorgeschlagen:
 
 Dieser Vorschlag ist bis zur ausdrücklichen Freigabe unverbindlich und löst
 keine Anlage eines neuen Repositories aus.
+
+## Datierte Änderung 28. November 2026 — FR-09 als verbindliche Regel geschlossen
+
+Externe oder Inter-App-HTTP-APIs folgen ab sofort verbindlich dieser Regel
+(Entscheidung Simon, 28. November 2026): Vor Veröffentlichung einer solchen
+API ist zu prüfen, ob ein Nextcloud-Standard (Events, Capabilities, OCS)
+genügt. Nur wenn nachweislich keiner genügt, wird ein versionierter
+OCS-/OpenAPI-Vertrag mit Autorisierung, Fehlersemantik und
+Kombinations-Contract-Tests freigegeben. App-lokale Events (z. B. ZM-07
+`ApplicationHiredEvent`) sind der bevorzugte Mechanismus und bleiben ohne
+HTTP-Vertrag.
