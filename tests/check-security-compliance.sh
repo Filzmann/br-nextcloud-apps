@@ -238,7 +238,7 @@ impact="$($checker \
     --changed-file flzcalendar/appinfo/routes.php \
     --changed-file flzcalendar/lib/Service/CalendarAccessService.php \
     --changed-file flzcalendar/lib/Migration/Version999Date.php \
-    --changed-file localbase/tests/coverage/composer.lock)"
+    --changed-file test-harness/coverage/composer.lock)"
 grep -Fq 'Review-Kontext: flzcalendar/appinfo/routes.php -> api-contract' <<< "$impact" || {
     echo 'Der Security-Impact nennt keinen konkreten App-/Dateikontext.' >&2
     exit 1

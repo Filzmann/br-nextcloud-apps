@@ -10,8 +10,8 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
     apps+=("$path")
 done < "$manifest"
 container_root='/var/www/html/html/custom_apps'
-tool="$container_root/localbase/tests/coverage/vendor/bin/phpcov"
-merger="$container_root/localbase/tests/coverage/merge-clover.php"
+tool="$container_root/test-harness/coverage/vendor/bin/phpcov"
+merger="$container_root/test-harness/coverage/merge-clover.php"
 container_output='/tmp/flz-full-suite-coverage'
 host_output="$workspace/build/coverage"
 summary="$host_output/php-summary.tsv"
