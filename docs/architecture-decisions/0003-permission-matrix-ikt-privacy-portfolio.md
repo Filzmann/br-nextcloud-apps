@@ -85,6 +85,14 @@ aus.
 
 ## Groupfolders-Kompatibilitätsgrenze
 
+> Datierte Änderung 28. November 2026 (FR-06, freigegeben durch Simon): Die
+> private Groupfolders-22.x-Ausnahme wurde entfernt, weil das unterstützte
+> Mindest-Nextcloud 33+ die 22.x-Sonderlogik gegenstandslos macht. Der
+> Abschnitt unten bleibt als historische Begründung dokumentiert.
+> `groupfolders`/`files_groupfolders` werden wie jede andere fremde App über
+> den GenericAppAdapter sichtbar als `UNSUPPORTED` geführt; unbekannte
+> Kombinationen bleiben `UNKNOWN`.
+
 `groupfolders` bleibt eine eigenständige fremde Nextcloud-Laufzeit-App. Der
 Adaptercode ist bewusst app-lokal in der Berechtigungsmatrix und wird weder in
 LocalBase noch in eine gemeinsame Bibliothek verschoben. Die offizielle App

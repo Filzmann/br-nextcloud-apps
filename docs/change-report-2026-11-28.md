@@ -115,3 +115,17 @@ keine Datenmigration nötig.
   `UNKNOWN`, `UNSUPPORTED`.
 - **flzroom 0.13.0**: stabiler Versionsbump für den offiziellen App Store
   (flzroom PR #15), Store-Artefakt rc4.
+
+## FR-06 und FR-09 — entschieden (Simon, 28. November 2026)
+
+- **FR-06 — Groupfolders-Ausnahme entfernt**: Die private
+  Groupfolders-22.x-Ausnahme der Berechtigungsmatrix (Adapter, Sources,
+  Provider, Quellgate) ist entfallen (flz_permission_matrix PR #8); das
+  unterstützte Mindest-Nextcloud 33+ macht sie gegenstandslos.
+  `groupfolders`/`files_groupfolders` werden sichtbar `UNSUPPORTED`,
+  unbekannte Kombinationen `UNKNOWN`. ADR 0003 trägt eine datierte Änderung.
+- **FR-09 — als Regel geschlossen**: Künftige externe/Inter-App-HTTP-APIs
+  müssen zuerst Nextcloud-Standards (Events/Capabilities/OCS) prüfen; nur bei
+  nachweislichem Mehrbedarf gibt es einen versionierten OCS-/OpenAPI-Vertrag
+  mit Autorisierung, Fehlersemantik und Kombinations-Contract-Tests. In ADR
+  0001 verankert.
