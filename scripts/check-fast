@@ -15,7 +15,14 @@ git diff --check
 echo '== Getrackte Artefakte und eindeutige Secret-Dateien =='
 # Nur explizit geprüfte, unvermeidbare Fixtures hier mit exaktem Repository-Pfad
 # aufnehmen. Die Allowlist bleibt bewusst klein und ersetzt keine Inhaltsprüfung.
-tracked_artifact_allowlist=()
+tracked_artifact_allowlist=(
+    # Gelockte Vertragsdateien des Test-Harness (Coverage-Tooling), bewusst getrackt
+    'test-harness/coverage/composer.json'
+    'test-harness/coverage/composer.lock'
+    'test-harness/coverage/merge-clover.php'
+    'test-harness/coverage/package.json'
+    'test-harness/coverage/package-lock.json'
+)
 tracked_secret_allowlist=(
     '.env.example'
 )
