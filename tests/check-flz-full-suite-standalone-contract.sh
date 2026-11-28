@@ -23,8 +23,12 @@ for app in "${products[@]}"; do
         echo "Direkte OrgSuite-Assetkopplung in $app/templates/index.php" >&2
         exit 1
     fi
-    if [[ ! -f "$listener" ]] || ! grep -Fq 'StandaloneAppNavigationService' "$listener"; then
-        echo "Standalone-Navigation fehlt in $app" >&2
+    if [[ ! -f "$listener" ]] || ! grep -Fq 'INavigationManager' "$listener" || ! grep -Fq 'LoadAdditionalEntriesEvent' "$listener"; then
+        echo "App-lokale Standalone-Navigation (INavigationManager) fehlt in $app" >&2
+        exit 1
+    fi
+    if grep -Fq 'OCA\\LocalBase\\' "$listener"; then
+        echo "Standalone-Navigation in $app nutzt noch LocalBase" >&2
         exit 1
     fi
     if ! grep -Fq 'LoadAdditionalEntriesEvent::class' "$application"; then
