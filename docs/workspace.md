@@ -31,6 +31,7 @@ br-nextcloud-apps/
 |       |-- docker-compose.brtop.yaml
 |       |-- docker-compose.flzplaner.yaml
 |       |-- docker-compose.brstunden.yaml
+|       |-- docker-compose.brsprechstundenbuch.yaml
 |       |-- docker-compose.localbase.yaml
 |       |-- docker-compose.flz_permission_matrix.yaml
 |       |-- docker-compose.flzcalendar.yaml
@@ -49,6 +50,7 @@ br-nextcloud-apps/
 |-- brtop/      # eigenes Git-Repo, im Parent ignoriert
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
+|-- brsprechstundenbuch/  # eigenes Git-Repo, im Parent ignoriert
 |-- localbase/  # eigenes Git-Repo, Test-Harness + leere Compat-Stage (seit 28.11.2026 ohne Pilot-Code)
 |-- flz_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- flzcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
@@ -75,6 +77,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | BRTop | `brtop` | `brtop/` | `https://nextcloud-dev.ddev.site/apps/brtop/` |
 | FlzPlaner | `flzplaner` | `flzplaner/` | `https://nextcloud-dev.ddev.site/apps/flzplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
+| BR-Sprechstundenbuch | `brsprechstundenbuch` | `brsprechstundenbuch/` | `https://nextcloud-dev.ddev.site/apps/brsprechstundenbuch/` |
 | LocalBase (Test-Harness) | `localbase` | `localbase/` | keine Navigation, keine Laufzeit-Pilotkomponenten |
 | Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
 | Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
@@ -123,7 +126,7 @@ Repositorymanifest registrierte Subrepository auf eine bytegleiche Projektion.
 ## Repo-Trennung
 
 - Der Parent ist nur Meta-/DDEV-/Dokumentationskontext.
-- `brtop/`, `flzplaner/`, `brstunden/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/`, `flz_kapazitaet/`, `flz_dpa/`, `flz_prognose/`, `flz_berichte/` und `flz-full-suite/` sind eigene Git-Repositories.
+- `brtop/`, `flzplaner/`, `brstunden/`, `brsprechstundenbuch/`, `localbase/`, `flz_permission_matrix/`, `flzcalendar/`, `flzurlaub/`, `orgsuite/`, `flzroom/`, `flzrecruitment/`, `flzbqplanung/`, `flz_data_protection/`, `flz_akut/`, `flz_kapazitaet/`, `flz_dpa/`, `flz_prognose/`, `flz_berichte/` und `flz-full-suite/` sind eigene Git-Repositories.
 - Der Parent ignoriert App-Verzeichnisse per `.gitignore`.
 - App-Code darf im Parent nicht getrackt, gestaged oder committed werden.
 - App-Code wird nur im App-Repo geaendert und nur nach ausdruecklichem Auftrag.
@@ -148,6 +151,7 @@ ddev exec -d /var/www/html/html php occ status
 ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
+ddev exec -d /var/www/html/html php occ app:list | grep -i brsprechstundenbuch
 ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_permission_matrix
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzcalendar
@@ -255,6 +259,19 @@ Konfiguration:
 
 ```text
 nextcloud-dev/.ddev/docker-compose.brstunden.yaml
+```
+
+BR-Sprechstundenbuch:
+
+```text
+${WORKSPACE_ROOT}/brsprechstundenbuch
+-> /var/www/html/html/custom_apps/brsprechstundenbuch
+```
+
+Konfiguration:
+
+```text
+nextcloud-dev/.ddev/docker-compose.brsprechstundenbuch.yaml
 ```
 
 LocalBase:

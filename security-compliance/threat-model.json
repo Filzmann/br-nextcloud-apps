@@ -234,6 +234,49 @@
       ]
     },
     {
+      "id": "brsprechstundenbuch",
+      "assets": [
+        "consultation-hour entries (sender/participants, short content, action/filing)",
+        "individual case files with contact details",
+        "consultation-hour reports for meeting minutes"
+      ],
+      "actors": [
+        "BR member",
+        "chair/deputy",
+        "temporarily authorized Nextcloud admin"
+      ],
+      "entry_points": [
+        "page and API routes",
+        "future report generation"
+      ],
+      "trust_boundaries": [
+        "Nextcloud identity to BR role via flz_permission_matrix PublicApi V1 (fail-closed)",
+        "flz_data_protection provider events",
+        "future document/file generation for reports"
+      ],
+      "privileges": [
+        "document own consultation hours",
+        "flag important entries",
+        "create individual cases from entries"
+      ],
+      "threats": [
+        {
+          "id": "brsprechstundenbuch-foreign-case-disclosure",
+          "description": "A non-authorized user could read or modify another member's consultation-hour entries or individual cases, or receive them in a report.",
+          "controls": [
+            "AUTHZ-01",
+            "PRIVACY-01"
+          ],
+          "verification_refs": [
+            "brsprechstundenbuch/tests/AppStructureContractTest.php",
+            "brsprechstundenbuch/tests/ProcessingMetadataProviderTest.php",
+            "brsprechstundenbuch/tests/StandaloneNavigationListenerTest.php"
+          ],
+          "residual_risk": "Legal basis, retention and report recipients remain PRIVACY-DECISION-REQUIRED until decided."
+        }
+      ]
+    },
+    {
       "id": "flz_permission_matrix",
       "assets": [
         "permission snapshots and baselines",
