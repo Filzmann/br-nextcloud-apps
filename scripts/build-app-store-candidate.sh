@@ -66,7 +66,7 @@ trap 'rm -rf "$stage"' EXIT
 # Sauberer Export aus dem definierten Commit; Entwicklungsdateien bleiben außen.
 mkdir -p "$stage/$app"
 git -C "$app_root" archive --format=tar "$commit" | tar -x -C "$stage/$app"
-for forbidden in tests .github node_modules dist build .git .DS_Store; do
+for forbidden in tests .github node_modules dist build .git .DS_Store .agents .vibe .codex; do
     rm -rf "$stage/$app/$forbidden"
 done
 find "$stage/$app" -name '*.log' -delete
