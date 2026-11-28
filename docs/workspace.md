@@ -22,6 +22,7 @@ br-nextcloud-apps/
 |   |-- config.toml
 |   `-- agents/
 |-- 00_ki_projektkonfiguration_br_nextcloud_apps.md
+|-- test-harness/  # gemeinsames Test-Harness (aus localbase/tests verschoben)
 |-- br-nextcloud-apps.code-workspace
 |-- docs/
 |   `-- workspace.md
@@ -32,7 +33,6 @@ br-nextcloud-apps/
 |       |-- docker-compose.flzplaner.yaml
 |       |-- docker-compose.brstunden.yaml
 |       |-- docker-compose.brsprechstundenbuch.yaml
-|       |-- docker-compose.localbase.yaml
 |       |-- docker-compose.flz_permission_matrix.yaml
 |       |-- docker-compose.flzcalendar.yaml
 |       |-- docker-compose.flzurlaub.yaml
@@ -51,7 +51,7 @@ br-nextcloud-apps/
 |-- flzplaner/   # eigenes Git-Repo, im Parent ignoriert
 |-- brstunden/  # eigenes Git-Repo, im Parent ignoriert
 |-- brsprechstundenbuch/  # eigenes Git-Repo, im Parent ignoriert
-|-- localbase/  # eigenes Git-Repo, Test-Harness + leere Compat-Stage (seit 28.11.2026 ohne Pilot-Code)
+|-- localbase/  # eigenes Git-Repo, auf registrierungsfreie Huelle zurueckgebaut und auf GitHub archiviert; Test-Harness liegt im Parent unter test-harness/
 |-- flz_permission_matrix/ # eigenes Git-Repo, Berechtigungsmatrix
 |-- flzcalendar/ # eigenes Git-Repo, Dienst- und Terminplanung
 |-- flzurlaub/   # eigenes Git-Repo, Urlaubsplanung
@@ -78,7 +78,7 @@ Die folgende Tabelle ist eine nicht-kanonische, human-lesbare Übersicht. Die vo
 | FlzPlaner | `flzplaner` | `flzplaner/` | `https://nextcloud-dev.ddev.site/apps/flzplaner/` |
 | BRStunden | `brstunden` | `brstunden/` | `https://nextcloud-dev.ddev.site/apps/brstunden/` |
 | BR-Sprechstundenbuch | `brsprechstundenbuch` | `brsprechstundenbuch/` | `https://nextcloud-dev.ddev.site/apps/brsprechstundenbuch/` |
-| LocalBase (Test-Harness) | `localbase` | `localbase/` | keine Navigation, keine Laufzeit-Pilotkomponenten |
+| LocalBase (archiviert) | `localbase` | `localbase/` | nicht in DDEV gemountet, keine Laufzeitkomponenten |
 | Berechtigungsmatrix | `flz_permission_matrix` | `flz_permission_matrix/` | `https://nextcloud-dev.ddev.site/apps/flz_permission_matrix/` |
 | Filzmann Kalender | `flzcalendar` | `flzcalendar/` | `https://nextcloud-dev.ddev.site/apps/flzcalendar/` |
 | Filzmann Urlaubsplanung | `flzurlaub` | `flzurlaub/` | `https://nextcloud-dev.ddev.site/apps/flzurlaub/` |
@@ -152,7 +152,6 @@ ddev exec -d /var/www/html/html php occ app:list | grep -i brtop
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzplaner
 ddev exec -d /var/www/html/html php occ app:list | grep -i brstunden
 ddev exec -d /var/www/html/html php occ app:list | grep -i brsprechstundenbuch
-ddev exec -d /var/www/html/html php occ app:list | grep -i localbase
 ddev exec -d /var/www/html/html php occ app:list | grep -i flz_permission_matrix
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzcalendar
 ddev exec -d /var/www/html/html php occ app:list | grep -i flzurlaub
@@ -274,17 +273,11 @@ Konfiguration:
 nextcloud-dev/.ddev/docker-compose.brsprechstundenbuch.yaml
 ```
 
-LocalBase:
+LocalBase ist nicht mehr in DDEV gemountet (App deaktiviert, Repo archiviert).
+Das Test-Harness liegt im Parent unter `test-harness/`:
 
 ```text
-${WORKSPACE_ROOT}/localbase
--> /var/www/html/html/custom_apps/localbase
-```
-
-Konfiguration:
-
-```text
-nextcloud-dev/.ddev/docker-compose.localbase.yaml
+${WORKSPACE_ROOT}/test-harness
 ```
 
 Berechtigungsmatrix:
@@ -507,7 +500,7 @@ Aktivierung in Nextcloud braucht eine gesonderte Freigabe.
 `scripts/check-fast` führt für neue, ungetrackte sowie gestagte oder ungestagte
 JavaScript-Dateien unter `js/` jeder registrierten App eine frische c8-Messung
 über deren `node tests/run-js.mjs` aus. Der vorhandene, gelockte c8-Einstieg
-unter `localbase/tests/coverage` wird wiederverwendet. Ein vollständig
+unter `test-harness/coverage` wird wiederverwendet. Ein vollständig
 unausgeführtes betroffenes Skript blockiert unabhängig von der App-Baseline;
 reine Quelltextprüfungen reichen nicht aus. Unberührte Bestandsdateien werden
 dadurch nicht künstlich als neue Arbeit behandelt. Vorhandene niedrige

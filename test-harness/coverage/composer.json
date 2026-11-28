@@ -1,0 +1,11 @@
+{
+    "name": "flz-full-suite/coverage-tools",
+    "description": "Nur lokal verwendete Coverage-Werkzeuge für die Filzmann Nextcloud Plugins.",
+    "type": "project",
+    "require-dev": {
+        "phpunit/phpcov": "^11.0"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -6,8 +6,8 @@ manifest="$workspace/config/workspace-repositories.tsv"
 checker="$workspace/scripts/check-flz-full-suite-coverage-baseline.sh"
 baseline="$workspace/scripts/flz-full-suite-js-coverage-baseline.tsv"
 measurement="$workspace/scripts/measure-flz-full-suite-js-coverage.sh"
-package="$workspace/localbase/tests/coverage/package.json"
-lock="$workspace/localbase/tests/coverage/package-lock.json"
+package="$workspace/test-harness/coverage/package.json"
+lock="$workspace/test-harness/coverage/package-lock.json"
 
 for file in "$baseline" "$measurement" "$package" "$lock"; do
     if [[ ! -f "$file" ]]; then

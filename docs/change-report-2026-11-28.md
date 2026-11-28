@@ -149,3 +149,29 @@ keine Datenmigration nötig.
   automatisch nach dem ersten Raum.
 - **DDEV-Delivery-Gate erneut grün** (RC=0, 28.11.2026 13:12 UTC) nach
   `occ upgrade` (flzroom 0.13.1-rc.1 übernommen).
+
+## LocalBase-Archivierung — Test-Harness in den Parent verschoben (umgesetzt, Freigabe Simon: Harness in Parent, Repo archivieren)
+
+- `localbase/tests/` wurde unveraendert (nur ohne node_modules/vendor) nach
+  `test-harness/` im Parent verschoben; der PHP-Namespace
+  `OCA\LocalBase\Tests\...` bleibt vorerst, damit App-Bootstraps nur den
+  Pfad anpassen. `test-harness/README.md` dokumentiert die Pfadaufloesung
+  (lokal `<workspace>/test-harness`, in der App-CI derselbe Pfad, weil der
+  Parent-Workflow den Parent-Repo-Wurzel mit `path: '.', clean: false`
+  auscheckt).
+- Parent-Skripte und -Tests stellen von `localbase/tests/coverage` auf
+  `test-harness/coverage` um (Coverage-Messung, JS-Runtime-Coverage,
+  Security-Compliance, Full-Suite-CI-Vertrag, JS-Coverage-Baseline).
+- `tests/check-flz-full-suite-ci-contract.sh` fordert statt des LocalBase-
+  Checkouts je Verbraucher-Workflow (PHP- und JS-Job) genau einen
+  Parent-Checkout `Filzmann/br-nextcloud-apps` mit `ref: main`, `path: '.'`,
+  `clean: false`, und verbietet `nextcloud-localbase`-Referenzen. Die
+  dynamischen Branch- und Pin-Referenzen (LOCALBASE_TEST_REF) entfallen, weil
+  das Harness ausschliesslich auf Parent-main lebt.
+- `docs/workspace.md` aktualisiert (Test-Harness im Parent, LocalBase nicht
+  mehr in DDEV gemountet). `config/workspace-repositories.tsv` behaelt die
+  localbase-Zeile, solange das lokale Repo als Referenz liegt; das GitHub-Repo
+  `Filzmann/nextcloud-localbase` wird archiviert (archivierte Repos bleiben
+  klonbar, die Staging-Runtime-Spiegel in den Compat-/Staging-Skripten bleiben
+  damit funktionsfaehig).
+- DDEV: `docker-compose.localbase.yaml` entfernt, App `localbase` deaktiviert.

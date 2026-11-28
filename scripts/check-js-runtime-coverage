@@ -73,9 +73,9 @@ if (( ${#changed[@]} == 0 )); then
     exit 0
 fi
 
-tool="$workspace/localbase/tests/coverage/node_modules/.bin/c8"
+tool="$workspace/test-harness/coverage/node_modules/.bin/c8"
 if [[ ! -x "$tool" ]]; then
-    echo 'JS-Laufzeitnachweis benötigt npm ci --prefix localbase/tests/coverage.' >&2
+    echo 'JS-Laufzeitnachweis benötigt npm ci --prefix test-harness/coverage.' >&2
     exit 1
 fi
 

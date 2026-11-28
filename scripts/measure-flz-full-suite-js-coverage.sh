@@ -3,7 +3,7 @@ set -euo pipefail
 
 workspace="$(cd "$(dirname "$0")/.." && pwd)"
 manifest="$workspace/config/workspace-repositories.tsv"
-tool="$workspace/localbase/tests/coverage/node_modules/.bin/c8"
+tool="$workspace/test-harness/coverage/node_modules/.bin/c8"
 host_output="$workspace/build/coverage/js"
 summary="$workspace/build/coverage/js-summary.tsv"
 baseline="${JS_COVERAGE_BASELINE_FILE:-$workspace/scripts/flz-full-suite-js-coverage-baseline.tsv}"
@@ -15,7 +15,7 @@ while IFS=$'\t' read -r path kind app_id required_skills; do
 done < "$manifest"
 
 if [[ ! -x "$tool" ]]; then
-    echo 'JavaScript-Coverage-Abhängigkeiten fehlen. Bitte npm ci --prefix localbase/tests/coverage ausführen.' >&2
+    echo 'JavaScript-Coverage-Abhängigkeiten fehlen. Bitte npm ci --prefix test-harness/coverage ausführen.' >&2
     exit 1
 fi
 

@@ -6,19 +6,6 @@ manifest="$workspace/config/workspace-repositories.tsv"
 php_coverage_baseline="$workspace/scripts/flz-full-suite-php-coverage-baseline.tsv"
 mapfile -t apps < <(awk -F '\t' '$2 == "app" { print $1 }' "$manifest")
 consumers=(orgsuite flzcalendar flzplaner flzurlaub flzroom brtop brstunden flz_permission_matrix flzrecruitment)
-branch_matched_consumers=(orgsuite flzcalendar flzurlaub flzroom brtop flz_permission_matrix flzrecruitment)
-pinned_consumers=(brstunden flzplaner)
-declare -A consumer_repositories=(
-    [orgsuite]='nextcloud-orgsuite'
-    [flzcalendar]='nextcloud-flzcalendar'
-    [flzplaner]='nextcloud-flzplaner'
-    [flzurlaub]='nextcloud-flzurlaub'
-    [flzroom]='nextcloud-flzroom'
-    [brtop]='nextcloud-brtop'
-    [brstunden]='nextcloud-brstunden'
-    [flz_permission_matrix]='nextcloud-flz-permission-matrix'
-    [flzrecruitment]='nextcloud-flzrecruitment'
-)
 
 require_text() {
     local file="$1"
@@ -69,67 +56,51 @@ for app in "${apps[@]}"; do
     require_text "$workflow" "if: matrix.php-version == '8.3'" 'PHP-Coverage-Laufzeit'
     require_text "$workflow" "coverage: \${{ matrix.php-version == '8.3' && 'xdebug' || 'none' }}" 'Selektive Xdebug-Coverage'
     require_text "$workflow" "if: matrix.php-version == '8.5'" 'PHP-Schnelltest-Laufzeit'
-    require_text "$workflow" 'composer install --working-dir=localbase/tests/coverage' 'PHP-Coverage-Tooling'
-    require_text "$workflow" 'PHP_COVERAGE_COMMAND="$GITHUB_WORKSPACE/localbase/tests/coverage/vendor/bin/phpcov"' 'PHP-Coverage-Kommando'
+    require_text "$workflow" 'composer install --working-dir=test-harness/coverage' 'PHP-Coverage-Tooling'
+    require_text "$workflow" 'PHP_COVERAGE_COMMAND="$GITHUB_WORKSPACE/test-harness/coverage/vendor/bin/phpcov"' 'PHP-Coverage-Kommando'
     require_text "$workflow" 'PHP_COVERAGE_OUTPUT_DIR="$RUNNER_TEMP/php-coverage"' 'PHP-Coverage-Ausgabe'
     require_text "$workflow" \
-        "php \"\$GITHUB_WORKSPACE/localbase/tests/coverage/merge-clover.php\" $app \"\$RUNNER_TEMP/php-coverage\" $minimum_php_coverage" \
+        "php \"\$GITHUB_WORKSPACE/test-harness/coverage/merge-clover.php\" $app \"\$RUNNER_TEMP/php-coverage\" $minimum_php_coverage" \
         'PHP-Coverage-Baseline'
 done
 
 for app in "${consumers[@]}"; do
     workflow="$workspace/$app/.github/workflows/tests.yml"
-    require_text "$workflow" 'repository: Filzmann/nextcloud-localbase' 'LocalBase-Checkout'
-    require_text "$workflow" 'path: localbase' 'LocalBase-Nachbarpfad'
-done
-
-for app in "${branch_matched_consumers[@]}"; do
-    workflow="$workspace/$app/.github/workflows/tests.yml"
-    require_text "$workflow" 'name: LocalBase-Referenz bestimmen' 'Dynamische LocalBase-Referenz'
-    require_text "$workflow" 'CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}' 'LocalBase-Branchkandidat'
-    require_text "$workflow" 'git ls-remote --exit-code --heads https://github.com/Filzmann/nextcloud-localbase.git' 'Sichere LocalBase-Branchprüfung'
-    require_text "$workflow" 'echo "ref=main" >> "$GITHUB_OUTPUT"' 'LocalBase-main-Fallback'
-    require_text "$workflow" 'ref: ${{ steps.localbase-ref.outputs.ref }}' 'Aufgelöste LocalBase-Referenz'
-done
-
-for app in "${pinned_consumers[@]}"; do
-    workflow="$workspace/$app/.github/workflows/tests.yml"
-    # Der Workflow ist die einzige Wertquelle des veröffentlichten Test-Pins.
-    # Beide Jobs müssen denselben unveränderlichen Commit auschecken.
-    mapfile -t pinned_refs < <(sed -nE 's/^  LOCALBASE_TEST_REF: ([0-9a-f]{40})$/\1/p' "$workflow")
-    if (( ${#pinned_refs[@]} != 1 )) || [[ "$(grep -c '^  LOCALBASE_TEST_REF:' "$workflow")" != 1 ]]
-    then
-        echo "Eindeutiger vollständiger LocalBase-Commit-Pin fehlt in ${workflow#"$workspace/"}." >&2
+    # Das Test-Harness liegt im Parent-Repository (test-harness/). Beide Jobs
+    # (PHP und JavaScript) müssen den Parent unverändert in den Workspace-Root
+    # auschecken, damit test-harness/ lokal und in der CI identisch auflöst.
+    if grep -Fq 'nextcloud-localbase' "$workflow"; then
+        echo "Veralteter LocalBase-Checkout in ${workflow#"$workspace/"}." >&2
         exit 1
     fi
+    require_text "$workflow" 'repository: Filzmann/br-nextcloud-apps' 'Parent-Checkout (Test-Harness)'
+    require_text "$workflow" "path: '.'" 'Parent-Workspace-Wurzel'
+    require_text "$workflow" 'clean: false' 'Parent-Checkout ohne Clean'
+    require_text "$workflow" 'ref: main' 'Parent-main-Referenz'
     if ! awk '
         function check_step()
         {
-            if (localbase)
+            if (parent)
             {
                 checkouts++
-                if (!checkout || !pinned || !neighbor) invalid = 1
+                if (!checkout || !root || !noclean || !mainref) invalid = 1
             }
-            localbase = checkout = pinned = neighbor = 0
+            parent = checkout = root = noclean = mainref = 0
         }
         /^      - / { check_step() }
         /^        uses: actions\/checkout@v7$/ { checkout = 1 }
-        /^          repository: Filzmann\/nextcloud-localbase$/ { localbase = 1 }
-        /^          ref: \$\{\{ env.LOCALBASE_TEST_REF \}\}$/ { pinned = 1 }
-        /^          path: localbase$/ { neighbor = 1 }
+        /^          repository: Filzmann\/br-nextcloud-apps$/ { parent = 1 }
+        /^          ref: main$/ { mainref = 1 }
+        /^          path: .{3}$/ { root = 1 }
+        /^          clean: false$/ { noclean = 1 }
         END {
             check_step()
             exit (checkouts != 2 || invalid)
         }
     ' "$workflow"; then
-        echo "PHP- und JavaScript-Checkout müssen denselben LocalBase-Commit-Pin verwenden: ${workflow#"$workspace/"}." >&2
+        echo "PHP- und JavaScript-Job müssen je einen Parent-Checkout (ref: main, path: '.', clean: false) enthalten: ${workflow#"$workspace/"}." >&2
         exit 1
     fi
-done
-
-localbase_workflow="$workspace/localbase/.github/workflows/tests.yml"
-for app in "${consumers[@]}"; do
-    require_text "$localbase_workflow" "repository: Filzmann/${consumer_repositories[$app]}" "Verbraucher-Checkout $app"
 done
 
 echo 'Workspace-CI-Vertrag: OK'
