@@ -7,10 +7,10 @@ require_once __DIR__ . '/bootstrap.php';
 use OCA\LocalBase\Tests\Support\PhpTestRunner;
 
 PhpTestRunner::run(
-    root: dirname(__DIR__),
-    lintDirectories: ['appinfo', 'tests'],
-    testDirectories: ['tests/Support'],
+    root: __DIR__,
+    lintDirectories: ['Support'],
+    testDirectories: ['Support'],
     testSuffixes: ['Test.php'],
-    successMessage: 'LocalBase PHP tests passed',
-    prependBootstrap: true,
+    successMessage: 'Test-harness PHP tests passed',
+    prependBootstrap: false,
 );
