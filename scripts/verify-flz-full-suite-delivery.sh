@@ -219,7 +219,6 @@ for product in "${products[@]}"; do
         "flz-product-$product-delivery-check/ABNAHMEPROTOKOLL.md" \
         "flz-product-$product-delivery-check/flz-product-catalog.json" \
         "flz-product-$product-delivery-check/sbom.cdx.json" \
-        "flz-product-$product-delivery-check/localbase-" \
         "flz-product-$product-delivery-check/orgsuite-" \
         "flz-product-$product-delivery-check/$product-"; do
         if ! grep -Fq "$contract" <<< "$product_members"; then

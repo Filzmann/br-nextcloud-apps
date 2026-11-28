@@ -81,11 +81,14 @@ LocalBase-Repository, beispielsweise `flzcalendar/tests/run.php`,
 `orgsuite/tests/EntryControllerTest.php`. Das ist eine Entwicklungs- und
 Testkopplung, keine auslieferbare Produktionsabhängigkeit.
 
-Der Parent-Releasecode liest LocalBase-Interna direkt:
-`scripts/read-flz-product-catalog.php` lädt
-`localbase/lib/Catalog/FlzProductCatalog.php`, und
+Der Parent-Releasecode liest den FLZ-Produktkatalog ausschließlich aus
+OrgSuite: `scripts/read-flz-product-catalog.php` lädt
+`orgsuite/lib/Catalog/FlzProductCatalog.php` und
 `scripts/build-flz-full-suite-release.sh` liest
-`orgsuite/resources/flz-product-catalog.json`. Diese Quellbaumkopplung ist für
+`orgsuite/resources/flz-product-catalog.json`. (Datierte Änderung 28. November
+2026: Zuvor lud der Reader `localbase/lib/Catalog/FlzProductCatalog.php`; mit
+dem LocalBase-Retirement aus den Bundles ist OrgSuite die alleinige
+Katalogquelle.) Diese Quellbaumkopplung ist für
 den internen Suite-Build belegt, aber kein zulässiges Modell für ein
 eigenständiges App-Store-Archiv.
 

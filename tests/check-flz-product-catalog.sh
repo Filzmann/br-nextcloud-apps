@@ -8,13 +8,7 @@ reader="$workspace/scripts/read-flz-product-catalog.php"
 [[ -f "$catalog" ]] || { echo 'Kanonischer FLZ-Produktkatalog fehlt.' >&2; exit 1; }
 [[ -f "$reader" ]] || { echo 'Maschinenlesbarer FLZ-Produktkatalog-Reader fehlt.' >&2; exit 1; }
 
-# Solange LocalBase noch eine eigene Kopie ausliefert, darf diese nicht von der
-# kanonischen OrgSuite-Quelle abweichen; beim LocalBase-Retirement entfällt die Kopie.
-legacy_copy="$workspace/localbase/resources/flz-product-catalog.json"
-if [[ -f "$legacy_copy" ]] && ! cmp -s "$legacy_copy" "$catalog"; then
-    echo 'LocalBase-Kopie des FLZ-Produktkatalogs weicht von der kanonischen OrgSuite-Quelle ab.' >&2
-    exit 1
-fi
+# Kanonische Katalogquelle ist ausschließlich OrgSuite; LocalBase ist kein Bundle-Bestandteil mehr.
 
 php "$reader" validate >/dev/null
 mapfile -t products < <(php "$reader" products)
@@ -22,16 +16,16 @@ expected_navigation=(flzcalendar flzplaner flzurlaub flzroom flzrecruitment flzb
 [[ "${products[*]}" == "${expected_navigation[*]}" ]] || { echo 'FLZ-Navigationsproduktliste oder Reihenfolge weicht ab.' >&2; exit 1; }
 
 mapfile -t full_suite < <(php "$reader" full-suite)
-expected_full=(localbase orgsuite flzcalendar flzplaner flzurlaub flzroom flzrecruitment flz_akut)
+expected_full=(orgsuite flzcalendar flzplaner flzurlaub flzroom flzrecruitment flz_akut)
 [[ "${full_suite[*]}" == "${expected_full[*]}" ]] || { echo 'Vollständige Suite enthält nicht alle katalogisierten Apps.' >&2; exit 1; }
 
 mapfile -t bundle_products < <(php "$reader" bundle-products)
 [[ "${bundle_products[*]}" == 'flzcalendar flzplaner flzurlaub flzroom flzrecruitment flz_akut' ]] || { echo 'Freigegebene und ausgeschlossene Produktbundles weichen vom Katalogvertrag ab.' >&2; exit 1; }
 
 mapfile -t recruitment_bundle < <(php "$reader" product-bundle flzrecruitment)
-[[ "${recruitment_bundle[*]}" == 'localbase orgsuite flzrecruitment' ]] || { echo 'Recruitment-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
+[[ "${recruitment_bundle[*]}" == 'orgsuite flzrecruitment' ]] || { echo 'Recruitment-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
 mapfile -t acute_bundle < <(php "$reader" product-bundle flz_akut)
-[[ "${acute_bundle[*]}" == 'localbase orgsuite flz_akut' ]] || { echo 'Akut-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
+[[ "${acute_bundle[*]}" == 'orgsuite flz_akut' ]] || { echo 'Akut-Produktbundle ist falsch zusammengesetzt.' >&2; exit 1; }
 if php "$reader" product-bundle flzbqplanung >/dev/null 2>&1; then
     echo 'flzbqplanung besitzt vor seiner Releasefreigabe unerwartet ein Produktbundle.' >&2
     exit 1

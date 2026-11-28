@@ -65,7 +65,7 @@ catalog_products="$($php_bin -r '
         }
         exit(9);
     }
-    if (($seen["localbase"] ?? null) !== "infrastructure" || ($seen["orgsuite"] ?? null) !== "infrastructure") exit(10);
+    if (($seen["orgsuite"] ?? null) !== "infrastructure") exit(10);
     usort($products, static fn(array $left, array $right): int => [$left["order"], $left["id"]] <=> [$right["order"], $right["id"]]);
     foreach ($products as $entry) {
         echo $entry["id"], "\t", $entry["fullSuiteBundle"] ? "1" : "0", "\t", $entry["productBundle"] ? "1" : "0", "\n";
@@ -234,14 +234,11 @@ install_archive() {
     echo "$app $package_version wurde bereitgestellt."
 }
 
-install_archive localbase
 install_archive orgsuite
 for selected_product in "${selected_products[@]}"; do
     install_archive "$selected_product"
 done
 
-"$php_bin" "$nextcloud_root/occ" app:enable localbase
-[[ -n "${originally_enabled[localbase]:-}" ]] || enabled_by_installer+=(localbase)
 for selected_product in "${selected_products[@]}"; do
     "$php_bin" "$nextcloud_root/occ" app:enable "$selected_product"
     [[ -n "${originally_enabled[$selected_product]:-}" ]] || enabled_by_installer+=("$selected_product")

@@ -71,3 +71,26 @@ Der kanonische FLZ-Produktkatalog liegt app-lokal in OrgSuite
 `FLZ_PRODUCT_CATALOG_FILE` bzw. mitgelieferte Kopie. Das Admin-Template ist
 eigenständig und verlinkt auf die flz_organization-Administration. DP-08
 siehe oben (PR #12).
+
+## LB-RUNTIME-RETIREMENT — LocalBase aus Katalog, Installer und Bundles entfernt (umgesetzt)
+
+Entscheidung (Simon, 28. November 2026): LocalBase fliegt vollständig aus
+Katalog, Installer und Bundles; es gibt keinen Produktivbestand, daher ist
+keine Datenmigration nötig.
+
+- Kanonischer Katalog (`orgsuite/resources/flz-product-catalog.json`) ohne
+  `localbase`-Eintrag; OrgSuite ist alleinige verbindliche Suite-Infrastruktur
+  (`FlzProductCatalog::REQUIRED_INFRASTRUCTURE = ['orgsuite']`).
+- `scripts/read-flz-product-catalog.php` lädt die Katalogklasse aus OrgSuite
+  statt aus LocalBase.
+- `scripts/install-flz-product-bundle.sh` installiert und aktiviert
+  `localbase` nicht mehr; `tests/check-flz-product-installer.sh` prüft
+  positiv, dass LocalBase weder installiert noch aktiviert wird.
+- Produktpaket-Vertrag in `scripts/verify-flz-full-suite-delivery.sh` ohne
+  `localbase-`-Archive; Brand-Vertrag ohne LocalBase-Runtime-Wurzel;
+  Standalone-Vertrag ohne LocalBase-Prüfschleife.
+- Doku: flz-full-suite README/INSTALLATION ohne LocalBase-Bestandteil,
+  ADR 0001 mit datierter Änderung zur Katalogquelle.
+- LocalBase bleibt als Repository bestehen (Test-Harness: PhpTestRunner und
+  Coverage-Tooling unter `tests/`, Compat-Stage/Staging-Mirror), wird aber
+  nicht mehr gebündelt. Vollständiger Code-Rückbau bleibt offen.
