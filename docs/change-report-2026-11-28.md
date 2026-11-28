@@ -165,7 +165,9 @@ keine Datenmigration nötig.
 - `tests/check-flz-full-suite-ci-contract.sh` fordert statt des LocalBase-
   Checkouts je Verbraucher-Workflow (PHP- und JS-Job) genau einen
   Parent-Checkout `Filzmann/br-nextcloud-apps` mit `ref: main`, `path: '.'`,
-  `clean: false`, und verbietet `nextcloud-localbase`-Referenzen. Die
+  `clean: false` vor dem App-Checkout (`actions/checkout` wischelt bei
+  `path: '.'` den Workspace, daher muss der Parent zuerst ausgecheckt
+  werden), und verbietet `nextcloud-localbase`-Referenzen. Die
   dynamischen Branch- und Pin-Referenzen (LOCALBASE_TEST_REF) entfallen, weil
   das Harness ausschliesslich auf Parent-main lebt.
 - `docs/workspace.md` aktualisiert (Test-Harness im Parent, LocalBase nicht
