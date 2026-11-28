@@ -142,7 +142,7 @@ if (array_key_exists('personal_runtime_data', $brTopCatalog->toArray())) {
 if ($bqProvider->descriptor()->appId() !== 'flzbqplanung' || $bqProvider->descriptor()->contractVersion() !== '1.0') {
     throw new RuntimeException('Filzmann BQ-Planer veröffentlicht keine stabile Processing-Metadata-Identität.');
 }
-if ($bqCatalog->processingIds() !== ['bq_run_curriculum_and_schedule_management', 'lecturer_profile_and_assignment_management', 'external_lecturer_request_tracking', 'temporary_admin_full_access']) {
+if ($bqCatalog->processingIds() !== ['bq_run_curriculum_and_schedule_management', 'lecturer_profile_and_assignment_management', 'external_lecturer_request_tracking', 'temporary_admin_full_access', 'bq_hiring_event_inbox']) {
     throw new RuntimeException('Der Filzmann-BQ-Planer-Katalog deckt seine personenbezogenen Verarbeitungen nicht vollständig ab.');
 }
 if (array_key_exists('personal_runtime_data', $bqCatalog->toArray())) {

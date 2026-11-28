@@ -80,6 +80,11 @@
       "kind": "domain-app"
     },
     {
+      "id": "brsprechstundenbuch",
+      "repository": "brsprechstundenbuch",
+      "kind": "domain-app"
+    },
+    {
       "id": "flz_permission_matrix",
       "repository": "flz_permission_matrix",
       "kind": "independent-runtime-app"

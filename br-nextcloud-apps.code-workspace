@@ -17,6 +17,10 @@
       "path": "brstunden"
     },
     {
+      "name": "brsprechstundenbuch",
+      "path": "brsprechstundenbuch"
+    },
+    {
       "name": "localbase",
       "path": "localbase"
     },
