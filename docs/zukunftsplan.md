@@ -58,10 +58,14 @@ Daten, Rechte, Datenschutz, Runtimegrenze und Releaseweg zu entscheiden.
 | ZM-04 | Kapazitäts-/Fallbackplanung | Lokale Erweiterung, gebundelte Bibliothek oder Laufzeit-App gemäß ADR 0001 |
 | ZM-05 | Aggregierte Berichte | Empfänger, Granularität, Export, Aufbewahrung und Reidentifikationsrisiko |
 | ZM-07 | Recruitment–BQ-Integration | Minimaler Datenumfang, Zustände, Autorisierung, Wiederholung und Rückbau |
+| ZM-08 | BR-Sprechstundenbuch | Datenmodell, konfigurierbare Bereiche, Rechtevertrag (BR-Rolle fail-closed), Rechtsgrundlage/Retention der Einträge und Einzelfälle, Sprechstundenbericht und Releaseweg |
 
 ZM-02 (DPA-Fallsteuerung) ist als erster Pilot freigegeben (27.11.2026) und wird
 im zuständigen App-Repository `flz_dpa` geführt; ZM-06 (Suiteweite
 Lokalisierung) ist entschieden — siehe `docs/change-report-2026-11-27.md`.
+ZM-08 (BR-Sprechstundenbuch) wurde am 28.11.2026 beauftragt und wird im eigenen
+App-Repository `brsprechstundenbuch` geführt (Scaffold auf main, fachliche
+Funktionen nach `brsprechstundenbuch/ROADMAP.md`).
 
 Für alle personalbezogenen Zukunftsmodule gelten vor einer Produktentscheidung:
 keine Leistungs- oder Vermittlungsscores, Rankings, Blacklists, Diagnosen,
